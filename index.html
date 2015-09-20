@@ -1,0 +1,125 @@
+<!doctype html>
+<html xmlns:ng="http://angularjs.org" id="ng-app" ng-app="quicklist" ng-controller="listController">
+	<head>
+		<meta name="viewport" content="width=device-width">
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<meta property="og:title" content="qList.cc: share quick lists"/>
+		<meta property="og:url" content="http://qList.cc"/>
+		<meta property="og:site_name" content="qList"/>
+	    <meta property="og:image" content="icons/ql-icon-retina-iphone.png"/>
+		<title ng-bind="getListName()">qList.cc | quick lists</title>
+		<!-- <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet"> -->
+		<!-- <link rel="stylesheet" type="text/css" href="http://d242yqjtwaiaj1.cloudfront.net/prod.css.gz"> -->
+		<link rel="stylesheet" type="text/css" href="css/prod.css">
+		<link rel="shortcut icon" href="icons/ql.ico" type="image/icon"> 
+		<link rel="icon" href="icons/ql.ico" type="image/icon">
+		<link rel="apple-touch-icon" href="icons/ql-icon-iphone.png">
+		<link rel="apple-touch-icon" sizes="76x76" href="icons/ql-icon-ipad.png">
+		<link rel="apple-touch-icon" sizes="120x120" href="icons/ql-icon-retina-iphone.png">
+		<link rel="apple-touch-icon" sizes="152x152" href="icons/ql-icon-retina-ipad.png">
+		<!--[if lte IE 7]>
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/json3/3.3.0/json3.min.js"></script>
+      	<![endif]-->
+      	<!--[if lt IE 9]>
+      	<script src="js/html5shiv.js"></script>
+      	<script src="http://cdnjs.cloudflare.com/ajax/libs/es5-shim/2.3.0/es5-shim.js"></script>
+      	<![endif]-->
+		<!-- <script>
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+		  ga('create', 'UA-48582921-2', 'qlist.cc');
+		  ga('require', 'displayfeatures');
+		  ga('send', 'pageview');
+
+		</script> -->
+		<script src="js/prod.js"></script>
+		<script src="js/angular-linkify.min.js"></script>
+	</head>
+	<body>
+		<div class="aboveTheFooterOuter">
+			<div class="aboveTheFooterInner">
+				<div class="header">
+					<div class="headerMain">
+						<div class="title">
+							qList<span class="cc">.cc</span> <br>
+							<span class="subtitle"> 
+							quick, easy lists.
+							</span>
+						</div>
+						<div class="floatToRight">
+							<div class="topButtons">
+								<button type="button" class="btn btn-sm newButton" ng-click="showNewListModal()">new list</button>
+								<button type="button" class="btn btn-sm shareButton" ng-click="showShareModal()">share your list</button>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="main">
+					<div class="spinner" ng-hide="loaded">
+						<i class="fa fa-spinner fa-spin fa-3x"></i>					
+					</div>
+					<div class="animate-show" ng-cloak ng-show="loaded">
+						<div class="listTitle">
+							<input name="titleBox" ng-class="{'titleBox':true, 'titleBoxFilled':listName.$value.length, 'titleBoxNotFocused':!listNameFocused}" type="text" ng-model="listName.$value" ng-blur="titleBoxBlur()" ng-focus="titleBoxFocus()" placeholder="{{listNamePlaceholder}}" select-on-click>
+						</div>
+						<form name="addItemForm" ng-submit="addItem()">
+							<input name="addItemBox" class="addItemBox" type="text" required ng-model="itemName" placeholder="{{fbCount(items) && 'enter your next item' || 'enter your first item here'}}" ng-pattern="moreThanWhitespace" />
+							<input class="addItemButton" type="submit" value="add" />
+						</form>					
+						<ul ui-sortable="sortableOptions" ng-model="items" class="theList">
+							<li ng-class="{'listItem': true, 'checkedItem': item.checked}" ng-repeat="item in items | orderByPriority">
+								<div class="chkbox" ng-click="checkItem(item)" >
+									<i ng-class="{'fa': true, 'fa-check-square-o': item.checked, 'fa-square-o': !item.checked, 'fa-lg': true}"></i>
+								</div>
+								<div class="listItemName">
+									<span class="listItemNameContent" linkify>{{item.name}}</span> 
+									<div class="deleteButton" ng-click="deleteItem(item.ID)" ng-show="item.checked">	
+										<i class="fa fa-times-circle fa-lg"></i> 
+									</div>
+								</div>			
+								<div class="gripper">
+									<i class="fa fa-sort"></i> <i class="fa fa-bars"></i> 
+								</div>		
+							</li>
+						</ul>
+						<div class="instructions animate-show" ng-hide="!loaded || fbCount(items)">
+							<div class="instructionsHeader">welcome to your qList!</div>
+							<div class="instructionsBody">qList is great for shopping lists, to-do lists, or any other quick list you need</div>
+							<div class="instructionsIcon"><i class="fa fa-user fa-lg"></i>&nbsp;&nbsp;&nbsp;<i class="fa fa-long-arrow-right fa-lg"></i>&nbsp;&nbsp;&nbsp;<i class="fa fa-users fa-lg"></i> </div> 
+							<div class="instructionsHeader">easy to share</div> 							
+							<div class="instructionsBody">start your list then send this page's URL to share and collaborate</div>
+							<div class="instructionsIcon"><i class="fa fa-desktop fa-lg"></i>&nbsp;&nbsp;&nbsp;<i class="fa fa-laptop fa-lg"></i>&nbsp;&nbsp;&nbsp;<i class="fa fa-tablet fa-lg"></i>&nbsp;&nbsp;&nbsp;<i class="fa fa-mobile fa-lg"></i> </div> 
+							<div class="instructionsHeader">use it anywhere</div>
+							<div class="instructionsBody">works great on your computer, phone, and tablet's web browser</div>
+							<div class="instructionsIcon"><i class="fa fa-bolt fa-lg"></i></div>
+							<div class="instructionsHeader">just get started</div>
+							<div class="instructionsBody">no sign up, no spam.&nbsp;&nbsp;start your list right here!</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<footer>
+			<div class="footerWidthLimit">
+				<div class="footerLeft">
+					<ul>
+						<li ng-show="checkedItemExists" class="animate-show" ng-click="showDeleteAllModal()"><a class="btnDelete"><i class="fa fa-times-circle fa-lg"></i> <i class="fa fa-check-square-o fa-lg"></i></a></li>
+					</ul>
+				</div>
+				<div class="footerRight">
+					<ul>
+						<!-- <li><a data-uv-trigger data-uv-accent-color="#7E7856">feedback</a></li> -->
+						<li><a ng-click="showTosModal()">terms of use</a></li>
+					</ul>
+				</div>
+			</div>
+		</footer>		
+<!-- 		<script>
+		UserVoice=window.UserVoice||[];(function(){var uv=document.createElement('script');uv.type='text/javascript';uv.async=true;uv.src='//widget.uservoice.com/u1GJpFhXkOuP8Oq71GJCRw.js';var s=document.getElementsByTagName('script')[0];s.parentNode.insertBefore(uv,s)})();
+		</script> -->
+	</body>
+</html>
