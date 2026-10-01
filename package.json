@@ -12,7 +12,7 @@
     "dev:emulator": "vite --mode emulator",
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test test/*.test.ts",
+    "test": "node --test --test-timeout=15000 test/*.test.ts",
     "test:emulator": "firebase emulators:exec --only database --project demo-qlist \"node --test --test-timeout=15000 test/firebase.integration.ts\"",
     "check": "npm run typecheck && npm run build && npm test",
     "test:staging-rules": "firebase emulators:exec --config firebase.staging-test.json --only database --project demo-qlist \"node --test --test-timeout=20000 test/staging-rules.integration.ts\"",
@@ -22,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "24.19.0",
+    "@types/sortablejs": "1.15.9",
     "firebase-tools": "15.32.1",
     "jsdom": "30.1.1",
     "prettier": "3.9.9",
@@ -29,7 +30,8 @@
     "vite": "8.3.2"
   },
   "dependencies": {
-    "firebase": "12.19.0"
+    "firebase": "12.19.0",
+    "sortablejs": "1.15.7"
   },
   "overrides": {
     "@grpc/grpc-js": "1.14.5"

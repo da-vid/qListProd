@@ -12,6 +12,9 @@ async function ui(
     runScripts: "outside-only",
     pretendToBeVisual: true,
   });
+  Object.defineProperty(dom.window, "matchMedia", {
+    value: () => ({ matches: false }),
+  });
   Object.assign(dom.window.HTMLDialogElement.prototype, {
     showModal() {
       this.setAttribute("open", "");
@@ -63,17 +66,39 @@ test("built UI adds, edits, checks, orders, deletes and preserves focus", async 
     await tick();
     assert.equal(d.activeElement, name);
     assert.ok(d.querySelector(".item.done"));
-    (
-      d.querySelector('[aria-label="Move Milk up"]') as HTMLButtonElement
-    ).click();
+    const handle = d.querySelector(
+      '[aria-label="Reorder Milk"]',
+    ) as HTMLButtonElement;
+    handle.focus();
+    handle.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", {
+        key: "ArrowUp",
+        bubbles: true,
+      }),
+    );
     await tick();
     assert.equal(
       (d.querySelector(".item .name") as HTMLInputElement).value,
       "Milk",
     );
-    (
-      d.querySelector('[aria-label="Delete Milk"]') as HTMLButtonElement
-    ).click();
+    assert.equal(d.activeElement, handle);
+    const remove = d.querySelector(
+      '[aria-label="Delete Milk"]',
+    ) as HTMLButtonElement;
+    assert.equal(remove.hidden, true);
+    assert.equal(remove.disabled, true);
+    remove.click();
+    await tick();
+    assert.equal(d.querySelectorAll(".item").length, 2);
+    const milkCheck = d.querySelector(
+      '[aria-label="Complete Milk"]',
+    ) as HTMLInputElement;
+    milkCheck.checked = true;
+    milkCheck.dispatchEvent(new dom.window.Event("change"));
+    await tick();
+    assert.equal(remove.hidden, false);
+    assert.equal(remove.disabled, false);
+    remove.click();
     await tick();
     assert.equal(d.querySelectorAll(".item").length, 1);
     assert.match(d.title, /Shopping/);
@@ -126,7 +151,7 @@ test("production origin refuses persistence and hosted bundle excludes Firebase 
     const file = (await readdir("dist/assets")).find((x) => x.endsWith(".js"))!;
     const js = await readFile(`dist/assets/${file}`, "utf8");
     assert.doesNotMatch(js, /firebaseio|qwiklist|google-analytics|AngularJS/);
-    assert.ok(js.length < 20000);
+    assert.ok(js.length < 65000);
   } finally {
     dom.window.close();
   }
@@ -277,6 +302,73 @@ test("unknown custom URL opens an empty independent list and persists on edit", 
           ) as HTMLInputElement
         ).value,
         "New custom item",
+      );
+    } finally {
+      reopened.window.close();
+    }
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("keyboard Home/End ordering persists and unchecking hides deletion again", async () => {
+  const dom = await ui();
+  try {
+    const d = dom.window.document;
+    for (const name of ["First", "Middle", "Last"]) {
+      submit(dom, name);
+      await tick();
+    }
+    const handle = d.querySelector(
+      '[aria-label="Reorder Last"]',
+    ) as HTMLButtonElement;
+    handle.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Home", bubbles: true }),
+    );
+    await tick();
+    const names = () =>
+      [...d.querySelectorAll<HTMLInputElement>(".item .name")].map(
+        (x) => x.value,
+      );
+    assert.deepEqual(names(), ["Last", "First", "Middle"]);
+    assert.match(d.querySelector("#reorder-help")!.textContent!, /arrow keys/);
+    handle.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "End", bubbles: true }),
+    );
+    await tick();
+    assert.deepEqual(names(), ["First", "Middle", "Last"]);
+    const check = d.querySelector(
+      '[aria-label="Complete Last"]',
+    ) as HTMLInputElement;
+    const remove = d.querySelector(
+      '[aria-label="Delete Last"]',
+    ) as HTMLButtonElement;
+    for (const checked of [true, false]) {
+      check.checked = checked;
+      check.dispatchEvent(new dom.window.Event("change"));
+      await tick();
+      assert.equal(remove.hidden, !checked);
+      assert.equal(remove.disabled, !checked);
+    }
+    // Persist a non-original order to distinguish restoration from original insertion order.
+    handle.dispatchEvent(
+      new dom.window.KeyboardEvent("keydown", { key: "Home", bubbles: true }),
+    );
+    await tick();
+    const storage = dom.window.localStorage;
+    const saved = Array.from({ length: storage.length }, (_, i) => {
+      const key = storage.key(i)!;
+      return [key, storage.getItem(key)!] as [string, string];
+    });
+    const reopened = await ui(undefined, saved);
+    try {
+      assert.deepEqual(
+        [
+          ...reopened.window.document.querySelectorAll<HTMLInputElement>(
+            ".item .name",
+          ),
+        ].map((x) => x.value),
+        ["Last", "First", "Middle"],
       );
     } finally {
       reopened.window.close();

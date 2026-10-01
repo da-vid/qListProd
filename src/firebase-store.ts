@@ -157,7 +157,11 @@ export class FirebaseStore implements Store {
       const result = await runTransaction(
         target,
         (current) => {
-          if (change.type === "delete") return null; // Deletion is idempotent, including retry after a lost acknowledgement.
+          // Re-evaluated on every server conflict: a stale checked UI is not authorization to delete.
+          if (change.type === "delete")
+            return current === null || current.checked === true
+              ? null
+              : undefined;
           if (current === null) return; // A deleted item must never be resurrected by a stale edit.
           if (change.type === "edit") return { ...current, name: change.name };
           if (change.type === "check")
@@ -168,7 +172,9 @@ export class FirebaseStore implements Store {
       );
       if (!result.committed)
         throw new Error(
-          "This item was removed in another tab. Your change was not saved.",
+          change.type === "delete"
+            ? "This item is not checked anymore. Check it before deleting."
+            : "This item was removed in another tab. Your change was not saved.",
         );
     } finally {
       stop();

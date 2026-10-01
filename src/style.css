@@ -266,12 +266,38 @@ main {
   color: #7e7856;
   background: #fdf4c6;
 }
-.icon:last-child {
+.delete-item {
   color: #d69999;
   font-size: 23px;
 }
-.item:not(.done) .icon:last-child {
-  color: #b6ac7c;
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  font-size: 24px;
+}
+.sortable-chosen .drag-handle {
+  cursor: grabbing;
+}
+.sortable-ghost {
+  opacity: 0.3;
+}
+.sortable-fallback {
+  background: #fcf0ad;
+  box-shadow: 0 3px 12px #48484630;
+}
+.delete-item[hidden] {
+  display: none;
+}
+@media (pointer: coarse) {
+  .delete-item {
+    min-width: 44px;
+    height: 44px;
+  }
 }
 .empty {
   width: 90%;

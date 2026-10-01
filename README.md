@@ -39,7 +39,7 @@ Open http://127.0.0.1:4173/AbC234 in two tabs. Emulator mode is restricted to lo
 
 ## Implementation
 
-- `src/main.ts`: semantic DOM interface, editable title/items, check/delete, keyboard/touch ordering buttons, confirmation dialogs, copyable links, saving/offline/error/retry feedback.
+- `src/main.ts`: semantic DOM interface, editable title/items, checked-only delete, mouse/touch drag handles with arrow-key/Home/End alternatives, confirmation dialogs, copyable links, saving/offline/error/retry feedback.
 - `src/model.ts`: data contract, secure link generation, legacy routes, deterministic ordering.
 - `src/local-store.ts`: preview operation log; independent tabs do not overwrite entire lists.
 - `src/firebase-store.ts`: modular Firebase SDK, per-item transactions, no whole-list writes, stale-edit deletion protection, granular title and monotonic `lastMod` updates.
@@ -50,6 +50,14 @@ Netlify publishes only `dist-staging/`; `dist/` remains the browser-local test b
 
 ## Validation and release boundary
 
-`npm run check` typechecks, builds, and runs 19 model/storage/DOM/build checks. `npm run test:emulator` runs nine independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI also runs `npm run test:staging-rules` against the separately proposed staging policy. See [staging handoff](staging/README.md) for exact schema, rules and setup instructions.
+`npm run check` typechecks, builds, and runs model/storage/DOM/build checks. `npm run test:emulator` runs independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI also runs `npm run test:staging-rules` against the separately proposed staging policy. See [staging handoff](staging/README.md) for exact schema, rules and setup instructions.
 
 The approved staging project is now configured for shared synthetic lists through October 8, 2026 at 23:59:59 UTC. A two-client SDK smoke test passed; independent browser/network review is still required. Production rollout requires the account/rules/backup and old-client compatibility work in [deployment.md](docs/deployment.md). Do not merge this draft or remove the production guard yet.
+
+### Dragging and checked-only removal
+
+Drag the right-hand handle to reorder with a mouse or touch. The rest of the row remains available for scrolling, checking and text editing. Focus the handle and use Up/Down, Home or End for keyboard ordering; moves are announced and focus is retained. SortableJS 1.15.7 supplies touch fallback and edge auto-scrolling. Only the moved item's priority is written, resolving the drop anchor against the latest received list. Conflicting/deleted targets produce a retryable message rather than a whole-list rewrite.
+
+The individual × button appears only on checked items. Firebase deletion transacts the item and checks its current `checked` value on every retry, including reconnect after another client unchecks it. Already-absent items remain an idempotent success. Browser-local writes use Web Locks where available and conditional operation replay. Existing Firebase rules are unchanged: this is a UI/application safeguard, not a security boundary against raw database clients or the old production app.
+
+Actual mobile touch gestures still require independent browser QA on the deployed preview; automated DOM checks do not prove touch behavior. Test handle dragging in both directions and at viewport edges, ordinary swipe scrolling outside handles, editing, keyboard reordering, second-tab synchronization and reload persistence. The explicit staging smoke test creates a fresh scrollable synthetic list and prints its six-character ID.

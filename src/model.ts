@@ -106,11 +106,28 @@ export function movePriority(
   if (i < 0 || j < 0 || j >= list.length)
     throw new Error("Already at the edge of the list.");
   const remaining = list.filter((x) => x.key !== key);
+  return moveBeforePriority(items, key, remaining[j]?.key ?? null);
+}
+// An anchor key, rather than a stale index, keeps a drop relative to current data.
+export function moveBeforePriority(
+  items: Item[],
+  key: string,
+  anchor: string | null,
+): number {
+  if (!items.some((x) => x.key === key))
+    throw new Error("This item was removed in another tab.");
+  const remaining = ordered(items).filter((x) => x.key !== key);
+  const j =
+    anchor === null
+      ? remaining.length
+      : remaining.findIndex((x) => x.key === anchor);
+  if (j < 0)
+    throw new Error("The list changed while dragging. Please try again.");
   const before = remaining[j - 1]?.priority;
   const after = remaining[j]?.priority;
   const value =
     before === undefined
-      ? after! - 1024
+      ? (after ?? 1024) - 1024
       : after === undefined
         ? before + 1024
         : (before + after) / 2;

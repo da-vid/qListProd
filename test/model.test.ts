@@ -5,6 +5,7 @@ import {
   newID,
   validID,
   movePriority,
+  moveBeforePriority,
   ordered,
   routeRequest,
   reserveGeneratedID,
@@ -83,5 +84,29 @@ test("generated reservation retries collisions and stops without an unsafe fallb
       () => "AbC234",
     ),
     /Could not reserve/,
+  );
+});
+
+test("drag targets use current anchor keys and reject deleted targets", () => {
+  const items = [0, 1, 2, 3].map((i) => ({
+    key: String(i),
+    ID: i,
+    name: String(i),
+    checked: false,
+    priority: i * 1024,
+  }));
+  assert.equal(moveBeforePriority(items, "3", "0"), -1024);
+  assert.equal(moveBeforePriority(items, "0", null), 4096);
+  assert.equal(moveBeforePriority(items, "0", "3"), 2560);
+  assert.throws(() => moveBeforePriority(items, "gone", "1"), /removed/);
+  assert.throws(() => moveBeforePriority(items, "0", "gone"), /changed/);
+  assert.throws(
+    () =>
+      moveBeforePriority(
+        items.map((x) => ({ ...x, priority: 1 })),
+        "0",
+        "2",
+      ),
+    /same order/,
   );
 });

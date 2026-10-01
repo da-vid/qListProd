@@ -63,6 +63,7 @@ test("reorder does not overwrite an independent edit or another item", async () 
 test("delete wins against later stale edit/check/reorder", async () =>
   clients(async (a, b) => {
     await a.apply({ type: "add", item: item("a") });
+    await a.apply({ type: "check", key: "a", checked: true });
     await a.apply({ type: "delete", key: "a" });
     for (const c of [
       { type: "edit", key: "a", name: "Ghost" },
@@ -167,3 +168,78 @@ test("racing custom-list creation never resets existing content", async () => {
     b.close();
   }
 });
+
+test("unchecked deletes reject; checked deletes and retries are idempotent", async () =>
+  clients(async (a, b) => {
+    await a.apply({ type: "add", item: item("a") });
+    await assert.rejects(b.apply({ type: "delete", key: "a" }), /not checked/);
+    await a.apply({ type: "check", key: "a", checked: true });
+    await b.apply({ type: "delete", key: "a" });
+    await a.apply({ type: "delete", key: "a" });
+    assert.equal((await get(ref(a.db, `lists/${a.id}/a`))).exists(), false);
+  }));
+
+test("a queued stale delete aborts when another client unchecks before commit", async () =>
+  clients(async (a, b) => {
+    await a.apply({ type: "add", item: { ...item("a"), checked: true } });
+    // Keep checked data cached while offline so the transaction actually starts stale.
+    let stop = () => {};
+    await new Promise<void>((resolve, reject) => {
+      stop = a.subscribe(
+        (s) => {
+          if (s.items[0]?.checked) resolve();
+        },
+        () => {},
+        reject,
+      );
+    });
+    try {
+      a.disconnect();
+      const deletion = a.apply({ type: "delete", key: "a" });
+      const rejected = assert.rejects(deletion, /not checked/);
+      await b.apply({ type: "check", key: "a", checked: false });
+      a.reconnect();
+      await rejected;
+      const value = (await get(ref(b.db, `lists/${a.id}/a`))).val();
+      assert.equal(value.checked, false);
+      assert.equal(value.name, "Item a");
+    } finally {
+      stop();
+    }
+  }));
+
+test("multi-position order survives independent subscription and reconnect", async () =>
+  clients(async (a, b) => {
+    for (let i = 0; i < 4; i++)
+      await a.apply({
+        type: "add",
+        item: { ...item(String(i)), priority: i * 1024 },
+      });
+    await a.apply({ type: "move", key: "3", priority: -1024 });
+    const expectOrder = () =>
+      new Promise<void>((resolve, reject) => {
+        let stop = () => {};
+        stop = b.subscribe(
+          (s) => {
+            if (s.items.length === 4) {
+              try {
+                assert.deepEqual(
+                  s.items.map((x) => x.key),
+                  ["3", "0", "1", "2"],
+                );
+                resolve();
+              } catch (e) {
+                reject(e);
+              }
+              queueMicrotask(stop);
+            }
+          },
+          () => {},
+          reject,
+        );
+      });
+    await expectOrder();
+    b.disconnect();
+    b.reconnect();
+    await expectOrder();
+  }));

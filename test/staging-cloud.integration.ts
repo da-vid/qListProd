@@ -62,6 +62,39 @@ test("two independent staging clients share and preserve concurrent synthetic ed
       (await get(ref(db, `listAttrs/${id}/listName`))).val(),
       "Synthetic cross-client QA",
     );
+    // Exercise conditional deletes only on a separate disposable synthetic item.
+    const kc = crypto.randomUUID().replaceAll("-", "");
+    await a.apply({
+      type: "add",
+      item: {
+        key: kc,
+        ID: kc,
+        name: "Synthetic disposable",
+        checked: false,
+        priority: 4096,
+      },
+    });
+    await assert.rejects(b.apply({ type: "delete", key: kc }), /not checked/);
+    await a.apply({ type: "check", key: kc, checked: true });
+    await b.apply({ type: "check", key: kc, checked: false });
+    await assert.rejects(a.apply({ type: "delete", key: kc }), /not checked/);
+    await b.apply({ type: "check", key: kc, checked: true });
+    await a.apply({ type: "delete", key: kc });
+    assert.equal((await get(ref(db, `lists/${id}/${kc}`))).exists(), false);
+    // Leave a scrollable, entirely synthetic fixture for independent phone/touch QA.
+    for (let i = 1; i <= 18; i++) {
+      const key = crypto.randomUUID().replaceAll("-", "");
+      await a.apply({
+        type: "add",
+        item: {
+          key,
+          ID: key,
+          name: `Touch QA item ${i}`,
+          checked: false,
+          priority: 4096 + i * 1024,
+        },
+      });
+    }
     console.log("SYNTHETIC_REVIEW_LIST=" + id);
   } finally {
     a.close();

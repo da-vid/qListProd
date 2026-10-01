@@ -68,3 +68,28 @@ test("custom names with prefix punctuation remain isolated", async () => {
   )();
   assert.equal(title, "Parent");
 });
+
+test("local checked-only deletion uses latest shared storage state", async () => {
+  const storage = dom.window.localStorage;
+  storage.clear();
+  const a = new LocalStore("DeleteQA", storage),
+    b = new LocalStore("DeleteQA", storage);
+  await a.apply({
+    type: "add",
+    item: { key: "a", ID: "a", name: "Keep", checked: false, priority: 1 },
+  });
+  await assert.rejects(a.apply({ type: "delete", key: "a" }), /not checked/);
+  await a.apply({ type: "check", key: "a", checked: true });
+  await b.apply({ type: "check", key: "a", checked: false });
+  await assert.rejects(a.apply({ type: "delete", key: "a" }), /not checked/);
+  await b.apply({ type: "check", key: "a", checked: true });
+  await a.apply({ type: "delete", key: "a" });
+  await b.apply({ type: "delete", key: "a" });
+  a.subscribe(
+    (s) => assert.equal(s.items.length, 0),
+    () => {},
+    (e) => {
+      throw e;
+    },
+  )();
+});

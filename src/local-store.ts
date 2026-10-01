@@ -17,7 +17,8 @@ export class LocalStore implements Store {
     this.prefix = `qlist:modern:v1:${encodeURIComponent(id)}:`;
   }
   private read(): ListState {
-    const changes: { stamp: string; change: Change }[] = [];
+    const changes: { stamp: string; change: Change; checkedOnly?: boolean }[] =
+      [];
     for (let i = 0; i < this.storage.length; i++) {
       const key = this.storage.key(i)!;
       if (key.startsWith(this.prefix))
@@ -27,7 +28,7 @@ export class LocalStore implements Store {
     const items = new Map<string, Item>();
     const deleted = new Set<string>();
     let title = "";
-    for (const { change: c } of changes) {
+    for (const { change: c, checkedOnly } of changes) {
       if (c.type === "title") {
         title = c.title;
         continue;
@@ -37,6 +38,9 @@ export class LocalStore implements Store {
         continue;
       }
       if (c.type === "delete") {
+        // Older preview records keep their historical meaning; new deletes are conditional.
+        if (checkedOnly && items.has(c.key) && !items.get(c.key)!.checked)
+          continue;
         deleted.add(c.key);
         items.delete(c.key);
         continue;
@@ -72,6 +76,18 @@ export class LocalStore implements Store {
   }
   async apply(change: Change) {
     validate(change);
+    const write = async () => this.write(change);
+    if (navigator.locks) await navigator.locks.request(this.prefix, write);
+    else await write();
+  }
+  private write(change: Change) {
+    if (change.type === "delete") {
+      const item = this.read().items.find((x) => x.key === change.key);
+      if (item && !item.checked)
+        throw new Error(
+          "This item is not checked anymore. Check it before deleting.",
+        );
+    }
     let clock = Date.now();
     for (let i = 0; i < this.storage.length; i++) {
       const key = this.storage.key(i)!;
@@ -85,7 +101,7 @@ export class LocalStore implements Store {
       clock.toString().padStart(16, "0") + "-" + crypto.randomUUID();
     this.storage.setItem(
       this.prefix + stamp,
-      JSON.stringify({ stamp, change }),
+      JSON.stringify({ stamp, change, checkedOnly: change.type === "delete" }),
     );
     this.notify();
   }

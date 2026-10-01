@@ -1,4 +1,5 @@
 import "./style.css";
+import Sortable from "sortablejs";
 import {
   type Change,
   type Item,
@@ -7,6 +8,7 @@ import {
   routeRequest,
   reserveGeneratedID,
   movePriority,
+  moveBeforePriority,
 } from "./model.ts";
 import { LocalStore, reserveLocalList } from "./local-store.ts";
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -16,6 +18,7 @@ let store: Store,
   online = true,
   ready = false,
   pending = 0,
+  dragging = false,
   failed: Change[] = [];
 const local = mode === "preview";
 const drafts = new Set<HTMLInputElement>();
@@ -101,6 +104,53 @@ add.disabled = true;
 addForm.append(addInput, add);
 const list = element("ul", "list");
 list.setAttribute("aria-label", "List items");
+const reorderHelp = element(
+  "span",
+  "sr-only",
+  "Drag the handle to reorder, or focus it and use the Up and Down arrow keys. Home moves to the top; End moves to the bottom.",
+);
+reorderHelp.id = "reorder-help";
+const reorderStatus = element("span", "sr-only");
+reorderStatus.setAttribute("role", "status");
+new Sortable(list, {
+  handle: ".drag-handle",
+  draggable: ".item",
+  animation: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 120,
+  forceFallback: true,
+  fallbackOnBody: true,
+  fallbackTolerance: 5,
+  direction: "vertical",
+  onChoose() {
+    dragging = true;
+    if (document.activeElement instanceof HTMLInputElement)
+      document.activeElement.blur();
+  },
+  onUnchoose() {
+    // Sortable fires end synchronously after unchoose; a tap without a drag still releases rendering.
+    queueMicrotask(() => {
+      dragging = false;
+      render(state);
+    });
+  },
+  onEnd(event) {
+    const key = event.item.dataset.key!;
+    const anchor =
+      (event.item.nextElementSibling as HTMLElement | null)?.dataset.key ??
+      null;
+    dragging = false;
+    try {
+      if (event.oldIndex !== event.newIndex)
+        void save({
+          type: "move",
+          key,
+          priority: moveBeforePriority(state.items, key, anchor),
+        });
+    } catch (e) {
+      showError((e as Error).message);
+    }
+    render(state);
+  },
+});
 const empty = element("div", "empty");
 empty.append(
   element("strong", "", "welcome to your qList!"),
@@ -143,7 +193,18 @@ const note = element(
     ? "Your preview lists are saved on this device, in this browser. Open the same link in another tab to try updates together. Clearing browser data removes these sample lists."
     : "Anyone with a list link can edit it. Keep this tab open until changes are saved. Offline changes are held in this session only; do not close or reload while changes are pending.",
 );
-main.append(title, errorBox, addForm, list, empty, meta, bottom, note);
+main.append(
+  title,
+  errorBox,
+  addForm,
+  reorderHelp,
+  reorderStatus,
+  list,
+  empty,
+  meta,
+  bottom,
+  note,
+);
 shell.append(main);
 app.append(notice, header, shell);
 const dialog = element("dialog");
@@ -298,6 +359,8 @@ function bindEditable(
 }
 function render(next: ListState, discardEdits = false) {
   state = next;
+  // Retain fresh server state, but let Sortable own row positions until release.
+  if (dragging) return;
   document.title = (state.title || "qList") + " · quick lists";
   if (discardEdits || document.activeElement !== title)
     title.value = state.title;
@@ -344,27 +407,42 @@ function render(next: ListState, discardEdits = false) {
         }
       });
       const actions = element("div", "actions");
-      for (const [symbol, dir] of [
-        ["↑", -1],
-        ["↓", 1],
-      ] as const) {
-        const b = button(symbol, "icon", () => {
-          try {
-            void save({
-              type: "move",
-              key: item.key,
-              priority: movePriority(state.items, item.key, dir),
-            });
-          } catch (e) {
-            showError((e as Error).message);
-          }
-        });
-        b.dataset.direction = String(dir);
-        actions.append(b);
-      }
-      actions.append(
-        button("×", "icon", () => void save({ type: "delete", key: item.key })),
+      const remove = button(
+        "×",
+        "icon delete-item",
+        () => void save({ type: "delete", key: item.key }),
       );
+      const handle = button("≡", "icon drag-handle", () => {});
+      handle.setAttribute("aria-describedby", "reorder-help");
+      handle.title = "Drag to reorder; use arrow keys when focused";
+      handle.addEventListener("keydown", (e) => {
+        if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(e.key)) return;
+        e.preventDefault();
+        try {
+          const priority =
+            e.key === "Home"
+              ? moveBeforePriority(
+                  state.items,
+                  item.key,
+                  state.items.find((x) => x.key !== item.key)?.key ?? null,
+                )
+              : e.key === "End"
+                ? moveBeforePriority(state.items, item.key, null)
+                : movePriority(
+                    state.items,
+                    item.key,
+                    e.key === "ArrowUp" ? -1 : 1,
+                  );
+          void save({ type: "move", key: item.key, priority }).then(() => {
+            handle.focus({ preventScroll: true });
+            const position = state.items.findIndex((x) => x.key === item.key);
+            reorderStatus.textContent = `${state.items[position]?.name ?? "Item"}, position ${position + 1} of ${state.items.length}`;
+          });
+        } catch (e) {
+          reorderStatus.textContent = (e as Error).message;
+        }
+      });
+      actions.append(remove, handle);
       row.append(check, name, actions);
     }
     row.className = "item" + (item.checked ? " done" : "");
@@ -375,11 +453,10 @@ function render(next: ListState, discardEdits = false) {
       inputs[1].value = item.name;
     inputs[1].setAttribute("aria-label", `Edit ${item.name}`);
     const buttons = row.querySelectorAll("button");
-    buttons[0].disabled = i === 0;
-    buttons[1].disabled = i === state.items.length - 1;
-    buttons[0].setAttribute("aria-label", `Move ${item.name} up`);
-    buttons[1].setAttribute("aria-label", `Move ${item.name} down`);
-    buttons[2].setAttribute("aria-label", `Delete ${item.name}`);
+    buttons[0].disabled = !item.checked;
+    buttons[0].hidden = !item.checked;
+    buttons[0].setAttribute("aria-label", `Delete ${item.name}`);
+    buttons[1].setAttribute("aria-label", `Reorder ${item.name}`);
     const at = list.children[i];
     if (at !== row) list.insertBefore(row, at || null);
     existing.delete(item.key);
