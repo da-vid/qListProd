@@ -15,7 +15,10 @@
     "test": "node --test test/*.test.ts",
     "test:emulator": "firebase emulators:exec --only database --project demo-qlist \"node --test --test-timeout=15000 test/firebase.integration.ts\"",
     "check": "npm run typecheck && npm run build && npm test",
-    "test:staging-rules": "firebase emulators:exec --config firebase.staging-test.json --only database --project demo-qlist \"node --test --test-timeout=20000 test/staging-rules.integration.ts\""
+    "test:staging-rules": "firebase emulators:exec --config firebase.staging-test.json --only database --project demo-qlist \"node --test --test-timeout=20000 test/staging-rules.integration.ts\"",
+    "build:staging": "node scripts/build.mjs --staging",
+    "test:staging-build": "node --test test/staging-build.integration.ts",
+    "test:staging-cloud": "node --test --test-timeout=30000 test/staging-cloud.integration.ts"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

@@ -1,6 +1,6 @@
 [build]
-  command = "npm run check"
-  publish = "dist"
+  command = "npm run check && npm run build:staging && npm run test:staging-build"
+  publish = "dist-staging"
 
 [build.environment]
   NODE_VERSION = "24.21.0"

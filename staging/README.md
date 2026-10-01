@@ -1,6 +1,6 @@
 # Isolated Spark staging handoff
 
-This is a **proposal and tested rules bundle**, not a cloud deployment. Only the separately approved, synthetic-only Spark project may receive these files. Never apply them to the production project or `qwiklist.firebaseio.com`.
+The separate `qlist-staging` Spark project was provisioned by the browser worker, with the exact rules and control node confirmed. The application now has an explicit staging build. Only the separately approved, synthetic-only Spark project may receive these files. Never apply them to the production project or `qwiklist.firebaseio.com`.
 
 ## Console setup (browser worker)
 
@@ -56,7 +56,7 @@ Return these alongside the Console project/database links, selected region, Spar
 
 ## Preview wiring (follow-up code change after verified configuration)
 
-The current build deliberately hardcodes browser-local `preview` mode; **setting environment variables alone will not connect it**. Do not bypass `scripts/build.mjs` or the production-host guard.
+The implemented `npm run build:staging` emits `dist-staging/` with the pinned project ID `qlist-staging` and URL `https://qlist-staging-default-rtdb.firebaseio.com`. Netlify runs local checks first, then this staging build and its guard tests. Environment/URL overrides remain forbidden. Production build and host guards remain in place.
 
 1. Add a separate, explicit `staging` build mode containing an exact project/URL allowlist from the verified console result. Reject production Netlify context, production hosts and any config mismatch before initializing the SDK. Do not accept project/endpoint/mode from URL parameters, localStorage, a user form, or a fallback.
 2. Initialize only this approved project, use the existing `FirebaseStore` plus `reserveFirebaseList`, and keep the existing original-style UI. Change the notice to clearly say it is shared synthetic staging data. Local preview and emulator modes remain separate.
@@ -74,3 +74,15 @@ npm run test:staging-rules
 This runs only the `demo-qlist` emulator at `127.0.0.1:9000`; the test's owner bypass is hard-coded to loopback. It verifies successful granular collaboration and rejects root reads, claim/control mutation, whole-list writes, invalid fields/IDs/types/priority, oversized values, expired and disabled access. Do not copy the emulator owner bypass into application or cloud commands.
 
 No broader approval is needed for the agreed separate Spark/synthetic/no-billing setup. Paid services, production rules/data, broader IAM access, new admin credentials, or legal acceptance outside existing authorization require separate handling. The console worker must honor any mandatory action-time approval prompts.
+
+## Verified staging transport and smoke test
+
+On 2026-10-01, two independent SDK clients connected directly to `wss://qlist-staging-default-rtdb.firebaseio.com` without a shard redirect. The staging CSP allows only that observed WebSocket host; no Firebase wildcard is enabled. The synthetic list `CMCUPZ` passed concurrent add, text/check, reorder and second-client read assertions. The browser worker should independently verify this deployed list from separate browser profiles/networks. If a future Firebase shard redirect is blocked, inspect and approve that specific staging transport hostname; do not silently widen CSP.
+
+To intentionally rerun cloud smoke testing against only this project:
+
+```sh
+QLIST_STAGING_SMOKE=1 npm run test:staging-cloud
+```
+
+This creates one new synthetic list and retains it for review. It is excluded from CI; CI uses emulators and static staging-build assertions, avoiding cloud writes on every push. No credentials are used. `test:staging-rules` still targets only the loopback demo emulator.

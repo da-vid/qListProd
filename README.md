@@ -14,7 +14,7 @@ npm run dev
 
 Open http://127.0.0.1:4173/Demo23 for synthetic sample items. `/new` creates a cryptographically random six-character list URL with atomic reservation/retry. Custom URL names (including short names, spaces, Unicode and longer legacy IDs), case sensitivity, trailing slashes and the `lastList` cookie remain supported. Unknown names open empty lists; `/new` is reserved. Generated local-preview IDs use Web Locks for atomic cross-tab reservation; browsers without Web Locks can still open custom URLs.
 
-The public Netlify build stores an immutable operation log in browser storage (`qlist:modern:v1:`). Tabs on the same origin/browser see changes; **different devices do not share data**. It does not load Firebase or analytics. Sample lists from the first development baseline are not migrated; production data is untouched.
+The public Netlify review build now uses **only the separate approved `qlist-staging` Spark database**, with synthetic shared lists and no signup. Local `npm run dev` still uses browser-local storage (`qlist:modern:v1:`) and does not share across devices. Neither mode connects to production or loads analytics. Sample lists from the first development baseline are not migrated; production data is untouched.
 
 ## Firebase integration, locally
 
@@ -35,7 +35,7 @@ npx firebase emulators:start --only database --project demo-qlist
 npm run dev:emulator
 ```
 
-Open http://127.0.0.1:4173/AbC234 in two tabs. Emulator mode is restricted to loopback; hosted builds always compile browser-local mode, regardless of user URL parameters. In emulator mode, writes await server acknowledgement. Offline pending edits live only in the current session: keep the tab open until it says saved. An unload warning protects pending/failed edits, but browsers cannot guarantee recovery after a crash.
+Open http://127.0.0.1:4173/AbC234 in two tabs. Emulator mode is restricted to loopback; Netlify builds the explicitly pinned staging mode; URL parameters cannot select a project or mode. In emulator mode, writes await server acknowledgement. Offline pending edits live only in the current session: keep the tab open until it says saved. An unload warning protects pending/failed edits, but browsers cannot guarantee recovery after a crash.
 
 ## Implementation
 
@@ -46,10 +46,10 @@ Open http://127.0.0.1:4173/AbC234 in two tabs. Emulator mode is restricted to lo
 - `test/`: built-interface tests, local-store/routing tests, real two-client Firebase emulator integration tests and test-only rules.
 - `scripts/build.mjs`: Vite output plus same-origin CSP/noindex headers and production build guard.
 
-Only `dist/` is published. The legacy AngularJS, AngularFire, jQuery, Bootstrap/AngularStrap, FastClick, and icon/font bundles are no longer shipped. Historical versions remain available in Git.
+Netlify publishes only `dist-staging/`; `dist/` remains the browser-local test build. The legacy AngularJS, AngularFire, jQuery, Bootstrap/AngularStrap, FastClick, and icon bundles are no longer shipped (the original static Lato fonts are retained). Historical versions remain available in Git.
 
 ## Validation and release boundary
 
-`npm run check` typechecks, builds, and runs 17 model/storage/DOM/build checks. `npm run test:emulator` runs nine independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI also runs `npm run test:staging-rules` against the separately proposed staging policy. See [staging handoff](staging/README.md) for exact schema, rules and setup instructions.
+`npm run check` typechecks, builds, and runs 19 model/storage/DOM/build checks. `npm run test:emulator` runs nine independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI also runs `npm run test:staging-rules` against the separately proposed staging policy. See [staging handoff](staging/README.md) for exact schema, rules and setup instructions.
 
-This phase has no approved cloud Firebase test project. The hosted preview cannot demonstrate real cross-device sharing. Production rollout requires the account/rules/backup and old-client compatibility work in [deployment.md](docs/deployment.md). Do not merge this draft or remove the production guard yet.
+The approved staging project is now configured for shared synthetic lists through October 8, 2026 at 23:59:59 UTC. A two-client SDK smoke test passed; independent browser/network review is still required. Production rollout requires the account/rules/backup and old-client compatibility work in [deployment.md](docs/deployment.md). Do not merge this draft or remove the production guard yet.

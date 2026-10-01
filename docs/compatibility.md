@@ -14,10 +14,12 @@ The 2014 client still saves whole lists and calculates numeric IDs. It can overw
 
 ## Offline, errors, and preview limits
 
-Firebase transactions are acknowledged by the emulator before the UI says saved. While disconnected, pending changes remain in memory and retry on reconnect. Closing/reloading/crashing may lose those writes; the UI warns and installs an unload prompt for unsaved work. Failed writes are retained for explicit retry or dismissal. Permission-denied tests exercise rules; no production permissions are inferred from emulator success.
+Firebase transactions are acknowledged by the selected isolated backend before the UI says saved. While disconnected, pending changes remain in memory and retry on reconnect. Closing/reloading/crashing may lose those writes; the UI warns and installs an unload prompt for unsaved work. Failed writes are retained for explicit retry or dismissal. Permission-denied tests exercise rules; no production permissions are inferred from emulator success.
 
 Browser-local previews use append-only operations and deletion tombstones; storage errors are surfaced. This is a demo store, not a cloud database or backup. Different browser origins/device profiles are separate. Operation logs grow until the preview origin's storage is cleared. Preview data from the first development baseline is intentionally isolated from the new schema.
 
 ## Before shared cloud previews
 
 Approve a dedicated non-production Firebase project/database, its owner and region, synthetic-only data, an appropriate billing/spend limit, and explicit unauthenticated shared-link rules with validation. Approve adding only its public client configuration to the preview build and updating CSP for that exact test endpoint. No admin key belongs in a browser or repository. Review abuse protection and enumeration risk before enabling a public writable service. None of these resources, rules, credentials, or access changes were created in this phase.
+
+The approved `qlist-staging` project is now wired only into the review build. This adds no production migration or data compatibility claim. Production list titles, text, IDs, checked states, order/priority metadata and URLs remain explicit preservation requirements for a separately approved cutover.

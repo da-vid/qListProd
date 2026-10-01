@@ -6,3 +6,5 @@ dist/
 
 *-debug.log
 .firebase/
+
+dist-staging/

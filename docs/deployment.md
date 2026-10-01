@@ -16,9 +16,9 @@ None of these dashboard settings were changed for this baseline. Runtime overrid
 
 ## Current review process
 
-Run `npm ci --ignore-scripts`, `npm run check`, and `npm run test:emulator` (Java 21+). Push only `codex/safe-development-baseline`; PR #1 remains a draft. Netlify builds `dist/` in preview context. Production context is rejected, and production hostnames are blocked at runtime. The hosted bundle contains browser-local storage only; no Firebase runtime, credentials, database URL, or analytics is included.
+Run `npm ci --ignore-scripts`, `npm run check`, and `npm run test:emulator` (Java 21+). Push only `codex/safe-development-baseline`; PR #1 remains a draft. Netlify first checks the browser-local `dist/` build, then builds and publishes `dist-staging/` in preview context. Production context is rejected, and production hostnames are blocked at runtime. The hosted bundle pins only the approved `qlist-staging` project/database, with a shared synthetic-data notice, exact-host WebSocket CSP, and no credentials or analytics. Local browser-only builds remain available.
 
-Review `/Demo23`, `/AbC234`, `/new`, title/item editing, check/delete, ordering controls, completed-item confirmation, links, persistence, keyboard focus, and mobile layout. Check errors and request destinations. Emulator tests validate two independent SDK clients; hosted previews do not establish cross-device collaboration. The Netlify review drawer is intentionally blocked by the strict frame CSP; use a branch-deploy permalink for a clean preview.
+Review `/Demo23`, `/AbC234`, `/new`, title/item editing, check/delete, ordering controls, completed-item confirmation, links, persistence, keyboard focus, and mobile layout. Check errors and request destinations. Emulator tests and a two-client synthetic cloud SDK test pass. The hosted staging preview is ready for independent cross-device browser verification. The Netlify review drawer is intentionally blocked by the strict frame CSP; use a branch-deploy permalink for a clean preview.
 
 See [compatibility.md](compatibility.md) for exact data shape, old-client risks, offline limitations, and approval needed for a dedicated shared test database.
 

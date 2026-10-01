@@ -14,9 +14,10 @@ const mode = import.meta.env.MODE;
 let store: Store,
   state: ListState = { title: "", items: [] },
   online = true,
+  ready = false,
   pending = 0,
   failed: Change[] = [];
-const local = mode !== "emulator";
+const local = mode === "preview";
 const drafts = new Set<HTMLInputElement>();
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -44,7 +45,9 @@ const notice = element(
   "preview",
   local
     ? "Development preview · Lists stay in this browser. Links do not sync across devices."
-    : "Local Firebase emulator · Synthetic data only.",
+    : mode === "staging"
+      ? "Staging preview · Shared test lists only. Your existing qList lists are unchanged."
+      : "Local Firebase emulator · Synthetic data only.",
 );
 const shell = element("div", "shell");
 const header = element("header");
@@ -62,11 +65,13 @@ const main = element("main");
 const title = element("input", "title");
 title.placeholder = "my qList";
 title.maxLength = 160;
+title.disabled = true;
 title.setAttribute("aria-label", "List title");
 const meta = element("div", "meta"),
   count = element("span"),
   status = element("span", "status");
 status.setAttribute("role", "status");
+status.textContent = local ? "Loading…" : "Connecting…";
 meta.append(count, status);
 const errorBox = element("div", "error");
 errorBox.hidden = true;
@@ -92,6 +97,7 @@ addInput.maxLength = 1000;
 addInput.setAttribute("aria-label", "New item");
 const add = element("button", "btn primary", "add");
 add.type = "submit";
+add.disabled = true;
 addForm.append(addInput, add);
 const list = element("ul", "list");
 list.setAttribute("aria-label", "List items");
@@ -220,19 +226,21 @@ nav.append(
 );
 function updateStatus() {
   status.className = "status" + (!online ? " offline" : "");
-  status.textContent = failed.length
-    ? "Changes need attention"
-    : drafts.size
-      ? "Editing…"
-      : pending
-        ? online
-          ? "Saving…"
-          : "Offline · changes waiting"
-        : local
-          ? "Saved on this device"
-          : online
-            ? "All changes saved"
-            : "Offline · keep this tab open";
+  status.textContent = !ready
+    ? "Connecting…"
+    : failed.length
+      ? "Changes need attention"
+      : drafts.size
+        ? "Editing…"
+        : pending
+          ? online
+            ? "Saving…"
+            : "Offline · changes waiting"
+          : local
+            ? "Saved on this device"
+            : online
+              ? "All changes saved"
+              : "Offline · keep this tab open";
 }
 async function save(change: Change) {
   pending++;
@@ -426,11 +434,18 @@ async function start() {
     if (requested !== null) await reserveLocalList(id, false);
     store = new LocalStore(id);
   } else {
-    if (!["localhost", "127.0.0.1"].includes(location.hostname))
-      throw new Error("Emulator mode is only available on this computer.");
     const { FirebaseStore, emulatorDatabase, reserveFirebaseList } =
       await import("./firebase-store.ts");
-    const db = emulatorDatabase(crypto.randomUUID());
+    let db;
+    if (mode === "staging") {
+      const { stagingDatabase } = await import("./staging-store.ts");
+      db = stagingDatabase(crypto.randomUUID(), location.hostname);
+    } else if (
+      mode === "emulator" &&
+      ["localhost", "127.0.0.1"].includes(location.hostname)
+    ) {
+      db = emulatorDatabase(crypto.randomUUID());
+    } else throw new Error("Unsupported qList build mode or hostname.");
     id =
       requested ??
       (await reserveGeneratedID((candidate) =>
@@ -443,6 +458,9 @@ async function start() {
   if (location.pathname !== canonical || location.search || location.hash)
     history.replaceState(null, "", canonical);
   document.cookie = `lastList=${encodeURIComponent(id)}; Max-Age=5184000; Path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+  ready = true;
+  add.disabled = false;
+  title.disabled = false;
   store.subscribe(
     render,
     (b) => {

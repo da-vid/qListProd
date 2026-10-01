@@ -2,7 +2,7 @@
 
 - Node 24.21.0 LTS / npm 11.16.0 remain pinned.
 - Vite 8.3.2, TypeScript 7.0.2: exact current stable versions verified against npm metadata; Vite supports this Node line. Official guidance: https://vite.dev/guide/ and https://vite.dev/releases
-- Firebase 12.19.0: modular app/database SDK only in local emulator mode. Official guidance: https://firebase.google.com/docs/database/web/read-and-write and https://firebase.google.com/docs/emulator-suite/connect_rtdb
+- Firebase 12.19.0: modular app/database SDK in local emulator and explicitly pinned staging modes. Official guidance: https://firebase.google.com/docs/database/web/read-and-write and https://firebase.google.com/docs/emulator-suite/connect_rtdb
 - Firebase CLI 15.32.1 / database emulator 4.11.2: development-only integration testing with a `demo-` project. Java 21 is used.
 - jsdom 30.1.1 and Prettier 3.9.9: test/format tools only.
 
