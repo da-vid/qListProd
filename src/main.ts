@@ -17,6 +17,7 @@ let store: Store,
   pending = 0,
   failed: Change[] = [];
 const local = mode !== "emulator";
+const drafts = new Set<HTMLInputElement>();
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   cls = "",
@@ -48,14 +49,18 @@ const notice = element(
 const shell = element("div", "shell");
 const header = element("header");
 const brand = element("div", "brand", "qList");
-brand.append(element("small", "", "quick, easy lists"));
+brand.append(
+  element("span", "cc", ".cc"),
+  element("small", "", "quick, easy lists."),
+);
 const nav = element("nav", "nav");
 nav.setAttribute("aria-label", "List actions");
-header.append(brand, nav);
+const headerInner = element("div", "header-inner");
+headerInner.append(brand, nav);
+header.append(headerInner);
 const main = element("main");
-const eyebrow = element("p", "eyebrow", "A little less to remember");
 const title = element("input", "title");
-title.placeholder = "Untitled list";
+title.placeholder = "my qList";
 title.maxLength = 160;
 title.setAttribute("aria-label", "List title");
 const meta = element("div", "meta"),
@@ -75,24 +80,41 @@ const retry = button("Retry", "btn", () => {
 });
 const discard = button("Dismiss unsaved changes", "text-button", () => {
   failed = [];
+  drafts.clear();
   errorBox.hidden = true;
-  updateStatus();
+  render(state, true);
 });
 errorBox.append(errorText, retry, discard);
 const addForm = element("form", "add");
 const addInput = element("input");
-addInput.placeholder = "What needs doing?";
+addInput.placeholder = "enter your first item here";
 addInput.maxLength = 1000;
 addInput.setAttribute("aria-label", "New item");
-const add = element("button", "btn primary", "Add");
+const add = element("button", "btn primary", "add");
 add.type = "submit";
 addForm.append(addInput, add);
 const list = element("ul", "list");
 list.setAttribute("aria-label", "List items");
 const empty = element("div", "empty");
 empty.append(
-  element("strong", "", "A fresh start."),
-  element("span", "", "Add your first item above."),
+  element("strong", "", "welcome to your qList!"),
+  element(
+    "p",
+    "",
+    "qList is great for shopping lists, to-do lists, or any other quick list you need",
+  ),
+  element("strong", "", "easy to share"),
+  element(
+    "p",
+    "",
+    local
+      ? "open this preview link in another tab to try updates together; different devices do not share preview lists"
+      : "send this page’s URL to share and collaborate",
+  ),
+  element("strong", "", "use it anywhere"),
+  element("p", "", "works on your computer, phone, and tablet’s web browser"),
+  element("strong", "", "just get started"),
+  element("p", "", "no sign up, no spam. start your list right here!"),
 );
 const bottom = element("div", "bottom");
 const progress = element("span");
@@ -115,11 +137,19 @@ const note = element(
     ? "Your preview lists are saved on this device, in this browser. Open the same link in another tab to try updates together. Clearing browser data removes these sample lists."
     : "Anyone with a list link can edit it. Keep this tab open until changes are saved. Offline changes are held in this session only; do not close or reload while changes are pending.",
 );
-main.append(eyebrow, title, meta, errorBox, addForm, list, empty, bottom, note);
-shell.append(header, main);
-app.append(notice, shell);
+main.append(title, errorBox, addForm, list, empty, meta, bottom, note);
+shell.append(main);
+app.append(notice, header, shell);
 const dialog = element("dialog");
 app.append(dialog);
+function labelDialog() {
+  const heading = dialog.querySelector("h2")!;
+  const description = dialog.querySelector("p")!;
+  heading.id = "dialog-title";
+  description.id = "dialog-description";
+  dialog.setAttribute("aria-labelledby", heading.id);
+  dialog.setAttribute("aria-describedby", description.id);
+}
 function openDialog(
   heading: string,
   message: string,
@@ -136,20 +166,21 @@ function openDialog(
     }),
   );
   dialog.append(actions);
+  labelDialog();
   dialog.showModal();
 }
 nav.append(
-  button("New list", "btn", () =>
+  button("new list", "btn", () =>
     openDialog(
-      "Start a fresh list?",
+      "Create a new list?",
       "This list will remain available at its current address. Save or copy the link to return.",
       () => location.assign("/new"),
       "Create list",
     ),
   ),
-  button("Share", "btn primary", () => {
+  button("share your list", "btn primary", () => {
     dialog.replaceChildren(
-      element("h2", "", "A list worth sharing."),
+      element("h2", "", "share your list"),
       element(
         "p",
         "",
@@ -162,24 +193,27 @@ nav.append(
     input.readOnly = true;
     input.value = location.origin + location.pathname;
     input.setAttribute("aria-label", "List link");
+    const copyFeedback = element("p", "copy-feedback");
+    copyFeedback.setAttribute("role", "status");
+    copyFeedback.setAttribute("aria-live", "polite");
     const actions = element("div", "nav");
     actions.append(
       button("Close", "btn", () => dialog.close()),
       button("Copy link", "btn primary", () => {
         void navigator.clipboard.writeText(input.value).then(
           () => {
-            status.textContent = "Link copied";
+            copyFeedback.textContent = "Link copied";
           },
           () => {
             input.select();
-            showError(
-              "Copy is unavailable. Select and copy the link manually.",
-            );
+            copyFeedback.textContent =
+              "Copy is unavailable. Select and copy the link manually.";
           },
         );
       }),
     );
-    dialog.append(input, actions);
+    dialog.append(input, copyFeedback, actions);
+    labelDialog();
     dialog.showModal();
     input.select();
   }),
@@ -188,15 +222,17 @@ function updateStatus() {
   status.className = "status" + (!online ? " offline" : "");
   status.textContent = failed.length
     ? "Changes need attention"
-    : pending
-      ? online
-        ? "Saving…"
-        : "Offline · changes waiting"
-      : local
-        ? "Saved on this device"
-        : online
-          ? "All changes saved"
-          : "Offline · keep this tab open";
+    : drafts.size
+      ? "Editing…"
+      : pending
+        ? online
+          ? "Saving…"
+          : "Offline · changes waiting"
+        : local
+          ? "Saved on this device"
+          : online
+            ? "All changes saved"
+            : "Offline · keep this tab open";
 }
 async function save(change: Change) {
   pending++;
@@ -211,15 +247,60 @@ async function save(change: Change) {
     updateStatus();
   }
 }
-function render(next: ListState) {
+// Clipboard/autofill changes do not reliably produce `change` in every browser.
+// Input marks unsaved work; blur is a final persistence boundary, including paste.
+function bindEditable(
+  input: HTMLInputElement,
+  current: () => string,
+  change: (value: string) => Change,
+) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let submitted: string | undefined;
+  let composing = false;
+  function flush() {
+    clearTimeout(timer);
+    drafts.delete(input);
+    const value = input.value.trim();
+    if (value === current() || value === submitted) {
+      updateStatus();
+      return;
+    }
+    submitted = value;
+    void save(change(value)).finally(() => {
+      submitted = undefined;
+    });
+  }
+  function schedule() {
+    clearTimeout(timer);
+    drafts.add(input);
+    updateStatus();
+    if (!composing) timer = setTimeout(flush, 300);
+  }
+  input.addEventListener("input", schedule);
+  input.addEventListener("change", flush);
+  input.addEventListener("blur", flush);
+  input.addEventListener("compositionstart", () => {
+    composing = true;
+    clearTimeout(timer);
+  });
+  input.addEventListener("compositionend", () => {
+    composing = false;
+    schedule();
+  });
+}
+function render(next: ListState, discardEdits = false) {
   state = next;
   document.title = (state.title || "qList") + " · quick lists";
-  if (document.activeElement !== title) title.value = state.title;
+  if (discardEdits || document.activeElement !== title)
+    title.value = state.title;
   count.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"}`;
   const done = state.items.filter((x) => x.checked).length;
   progress.textContent = state.items.length
     ? `${done} of ${state.items.length} complete`
-    : "Small steps, clearer days.";
+    : "";
+  addInput.placeholder = state.items.length
+    ? "enter your next item"
+    : "enter your first item here";
   clear.hidden = done === 0;
   empty.hidden = state.items.length > 0;
   const existing = new Map(
@@ -242,10 +323,10 @@ function render(next: ListState) {
       );
       const name = element("input", "name");
       name.maxLength = 1000;
-      name.addEventListener(
-        "change",
-        () =>
-          void save({ type: "edit", key: item.key, name: name.value.trim() }),
+      bindEditable(
+        name,
+        () => state.items.find((x) => x.key === item.key)?.name || "",
+        (value) => ({ type: "edit", key: item.key, name: value }),
       );
       name.addEventListener("keydown", (e) => {
         if (e.key === "Enter") name.blur();
@@ -282,7 +363,8 @@ function render(next: ListState) {
     const inputs = row.querySelectorAll("input");
     inputs[0].checked = item.checked;
     inputs[0].setAttribute("aria-label", `Complete ${item.name}`);
-    if (document.activeElement !== inputs[1]) inputs[1].value = item.name;
+    if (discardEdits || document.activeElement !== inputs[1])
+      inputs[1].value = item.name;
     inputs[1].setAttribute("aria-label", `Edit ${item.name}`);
     const buttons = row.querySelectorAll("button");
     buttons[0].disabled = i === 0;
@@ -297,9 +379,10 @@ function render(next: ListState) {
   for (const row of existing.values()) row.remove();
   updateStatus();
 }
-title.addEventListener(
-  "change",
-  () => void save({ type: "title", title: title.value.trim() }),
+bindEditable(
+  title,
+  () => state.title,
+  (value) => ({ type: "title", title: value }),
 );
 addForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -318,7 +401,7 @@ addForm.addEventListener("submit", (e) => {
   addInput.focus();
 });
 window.addEventListener("beforeunload", (e) => {
-  if (pending || failed.length) {
+  if (pending || failed.length || drafts.size) {
     e.preventDefault();
     e.returnValue = "";
   }

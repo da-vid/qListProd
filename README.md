@@ -1,6 +1,6 @@
 # qList modernization preview
 
-A small TypeScript/Vite frontend for quick, no-signup lists. This branch is **review-only**. Netlify production remains on `001fd8f`; no production Firebase data, rules, credentials, or billing were changed.
+A small TypeScript/Vite frontend for quick, no-signup lists, retaining the original yellow/charcoal qList appearance and bundled Lato typefaces. This branch is **review-only**. Netlify production remains on `001fd8f`; no production Firebase data, rules, credentials, or billing were changed.
 
 ## Try it
 
@@ -50,6 +50,6 @@ Only `dist/` is published. The legacy AngularJS, AngularFire, jQuery, Bootstrap/
 
 ## Validation and release boundary
 
-`npm run check` typechecks, builds, and runs ten model/storage/DOM/build checks. `npm run test:emulator` runs seven independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI runs both commands.
+`npm run check` typechecks, builds, and runs thirteen model/storage/DOM/build checks. `npm run test:emulator` runs seven independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI runs both commands.
 
 This phase has no approved cloud Firebase test project. The hosted preview cannot demonstrate real cross-device sharing. Production rollout requires the account/rules/backup and old-client compatibility work in [deployment.md](docs/deployment.md). Do not merge this draft or remove the production guard yet.
