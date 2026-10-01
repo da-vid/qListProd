@@ -4,11 +4,11 @@ import {
   type Item,
   type ListState,
   type Store,
-  newID,
-  route,
+  routeRequest,
+  reserveGeneratedID,
   movePriority,
 } from "./model.ts";
-import { LocalStore } from "./local-store.ts";
+import { LocalStore, reserveLocalList } from "./local-store.ts";
 const app = document.querySelector<HTMLDivElement>("#app")!;
 const mode = import.meta.env.MODE;
 let store: Store,
@@ -415,18 +415,34 @@ async function start() {
     throw new Error(
       "This development build cannot run on the production site.",
     );
-  const id = route(location.pathname, document.cookie);
-  if (location.pathname !== `/${id}`) history.replaceState(null, "", `/${id}`);
-  document.cookie = `lastList=${id}; Max-Age=5184000; Path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
+  const requested = routeRequest(location.pathname, document.cookie);
+  let id: string;
   if (local) {
+    id =
+      requested ??
+      (await reserveGeneratedID((candidate) =>
+        reserveLocalList(candidate, true),
+      ));
+    if (requested !== null) await reserveLocalList(id, false);
     store = new LocalStore(id);
   } else {
     if (!["localhost", "127.0.0.1"].includes(location.hostname))
       throw new Error("Emulator mode is only available on this computer.");
-    const { FirebaseStore, emulatorDatabase } =
+    const { FirebaseStore, emulatorDatabase, reserveFirebaseList } =
       await import("./firebase-store.ts");
-    store = new FirebaseStore(emulatorDatabase(crypto.randomUUID()), id);
+    const db = emulatorDatabase(crypto.randomUUID());
+    id =
+      requested ??
+      (await reserveGeneratedID((candidate) =>
+        reserveFirebaseList(db, candidate, true),
+      ));
+    if (requested !== null) await reserveFirebaseList(db, id, false);
+    store = new FirebaseStore(db, id);
   }
+  const canonical = `/${encodeURIComponent(id)}`;
+  if (location.pathname !== canonical || location.search || location.hash)
+    history.replaceState(null, "", canonical);
+  document.cookie = `lastList=${encodeURIComponent(id)}; Max-Age=5184000; Path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
   store.subscribe(
     render,
     (b) => {

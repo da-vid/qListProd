@@ -3,6 +3,7 @@ import {
   getDatabase,
   connectDatabaseEmulator,
   ref,
+  get,
   onValue,
   set,
   runTransaction,
@@ -39,6 +40,26 @@ export function emulatorDatabase(
   const db = getDatabase(app);
   connectDatabaseEmulator(db, host, port);
   return db;
+}
+export async function reserveFirebaseList(
+  db: Database,
+  id: string,
+  onlyNew: boolean,
+): Promise<boolean> {
+  if (!validID(id) || id === "new") throw new Error("Invalid list ID");
+  const result = await runTransaction(
+    ref(db, `listClaims/${id}`),
+    (current) => (current === null ? true : undefined),
+    { applyLocally: false },
+  );
+  if (!result.committed) return false;
+  if (!onlyNew) return true;
+  // Legacy-shaped data may predate the claims registry. Never assign its ID to a generated list.
+  const [items, attrs] = await Promise.all([
+    get(ref(db, `lists/${id}`)),
+    get(ref(db, `listAttrs/${id}`)),
+  ]);
+  return !items.exists() && !attrs.exists();
 }
 export class FirebaseStore implements Store {
   readonly db: Database;
@@ -117,7 +138,7 @@ export class FirebaseStore implements Store {
     }
     if (change.type === "add") {
       const { key, priority, ...item } = change.item;
-      // Random 128-bit item key, reused on retry. Never derive identity from list length.
+      // Random UUID-derived item key, reused on retry. Never derive identity from list length.
       const result = await runTransaction(
         ref(this.db, `lists/${this.id}/${key}`),
         (current) => current ?? { ...item, ".priority": priority },

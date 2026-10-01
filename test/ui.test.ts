@@ -251,3 +251,37 @@ test("discarding an invalid item edit restores the persisted visible value", asy
     dom.window.close();
   }
 });
+
+test("unknown custom URL opens an empty independent list and persists on edit", async () => {
+  const dom = await ui(
+    "https://preview.example/Family%20notes?ignored=query#not-an-id",
+  );
+  try {
+    assert.equal(dom.window.location.pathname, "/Family%20notes");
+    assert.equal(dom.window.location.search, "");
+    assert.equal(dom.window.location.hash, "");
+    assert.equal(dom.window.document.querySelectorAll(".item").length, 0);
+    submit(dom, "New custom item");
+    await tick();
+    const storage = dom.window.localStorage;
+    const saved = Array.from({ length: storage.length }, (_, i) => {
+      const key = storage.key(i)!;
+      return [key, storage.getItem(key)!] as [string, string];
+    });
+    const reopened = await ui("https://preview.example/Family%20notes", saved);
+    try {
+      assert.equal(
+        (
+          reopened.window.document.querySelector(
+            ".item .name",
+          ) as HTMLInputElement
+        ).value,
+        "New custom item",
+      );
+    } finally {
+      reopened.window.close();
+    }
+  } finally {
+    dom.window.close();
+  }
+});

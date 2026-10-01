@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ref, get, set, setWithPriority } from "firebase/database";
-import { FirebaseStore, emulatorDatabase } from "../src/firebase-store.ts";
+import {
+  FirebaseStore,
+  emulatorDatabase,
+  reserveFirebaseList,
+} from "../src/firebase-store.ts";
 const item = (key: string) => ({
   key,
   ID: key,
@@ -128,3 +132,38 @@ test("rules deny broad reads and malformed writes; retry add remains idempotent"
       "Preserve",
     );
   }));
+
+test("atomic generated claims have one winner and detect pre-registry legacy data", async () =>
+  clients(async (a, b) => {
+    const results = await Promise.all([
+      reserveFirebaseList(a.db, a.id, true),
+      reserveFirebaseList(b.db, a.id, true),
+    ]);
+    assert.equal(results.filter(Boolean).length, 1);
+    const legacy = "old" + crypto.randomUUID().replaceAll("-", "");
+    await set(ref(a.db, `listAttrs/${legacy}/listName`), "Existing");
+    assert.equal(await reserveFirebaseList(b.db, legacy, true), false);
+  }));
+test("racing custom-list creation never resets existing content", async () => {
+  const id = "custom " + crypto.randomUUID();
+  const a = new FirebaseStore(emulatorDatabase("custom-a" + id), id),
+    b = new FirebaseStore(emulatorDatabase("custom-b" + id), id);
+  try {
+    await Promise.all([
+      reserveFirebaseList(a.db, id, false),
+      reserveFirebaseList(b.db, id, false),
+    ]);
+    await Promise.all([
+      a.apply({ type: "add", item: item("a") }),
+      b.apply({ type: "add", item: item("b") }),
+    ]);
+    await reserveFirebaseList(a.db, id, false);
+    assert.equal(
+      Object.keys((await get(ref(a.db, `lists/${id}`))).val()).length,
+      2,
+    );
+  } finally {
+    a.close();
+    b.close();
+  }
+});

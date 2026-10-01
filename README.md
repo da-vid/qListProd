@@ -12,7 +12,7 @@ npm run check
 npm run dev
 ```
 
-Open http://127.0.0.1:4173/Demo23 for synthetic sample items. `/new` creates a cryptographically random 144-bit list URL. Existing case-sensitive paths such as `/AbC234`, trailing slashes, and the `lastList` cookie remain supported.
+Open http://127.0.0.1:4173/Demo23 for synthetic sample items. `/new` creates a cryptographically random six-character list URL with atomic reservation/retry. Custom URL names (including short names, spaces, Unicode and longer legacy IDs), case sensitivity, trailing slashes and the `lastList` cookie remain supported. Unknown names open empty lists; `/new` is reserved. Generated local-preview IDs use Web Locks for atomic cross-tab reservation; browsers without Web Locks can still open custom URLs.
 
 The public Netlify build stores an immutable operation log in browser storage (`qlist:modern:v1:`). Tabs on the same origin/browser see changes; **different devices do not share data**. It does not load Firebase or analytics. Sample lists from the first development baseline are not migrated; production data is untouched.
 
@@ -50,6 +50,6 @@ Only `dist/` is published. The legacy AngularJS, AngularFire, jQuery, Bootstrap/
 
 ## Validation and release boundary
 
-`npm run check` typechecks, builds, and runs thirteen model/storage/DOM/build checks. `npm run test:emulator` runs seven independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI runs both commands.
+`npm run check` typechecks, builds, and runs 17 model/storage/DOM/build checks. `npm run test:emulator` runs nine independent integration checks: concurrent inserts; edit/check; reorder/edit; stale edits after deletion; numeric legacy IDs/priorities; offline reconnect; and denied/malformed operations plus idempotent retry. CI also runs `npm run test:staging-rules` against the separately proposed staging policy. See [staging handoff](staging/README.md) for exact schema, rules and setup instructions.
 
 This phase has no approved cloud Firebase test project. The hosted preview cannot demonstrate real cross-device sharing. Production rollout requires the account/rules/backup and old-client compatibility work in [deployment.md](docs/deployment.md). Do not merge this draft or remove the production guard yet.

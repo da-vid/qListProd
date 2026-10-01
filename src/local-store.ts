@@ -14,7 +14,7 @@ export class LocalStore implements Store {
   private storage: Storage;
   constructor(id: string, storage: Storage = localStorage) {
     this.storage = storage;
-    this.prefix = `qlist:modern:v1:${id}:`;
+    this.prefix = `qlist:modern:v1:${encodeURIComponent(id)}:`;
   }
   private read(): ListState {
     const changes: { stamp: string; change: Change }[] = [];
@@ -90,4 +90,31 @@ export class LocalStore implements Store {
     this.notify();
   }
   close() {}
+}
+
+// Web Locks serialize reservations across tabs in the same browser profile.
+export async function reserveLocalList(
+  id: string,
+  onlyNew: boolean,
+  storage: Storage = localStorage,
+): Promise<boolean> {
+  const claim = `qlist:claims:v1:${encodeURIComponent(id)}`;
+  const action = () => {
+    if (storage.getItem(claim) !== null) return false;
+    const prefix = `qlist:modern:v1:${encodeURIComponent(id)}:`;
+    const exists =
+      storage.getItem(`qlist:synthetic:v1:${id}`) !== null ||
+      Array.from({ length: storage.length }, (_, i) => storage.key(i)!).some(
+        (key) => key.startsWith(prefix),
+      );
+    storage.setItem(claim, "reserved");
+    return !onlyNew || !exists;
+  };
+  if (navigator.locks)
+    return navigator.locks.request("qlist-list-reservation", action);
+  if (onlyNew)
+    throw new Error(
+      "This browser cannot safely reserve a random list address. Open a custom list URL instead.",
+    );
+  return action();
 }

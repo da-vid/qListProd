@@ -25,27 +25,70 @@ export interface Store {
   apply(change: Change): Promise<void>;
   close(): void;
 }
-export const validID = (id: string) => /^[A-Za-z0-9_-]{6,128}$/.test(id);
-export function newID(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(18)), (n) =>
-    n.toString(16).padStart(2, "0"),
-  ).join("");
+export function validID(id: string): boolean {
+  if (!id || /[.#$\[\]\/\u0000-\u001f\u007f]/.test(id)) return false;
+  try {
+    return encodeURIComponent(id).replace(/%[a-f\d]{2}/gi, "x").length <= 768;
+  } catch {
+    return false;
+  }
 }
-export function route(path: string, cookie: string): string {
-  const id = path.replace(/^\/|\/$/g, "");
+export function newID(): string {
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  const limit = 256 - (256 % alphabet.length);
+  let id = "";
+  while (id.length < 6)
+    for (const n of crypto.getRandomValues(new Uint8Array(12))) {
+      if (n < limit) id += alphabet[n % alphabet.length];
+      if (id.length === 6) break;
+    }
+  return id;
+}
+export function routeRequest(path: string, cookie: string): string | null {
+  if (!path.startsWith("/") || path.includes("?") || path.includes("#"))
+    throw new Error(
+      "Use one list name in the URL path; query strings and fragments are not list names.",
+    );
+  let id: string;
+  try {
+    id = decodeURIComponent(path.slice(1).replace(/\/$/, ""));
+  } catch {
+    throw new Error("That list address contains invalid URL encoding.");
+  }
   if (id && id !== "new") {
     if (!validID(id))
       throw new Error(
-        "That list address is not valid. Open a list link or create a new list.",
+        "Use a single list name, up to 768 UTF-8 bytes, without . # $ [ ] / or control characters.",
       );
     return id;
   }
-  const previous = cookie
+  if (id === "new") return null;
+  const raw = cookie
     .split(";")
     .map((x) => x.trim())
     .find((x) => x.startsWith("lastList="))
     ?.slice(9);
-  return id !== "new" && previous && validID(previous) ? previous : newID();
+  try {
+    const previous = raw ? decodeURIComponent(raw) : "";
+    return previous !== "new" && validID(previous) ? previous : null;
+  } catch {
+    return null;
+  }
+}
+export function route(path: string, cookie: string): string {
+  return routeRequest(path, cookie) ?? newID();
+}
+export async function reserveGeneratedID(
+  reserve: (id: string) => Promise<boolean>,
+  generate: () => string = newID,
+): Promise<string> {
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const id = generate();
+    if (await reserve(id)) return id;
+  }
+  throw new Error(
+    "Could not reserve an unused list address. Please try creating a new list again.",
+  );
 }
 export function ordered(items: Item[]): Item[] {
   return [...items].sort(

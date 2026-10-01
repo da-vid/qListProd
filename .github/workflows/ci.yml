@@ -25,3 +25,4 @@ jobs:
           echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
           "$JAVA_HOME_21_X64/bin/java" -version
       - run: npm run test:emulator
+      - run: npm run test:staging-rules

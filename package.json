@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.ts",
     "test:emulator": "firebase emulators:exec --only database --project demo-qlist \"node --test --test-timeout=15000 test/firebase.integration.ts\"",
-    "check": "npm run typecheck && npm run build && npm test"
+    "check": "npm run typecheck && npm run build && npm test",
+    "test:staging-rules": "firebase emulators:exec --config firebase.staging-test.json --only database --project demo-qlist \"node --test --test-timeout=20000 test/staging-rules.integration.ts\""
   },
   "devDependencies": {
     "@types/node": "24.19.0",

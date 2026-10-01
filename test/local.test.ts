@@ -50,3 +50,21 @@ test("storage failure rejects the write instead of reporting it saved", async ()
     /Storage full/,
   );
 });
+
+test("custom names with prefix punctuation remain isolated", async () => {
+  const storage = dom.window.localStorage;
+  storage.clear();
+  const a = new LocalStore("name", storage),
+    b = new LocalStore("name:child", storage);
+  await a.apply({ type: "title", title: "Parent" });
+  await b.apply({ type: "title", title: "Other" });
+  let title = "";
+  a.subscribe(
+    (s) => (title = s.title),
+    () => {},
+    (e) => {
+      throw e;
+    },
+  )();
+  assert.equal(title, "Parent");
+});
