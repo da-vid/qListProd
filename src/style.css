@@ -358,10 +358,10 @@ main {
   font-size: 12px;
   border-radius: 10px;
 }
-.bottom .text-button {
+.clear-slot .text-button {
   background: #f3cfcf;
 }
-.bottom .text-button:hover {
+.clear-slot .text-button:hover {
   background: #ebb;
 }
 .note {
@@ -492,4 +492,89 @@ dialog .primary {
 
 .copy-feedback:empty {
   display: none;
+}
+
+/* One compact sticky region; the preview notice scrolls away normally. */
+:root {
+  scroll-padding-top: calc(var(--sticky-height, 150px) + 8px);
+}
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  flex-shrink: 0;
+  background: #fcf0ad;
+  max-height: 60dvh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  overflow-anchor: none;
+}
+.list-controls {
+  width: 100%;
+  max-width: 500px;
+  margin: auto;
+}
+.clear-slot {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 180ms ease,
+    visibility 0s 180ms;
+}
+.clear-slot.available {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    grid-template-rows 180ms ease,
+    opacity 180ms ease,
+    visibility 0s;
+}
+.clear-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: flex-end;
+}
+.clear-slot .text-button {
+  margin: 3px 16px 5px;
+  min-height: 36px;
+}
+.clear-slot .text-button:focus-visible {
+  outline-offset: -3px;
+}
+.item {
+  scroll-margin-block: 8px;
+}
+.sortable-fallback {
+  z-index: 9 !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clear-slot,
+  .clear-slot.available {
+    transition: none;
+  }
+}
+@media (max-height: 450px) {
+  .list-controls .title {
+    margin-top: 3px;
+  }
+  .list-controls .add {
+    margin-block: 3px;
+  }
+  .clear-slot .text-button {
+    min-height: 30px;
+    padding-block: 6px;
+    margin-block: 0 3px;
+  }
+}
+
+.clear-slot .text-button:disabled {
+  opacity: 1;
+}
+.sticky-top button:focus-visible {
+  outline-offset: -2px;
 }

@@ -120,7 +120,7 @@ test("share explains preview limits and completed removal requires confirmation"
     check.checked = true;
     check.dispatchEvent(new dom.window.Event("change"));
     await tick();
-    (d.querySelector(".bottom button") as HTMLButtonElement).click();
+    (d.querySelector(".clear-slot button") as HTMLButtonElement).click();
     assert.ok(d.querySelector("dialog[open]"));
     assert.equal(d.querySelectorAll(".item").length, 1);
     (d.querySelector("dialog .primary") as HTMLButtonElement).click();
@@ -373,6 +373,46 @@ test("keyboard Home/End ordering persists and unchecking hides deletion again", 
     } finally {
       reopened.window.close();
     }
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("sticky clear action follows current checks, sits below input, and returns hidden focus safely", async () => {
+  const dom = await ui();
+  try {
+    const d = dom.window.document;
+    const sticky = d.querySelector(".sticky-top")!;
+    const controls = sticky.querySelector(".list-controls")!;
+    const slot = controls.querySelector<HTMLElement>(".clear-slot")!;
+    const clear = slot.querySelector("button")!;
+    assert.ok(sticky.querySelector("header nav"));
+    assert.ok(controls.querySelector(".title"));
+    assert.equal(controls.querySelector(".add")!.nextElementSibling, slot);
+    assert.equal(clear.textContent, "Clear all checked");
+    assert.equal(clear.disabled, true);
+    assert.equal(slot.getAttribute("aria-hidden"), "true");
+    assert.equal(slot.inert, true);
+    assert.equal(d.querySelector(".bottom button"), null);
+    submit(dom, "Keep until checked");
+    await tick();
+    const check = d.querySelector<HTMLInputElement>("[type=checkbox]")!;
+    check.checked = true;
+    check.dispatchEvent(new dom.window.Event("change"));
+    await tick();
+    assert.equal(slot.classList.contains("available"), true);
+    assert.equal(clear.disabled, false);
+    assert.equal(slot.inert, false);
+    clear.focus();
+    // Simulate the current item becoming unchecked without moving focus first.
+    check.checked = false;
+    check.dispatchEvent(new dom.window.Event("change"));
+    await tick();
+    assert.equal(slot.classList.contains("available"), false);
+    assert.equal(slot.inert, true);
+    assert.equal(clear.disabled, true);
+    assert.equal(d.activeElement, d.querySelector(".add input"));
+    assert.equal(d.querySelectorAll(".item").length, 1);
   } finally {
     dom.window.close();
   }

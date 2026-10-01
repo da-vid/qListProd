@@ -56,8 +56,14 @@ The approved staging project is now configured for shared synthetic lists throug
 
 ### Dragging and checked-only removal
 
-Drag the right-hand handle to reorder with a mouse or touch. The rest of the row remains available for scrolling, checking and text editing. Focus the handle and use Up/Down, Home or End for keyboard ordering; moves are announced and focus is retained. SortableJS 1.15.7 supplies touch fallback and edge auto-scrolling. Only the moved item's priority is written, resolving the drop anchor against the latest received list. Conflicting/deleted targets produce a retryable message rather than a whole-list rewrite.
+Drag the right-hand handle to reorder with a mouse or touch. The rest of the row remains available for scrolling, checking and text editing. Focus the handle and use Up/Down, Home or End for keyboard ordering; moves are announced and focus is retained. SortableJS 1.15.7 supplies touch fallback; viewport-aware edge auto-scrolling accounts for the sticky controls. Only the moved item's priority is written, resolving the drop anchor against the latest received list. Conflicting/deleted targets produce a retryable message rather than a whole-list rewrite.
 
 The individual × button appears only on checked items. Firebase deletion transacts the item and checks its current `checked` value on every retry, including reconnect after another client unchecks it. Already-absent items remain an idempotent success. Browser-local writes use Web Locks where available and conditional operation replay. Existing Firebase rules are unchanged: this is a UI/application safeguard, not a security boundary against raw database clients or the old production app.
 
 Actual mobile touch gestures still require independent browser QA on the deployed preview; automated DOM checks do not prove touch behavior. Test handle dragging in both directions and at viewport edges, ordinary swipe scrolling outside handles, editing, keyboard reordering, second-tab synchronization and reload persistence. The explicit staging smoke test creates a fresh scrollable synthetic list and prints its six-character ID.
+
+### Sticky list controls
+
+The toolbar, title, new-item input and conditional **Clear all checked** action stick together. The action is immediately disabled and removed from keyboard/accessibility navigation when no checked items remain; its height and opacity transition for 180ms, with no animation for reduced-motion users. The preview notice scrolls away. The sticky area is capped at 60% of the dynamic viewport height and can scroll internally on very short screens.
+
+A ResizeObserver maintains the anchor-scroll offset and keeps focused rows below the controls as their height changes. Drag auto-scroll uses the visible list edges below the sticky area; releasing over the toolbar cancels that move. Existing checked-only transaction guards are unchanged. Geometry/DOM regressions are tested; independent browser QA still needs to exercise sticky scrolling, animations, focus visibility and drag edges. Real mobile touch remains unverified by the available tools.

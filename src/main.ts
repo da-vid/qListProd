@@ -1,5 +1,6 @@
 import "./style.css";
 import Sortable from "sortablejs";
+import { installListViewport } from "./list-viewport.ts";
 import {
   type Change,
   type Item,
@@ -54,6 +55,8 @@ const notice = element(
 );
 const shell = element("div", "shell");
 const header = element("header");
+const sticky = element("div", "sticky-top");
+const controls = element("div", "list-controls");
 const brand = element("div", "brand", "qList");
 brand.append(
   element("span", "cc", ".cc"),
@@ -112,7 +115,9 @@ const reorderHelp = element(
 reorderHelp.id = "reorder-help";
 const reorderStatus = element("span", "sr-only");
 reorderStatus.setAttribute("role", "status");
+const viewport = installListViewport(sticky, list);
 new Sortable(list, {
+  scroll: false,
   handle: ".drag-handle",
   draggable: ".item",
   animation: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 120,
@@ -122,6 +127,7 @@ new Sortable(list, {
   direction: "vertical",
   onChoose() {
     dragging = true;
+    viewport.start();
     if (document.activeElement instanceof HTMLInputElement)
       document.activeElement.blur();
   },
@@ -129,6 +135,7 @@ new Sortable(list, {
     // Sortable fires end synchronously after unchoose; a tap without a drag still releases rendering.
     queueMicrotask(() => {
       dragging = false;
+      viewport.stop();
       render(state);
     });
   },
@@ -138,8 +145,9 @@ new Sortable(list, {
       (event.item.nextElementSibling as HTMLElement | null)?.dataset.key ??
       null;
     dragging = false;
+    viewport.stop();
     try {
-      if (event.oldIndex !== event.newIndex)
+      if (viewport.canDrop() && event.oldIndex !== event.newIndex)
         void save({
           type: "move",
           key,
@@ -174,18 +182,27 @@ empty.append(
 );
 const bottom = element("div", "bottom");
 const progress = element("span");
-const clear = button("Clear completed", "text-button", () =>
+const clear = button("Clear all checked", "text-button", () =>
   openDialog(
-    "Clear completed items?",
-    `${state.items.filter((x) => x.checked).length} completed items will be removed.`,
+    "Clear all checked items?",
+    `${state.items.filter((x) => x.checked).length} checked items will be removed.`,
     () => {
       for (const item of state.items.filter((x) => x.checked))
         void save({ type: "delete", key: item.key });
     },
-    "Clear completed",
+    "Clear all checked",
   ),
 );
-bottom.append(progress, clear);
+const clearSlot = element("div", "clear-slot");
+const clearInner = element("div", "clear-inner");
+clearInner.append(clear);
+clearSlot.append(clearInner);
+clearSlot.inert = true;
+clearSlot.setAttribute("aria-hidden", "true");
+clear.disabled = true;
+controls.append(title, addForm, clearSlot);
+sticky.append(header, controls);
+bottom.append(progress);
 const note = element(
   "p",
   "note",
@@ -194,9 +211,7 @@ const note = element(
     : "Anyone with a list link can edit it. Keep this tab open until changes are saved. Offline changes are held in this session only; do not close or reload while changes are pending.",
 );
 main.append(
-  title,
   errorBox,
-  addForm,
   reorderHelp,
   reorderStatus,
   list,
@@ -206,7 +221,7 @@ main.append(
   note,
 );
 shell.append(main);
-app.append(notice, header, shell);
+app.append(notice, sticky, shell);
 const dialog = element("dialog");
 app.append(dialog);
 function labelDialog() {
@@ -372,7 +387,13 @@ function render(next: ListState, discardEdits = false) {
   addInput.placeholder = state.items.length
     ? "enter your next item"
     : "enter your first item here";
-  clear.hidden = done === 0;
+  const canClear = done > 0;
+  if (!canClear && document.activeElement === clear)
+    addInput.focus({ preventScroll: true });
+  clearSlot.classList.toggle("available", canClear);
+  clearSlot.inert = !canClear;
+  clearSlot.setAttribute("aria-hidden", String(!canClear));
+  clear.disabled = !canClear;
   empty.hidden = state.items.length > 0;
   const existing = new Map(
     [...list.children].map((x) => [
@@ -435,6 +456,7 @@ function render(next: ListState, discardEdits = false) {
                   );
           void save({ type: "move", key: item.key, priority }).then(() => {
             handle.focus({ preventScroll: true });
+            viewport.reveal(handle);
             const position = state.items.findIndex((x) => x.key === item.key);
             reorderStatus.textContent = `${state.items[position]?.name ?? "Item"}, position ${position + 1} of ${state.items.length}`;
           });
