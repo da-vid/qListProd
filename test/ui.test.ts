@@ -417,3 +417,30 @@ test("sticky clear action follows current checks, sits below input, and returns 
     dom.window.close();
   }
 });
+
+test("clear confirmation uses singular and plural checked-item counts", async () => {
+  const dom = await ui();
+  try {
+    const d = dom.window.document;
+    for (const count of [1, 2]) {
+      submit(dom, `Item ${count}`);
+      await tick();
+      const check = d.querySelector(
+        `[aria-label="Complete Item ${count}"]`,
+      ) as HTMLInputElement;
+      check.checked = true;
+      check.dispatchEvent(new dom.window.Event("change"));
+      await tick();
+      (d.querySelector(".clear-slot button") as HTMLButtonElement).click();
+      assert.equal(
+        d.querySelector("#dialog-description")!.textContent,
+        count === 1
+          ? "1 checked item will be removed."
+          : "2 checked items will be removed.",
+      );
+      (d.querySelector("dialog .btn") as HTMLButtonElement).click();
+    }
+  } finally {
+    dom.window.close();
+  }
+});

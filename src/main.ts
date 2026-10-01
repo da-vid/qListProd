@@ -182,17 +182,18 @@ empty.append(
 );
 const bottom = element("div", "bottom");
 const progress = element("span");
-const clear = button("Clear all checked", "text-button", () =>
+const clear = button("Clear all checked", "text-button", () => {
+  const checkedCount = state.items.filter((x) => x.checked).length;
   openDialog(
     "Clear all checked items?",
-    `${state.items.filter((x) => x.checked).length} checked items will be removed.`,
+    `${checkedCount} checked item${checkedCount === 1 ? "" : "s"} will be removed.`,
     () => {
       for (const item of state.items.filter((x) => x.checked))
         void save({ type: "delete", key: item.key });
     },
     "Clear all checked",
-  ),
-);
+  );
+});
 const clearSlot = element("div", "clear-slot");
 const clearInner = element("div", "clear-inner");
 clearInner.append(clear);
