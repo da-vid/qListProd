@@ -71,3 +71,7 @@ A ResizeObserver maintains the anchor-scroll offset and keeps focused rows below
 ### Directional scroll fades
 
 Subtle yellow edge fades appear only where list rows continue beyond the visible area above/below. They track scrolling, item changes, sticky-control size and visual-viewport changes; fitting/empty/offscreen lists have no fades. Overlays ignore all pointer events and accessibility navigation. Focused rows remain above the gradients, and reduced-motion users see no fade animation. See [go-live readiness](docs/deployment.md#go-live-readiness-checkpoint--2026-10-01) for the private backup/restore rehearsal and remaining cutover decisions.
+
+### Legacy ordering compatibility
+
+The adapter preserves null, numeric and string priorities and sorts key ties exactly like Firebase, including numeric keys `2` before `10`. The emulator fixtures in `test/fixtures/legacy-lists.ts` compare server order, exact ID/priority types and read/edit/check/reconnect preservation. Mixed-priority append/reorder affects only its own item; a slot that cannot be represented without modifying other priorities produces a clear error. These tests use synthetic data only. Production content and rules remain untouched, and full private export/restore rehearsal remains a release gate.

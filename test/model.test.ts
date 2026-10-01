@@ -7,6 +7,7 @@ import {
   movePriority,
   moveBeforePriority,
   ordered,
+  appendPriority,
   routeRequest,
   reserveGeneratedID,
 } from "../src/model.ts";
@@ -108,5 +109,33 @@ test("drag targets use current anchor keys and reject deleted targets", () => {
         "2",
       ),
     /same order/,
+  );
+});
+
+test("legacy moves across priority types keep exact requested order or fail without normalization", () => {
+  const items = [null, null, -5, 0, "a", "c"].map((priority, i) => ({
+    key: String(i),
+    ID: i,
+    name: String(i),
+    checked: false,
+    priority,
+  }));
+  const move = (key: string, anchor: string | null) =>
+    ordered(
+      items.map((x) =>
+        x.key === key
+          ? { ...x, priority: moveBeforePriority(items, key, anchor) }
+          : x,
+      ),
+    ).map((x) => x.key);
+  assert.deepEqual(move("0", "3"), ["1", "2", "0", "3", "4", "5"]);
+  assert.deepEqual(move("5", "2"), ["0", "1", "5", "2", "3", "4"]);
+  assert.deepEqual(move("2", "5"), ["0", "1", "3", "4", "2", "5"]);
+  assert.deepEqual(move("0", null), ["1", "2", "3", "4", "5", "0"]);
+  assert.equal(appendPriority(items, "new"), "c!");
+  assert.throws(() => moveBeforePriority(items, "5", "0"), /no room/);
+  assert.deepEqual(
+    items.map((x) => x.priority),
+    [null, null, -5, 0, "a", "c"],
   );
 });

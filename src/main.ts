@@ -11,6 +11,7 @@ import {
   reserveGeneratedID,
   movePriority,
   moveBeforePriority,
+  appendPriority,
 } from "./model.ts";
 import { LocalStore, reserveLocalList } from "./local-store.ts";
 const app = document.querySelector<HTMLDivElement>("#app")!;
@@ -499,12 +500,19 @@ addForm.addEventListener("submit", (e) => {
   const name = addInput.value.trim();
   if (!name) return;
   const key = crypto.randomUUID().replaceAll("-", "");
+  let priority;
+  try {
+    priority = appendPriority(state.items, key);
+  } catch (e) {
+    showError((e as Error).message);
+    return;
+  }
   const item: Item = {
     key,
     ID: key,
     name,
     checked: false,
-    priority: Math.max(0, ...state.items.map((x) => x.priority)) + 1024,
+    priority,
   };
   addInput.value = "";
   void save({ type: "add", item });

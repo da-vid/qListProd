@@ -2,6 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { JSDOM } from "jsdom";
+import { legacyFixtures } from "./fixtures/legacy-lists.ts";
 const tick = () => new Promise((r) => setTimeout(r, 20));
 async function ui(
   url = "https://preview.example/AbC234",
@@ -442,5 +443,36 @@ test("clear confirmation uses singular and plural checked-item counts", async ()
     }
   } finally {
     dom.window.close();
+  }
+});
+
+test("built UI displays legacy priority fixtures exactly and appends below string priorities", async () => {
+  for (const fixture of legacyFixtures) {
+    const saved = fixture.items.map((item, i) => {
+      const stamp = String(i).padStart(16, "0") + "-fixture";
+      return [
+        `qlist:modern:v1:AbC234:${stamp}`,
+        JSON.stringify({ stamp, change: { type: "add", item } }),
+      ] as [string, string];
+    });
+    const dom = await ui(undefined, saved);
+    try {
+      const d = dom.window.document;
+      const keys = () =>
+        [...d.querySelectorAll<HTMLElement>(".list .item")].map(
+          (x) => x.dataset.key,
+        );
+      assert.deepEqual(keys(), fixture.expected, fixture.name);
+      submit(dom, "Appended after legacy items");
+      await tick();
+      assert.deepEqual(keys().slice(0, -1), fixture.expected, fixture.name);
+      assert.equal(
+        d.querySelector<HTMLInputElement>(".list .item:last-child .name")!
+          .value,
+        "Appended after legacy items",
+      );
+    } finally {
+      dom.window.close();
+    }
   }
 });

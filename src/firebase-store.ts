@@ -87,10 +87,7 @@ export class FirebaseStore implements Store {
               ID: v.ID ?? child.key!,
               name: v.name,
               checked: v.checked === true,
-              priority:
-                typeof child.priority === "number"
-                  ? (child.priority as number)
-                  : 0,
+              priority: child.priority,
             });
         });
         state = { ...state, items: ordered(items) };

@@ -1,9 +1,10 @@
+export type Priority = number | string | null;
 export interface Item {
   key: string;
   ID: number | string;
   name: string;
   checked: boolean;
-  priority: number;
+  priority: Priority;
 }
 export interface ListState {
   title: string;
@@ -13,7 +14,7 @@ export type Change =
   | { type: "add"; item: Item }
   | { type: "edit"; key: string; name: string }
   | { type: "check"; key: string; checked: boolean }
-  | { type: "move"; key: string; priority: number }
+  | { type: "move"; key: string; priority: Priority }
   | { type: "delete"; key: string }
   | { type: "title"; title: string };
 export interface Store {
@@ -90,16 +91,85 @@ export async function reserveGeneratedID(
     "Could not reserve an unused list address. Please try creating a new list again.",
   );
 }
+// Firebase's key comparator: signed 32-bit integer keys first (leading-zero
+// ties by length), then raw UTF-16 string order. Locale collation is not RTDB order.
+export function compareKeys(a: string, b: string): number {
+  if (a === b) return 0;
+  const integer = (key: string) => {
+    if (!/^-?0*\d{1,10}$/.test(key)) return null;
+    const value = Number(key);
+    return value >= -2147483648 && value <= 2147483647 ? value : null;
+  };
+  const x = integer(a),
+    y = integer(b);
+  if (x !== null && y !== null) return x - y || a.length - b.length;
+  if (x !== null) return -1;
+  if (y !== null) return 1;
+  return a < b ? -1 : 1;
+}
+function comparePriorities(a: Priority, b: Priority): number {
+  if (a === b) return 0;
+  const rank = (value: Priority) =>
+    value === null ? 0 : typeof value === "number" ? 1 : 2;
+  const typeOrder = rank(a) - rank(b);
+  if (typeOrder) return typeOrder;
+  return a! < b! ? -1 : 1;
+}
+function compareItems(
+  a: Pick<Item, "key" | "priority">,
+  b: Pick<Item, "key" | "priority">,
+): number {
+  return comparePriorities(a.priority, b.priority) || compareKeys(a.key, b.key);
+}
 export function ordered(items: Item[]): Item[] {
-  return [...items].sort(
-    (a, b) => a.priority - b.priority || a.key.localeCompare(b.key),
+  return [...items].sort(compareItems);
+}
+function slotPriority(remaining: Item[], key: string, index: number): Priority {
+  const before = remaining[index - 1],
+    after = remaining[index];
+  const lower = before?.priority,
+    upper = after?.priority;
+  let candidate: Priority;
+  if (upper === null) candidate = null;
+  else if (typeof lower === "string") candidate = lower + "!";
+  else if (typeof upper === "number")
+    candidate =
+      typeof lower === "number" ? lower / 2 + upper / 2 : upper - 1024;
+  else candidate = typeof lower === "number" ? lower + 1024 : 1024;
+  // Never rewrite neighboring priorities to make room. Tied priorities are usable
+  // only if this item's Firebase key order really fits in the requested slot.
+  const candidates = [
+    candidate,
+    ...(typeof lower === "string" ? [lower + "\u0000"] : []),
+    lower,
+    upper,
+  ];
+  for (const priority of candidates) {
+    if (
+      priority === undefined ||
+      (typeof priority === "number" && !Number.isFinite(priority))
+    )
+      continue;
+    const target = { key, priority };
+    if (
+      (!before || compareItems(before, target) < 0) &&
+      (!after || compareItems(target, after) < 0)
+    )
+      return priority;
+  }
+  throw new Error(
+    "These items have the same order or legacy priorities with no room for this move. Nothing was changed; move to another position.",
   );
+}
+export function appendPriority(items: Item[], key: string): Priority {
+  const sorted = ordered(items);
+  return slotPriority(sorted, key, sorted.length);
 }
 export function movePriority(
   items: Item[],
   key: string,
   direction: -1 | 1,
-): number {
+): Priority {
   const list = ordered(items);
   const i = list.findIndex((x) => x.key === key);
   const j = i + direction;
@@ -113,7 +183,7 @@ export function moveBeforePriority(
   items: Item[],
   key: string,
   anchor: string | null,
-): number {
+): Priority {
   if (!items.some((x) => x.key === key))
     throw new Error("This item was removed in another tab.");
   const remaining = ordered(items).filter((x) => x.key !== key);
@@ -123,21 +193,20 @@ export function moveBeforePriority(
       : remaining.findIndex((x) => x.key === anchor);
   if (j < 0)
     throw new Error("The list changed while dragging. Please try again.");
-  const before = remaining[j - 1]?.priority;
-  const after = remaining[j]?.priority;
-  const value =
-    before === undefined
-      ? (after ?? 1024) - 1024
-      : after === undefined
-        ? before + 1024
-        : (before + after) / 2;
-  if (!Number.isFinite(value) || value === before || value === after)
-    throw new Error(
-      "These items have the same order after simultaneous moves. Move one to the top or bottom, then try again.",
-    );
-  return value;
+  return slotPriority(remaining, key, j);
 }
+
 export function validate(change: Change): void {
+  if (change.type === "add" || change.type === "move") {
+    const priority =
+      change.type === "add" ? change.item.priority : change.priority;
+    if (
+      priority !== null &&
+      typeof priority !== "string" &&
+      !(typeof priority === "number" && Number.isFinite(priority))
+    )
+      throw new Error("Invalid item priority.");
+  }
   if (change.type === "title" && change.title.length > 160)
     throw new Error("Keep list titles under 160 characters.");
   if (
