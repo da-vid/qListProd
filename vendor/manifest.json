@@ -1,0 +1,20 @@
+{
+  "upstreamCommit": "001fd8f291e25da26f4fdd7e5e373055edece7ce",
+  "originalBundleSHA256": "dcd4b3b9b859ea8b7501f3ef3a96c1d542932696857a334698c92cc8aa714e31",
+  "files": {
+    "legacy.js": "0092200a51f5f24974360c247c83a5aa94d8b6637095a3cfc3daf06f555613de"
+  },
+  "dependencies": {
+    "jquery": "1.10.2",
+    "jquery-ui": "1.10.3",
+    "jquery-ui-touch-punch": "0.2.2",
+    "angularjs": "1.2.10",
+    "angular-ui": "0.4.0",
+    "firebase": "1.0.2",
+    "angularfire": "0.7.0",
+    "angular-strap": "2.0.0-rc.4",
+    "fastclick": "1.0.0",
+    "placeholders.js": "3.0.2"
+  },
+  "note": "Frozen compatibility baseline, NOT a security upgrade. Includes application-specific sortable adapter. See docs/dependencies.md."
+}

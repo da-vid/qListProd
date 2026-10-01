@@ -1,0 +1,7 @@
+/* Preview-only disclosure; the legacy interface below remains intact. */
+#preview-notice { padding: 10px 16px; background: #edf4fb; color: #243b53; font: 14px/1.4 system-ui, sans-serif; text-align: center; }
+#preview-notice a { color: #174e85; text-decoration: underline; font: inherit; }
+#preview-notice[data-error] { background: #fff0f0; color: #8b1515; }
+/* Angular 1.2 normally injects these rules; ng-csp requires an external stylesheet. */
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak, .ng-hide { display: none !important; }
+ng\:form { display: block; }

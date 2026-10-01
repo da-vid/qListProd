@@ -1,0 +1,11 @@
+[build]
+  command = "npm run check"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24.21.0"
+  NPM_VERSION = "11.16.0"
+
+# This is a preview-only baseline. Production rollout needs a separate reviewed change.
+[context.production]
+  command = "node scripts/reject-production.mjs"
