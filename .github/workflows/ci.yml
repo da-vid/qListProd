@@ -1,7 +1,7 @@
-name: Preview baseline
+name: Modern qList checks
 on:
   push:
-    branches: ['codex/safe-development-baseline']
+    branches: ["codex/safe-development-baseline"]
   pull_request:
     branches: [master]
 permissions:
@@ -18,3 +18,10 @@ jobs:
       - run: npm install --global npm@11.16.0
       - run: npm ci --ignore-scripts
       - run: npm run check
+      - name: Verify Java for the isolated database emulator
+        run: |
+          test -x "$JAVA_HOME_21_X64/bin/java"
+          echo "JAVA_HOME=$JAVA_HOME_21_X64" >> "$GITHUB_ENV"
+          echo "$JAVA_HOME_21_X64/bin" >> "$GITHUB_PATH"
+          "$JAVA_HOME_21_X64/bin/java" -version
+      - run: npm run test:emulator

@@ -1,0 +1,34 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "lists": {
+      "$list": {
+        ".read": "$list.matches(/^[A-Za-z0-9_-]{6,128}$/)",
+        "$item": {
+          ".write": "$list.matches(/^[A-Za-z0-9_-]{6,128}$/)",
+          ".validate": "newData.hasChildren(['ID','name','checked']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 1000 && newData.child('checked').isBoolean()",
+          "ID": {},
+          "name": {},
+          "checked": {},
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "listAttrs": {
+      "$list": {
+        ".read": true,
+        "listName": {
+          ".write": "$list.matches(/^[A-Za-z0-9_-]{6,128}$/)",
+          ".validate": "newData.isString() && newData.val().length <= 160"
+        },
+        "lastMod": {
+          ".write": "$list.matches(/^[A-Za-z0-9_-]{6,128}$/)",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
+      }
+    }
+  }
+}

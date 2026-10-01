@@ -1,34 +1,13 @@
-# Dependency baseline
+# Dependencies (verified 2026-10-01)
 
-Source: `da-vid/qListProd` commit `001fd8f291e25da26f4fdd7e5e373055edece7ce` (2021-10-04). The original repository contained a prebuilt bundle, no dependency manifest, and no build/test scripts. No separate source checkout was found during the audit.
+- Node 24.21.0 LTS / npm 11.16.0 remain pinned.
+- Vite 8.3.2, TypeScript 7.0.2: exact current stable versions verified against npm metadata; Vite supports this Node line. Official guidance: https://vite.dev/guide/ and https://vite.dev/releases
+- Firebase 12.19.0: modular app/database SDK only in local emulator mode. Official guidance: https://firebase.google.com/docs/database/web/read-and-write and https://firebase.google.com/docs/emulator-suite/connect_rtdb
+- Firebase CLI 15.32.1 / database emulator 4.11.2: development-only integration testing with a `demo-` project. Java 21 is used.
+- jsdom 30.1.1 and Prettier 3.9.9: test/format tools only.
 
-The library prefix of `js/prod.js` was extracted into `vendor/legacy.js`. Only trailing separator whitespace was normalized in the vendor prefix. Application code after `//quicklist.js` and routing after `//idHelper (prod)` were separated. The vendor prefix still includes the customized Angular sortable adapter and retains license banners. Its checksum and the original bundle checksum are recorded in `vendor/manifest.json`; the build refuses an unexpected vendor checksum change.
+All direct versions and the lockfile are pinned. Install scripts are disabled. `@grpc/grpc-js` is overridden to compatible patched 1.14.5 because the Firebase umbrella package includes an older Firestore-only dependency; this app does not import Firestore. `npm audit --omit=dev` reports **zero** vulnerabilities as of this review.
 
-| Component | Bundled version |
-| --- | --- |
-| jQuery | 1.10.2 |
-| jQuery UI | 1.10.3 |
-| jQuery UI Touch Punch | 0.2.2 |
-| AngularJS / ngAnimate | 1.2.10 |
-| AngularUI | 0.4.0 |
-| Firebase client | 1.0.2 |
-| AngularFire | 0.7.0 |
-| AngularStrap | 2.0.0-rc.4 |
-| FastClick | 1.0.0 |
-| Placeholders.js | 3.0.2 |
-| Font Awesome (CSS) | 4.4.0 |
-| Custom angular-linkify | no reliable version banner |
+Full development-tool audit still reports **9** findings (5 high, 4 moderate), transitively through Firebase CLI: basic-ftp/get-uri/proxy-agent, OpenTelemetry, and uuid/gaxios. The current upstream CLI has no compatible automatic fix; npm suggests a major downgrade, which is not applied blindly. These packages are not in the browser build. The CLI is used only with a loopback demo database, no authenticated cloud access. Track upstream fixes before extending the CLI's use. This is a documented tooling risk, not a claim that all dependencies are vulnerability-free.
 
-These are retained only to establish a behavioral baseline. AngularJS is end-of-life. jQuery 1.10.2 is in the affected range of CVE-2020-11022; exploitability in qList has not been established. New npm dependency audit results do **not** cover these vendored browser libraries. The Firebase SDK is present in the frozen bundle but is never instantiated by the preview application. A later migration can remove unused libraries after compatibility tests exist.
-
-- AngularJS support: https://docs.angularjs.org/misc/version-support-status
-- jQuery advisory: https://github.com/jquery/jquery/security/advisories/GHSA-gxr4-xjj5-5px2
-- Node support: https://nodejs.org/en/about/previous-releases
-- Netlify runtime configuration: https://docs.netlify.com/build/configure-builds/manage-dependencies/
-- Firebase modular migration: https://firebase.google.com/docs/web/modular-upgrade
-
-## New tooling
-
-Node 24.21.0 (LTS) and npm 11.16.0 are pinned. jsdom 30.1.1 is an exactly pinned **test-only** dependency; its transitive versions and integrity hashes are locked. Install scripts are disabled by `.npmrc`. The build itself uses only Node standard-library modules. GitHub Actions are pinned to immutable commits of checkout v6 and setup-node v6.
-
-The first batch intentionally does not update the production analytics integration. The previous inline Universal Analytics snippet is retained as `docs/upstream-analytics.html` for reference, excluded from published output. Its presence alone does not establish the state of any other analytics integration or account.
+The old AngularJS 1.2.10, jQuery 1.10.2, jQuery UI 1.10.3, Firebase 1.0.2, AngularFire 0.7.0, AngularStrap, FastClick, and Font Awesome bundles are removed from the active code/build. Git commit `f3ef9ac` retains the original inventory and source for comparison.
