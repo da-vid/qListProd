@@ -6,7 +6,7 @@ The new client reads `lists/<listId>/<itemKey>` and `listAttrs/<listId>/listName
 
 New items use UUID-derived random keys and string `ID`. These do not collide through the old `max(ID)+1` pattern. Add retries reuse the same key and preserve an already-present item. Item edits/checks/reorders transact only that item; deletion requires the current checked state (already absent is an idempotent success) and stale edits cannot recreate it. Title edits are last-writer-wins. Changes to distinct item fields survive concurrent transactions. Simultaneous changes to the same field are last-committed-writer-wins, not collaborative text merging.
 
-Ordering preserves numeric Firebase priorities. A move computes a midpoint and changes only the moved item's priority. Equal priorities have a stable key tiebreak. If a midpoint cannot be represented, the UI reports it instead of rewriting the entire list. A full fractional-ranking migration is deferred. The UI supplies keyboard/touch up/down controls rather than drag-only controls.
+Ordering preserves numeric Firebase priorities. A move computes a midpoint and changes only the moved item's priority. Equal priorities have a stable key tiebreak. If a midpoint cannot be represented, the UI reports it instead of rewriting the entire list. A full fractional-ranking migration is deferred. The UI supplies mouse/touch drag handles plus keyboard Up/Down/Home/End controls. See the ordering gap and exact preservation rehearsal in [the readiness checkpoint](deployment.md#go-live-readiness-checkpoint--2026-10-01); current numeric-priority tests do not establish compatibility for all legacy priority types or tied numeric keys.
 
 ## Old open clients are not safe concurrent writers
 

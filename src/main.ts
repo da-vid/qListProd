@@ -1,5 +1,6 @@
 import "./style.css";
 import Sortable from "sortablejs";
+import { installScrollFades } from "./scroll-fades.ts";
 import { installListViewport } from "./list-viewport.ts";
 import {
   type Change,
@@ -116,6 +117,7 @@ reorderHelp.id = "reorder-help";
 const reorderStatus = element("span", "sr-only");
 reorderStatus.setAttribute("role", "status");
 const viewport = installListViewport(sticky, list);
+installScrollFades(sticky, list);
 new Sortable(list, {
   scroll: false,
   handle: ".drag-handle",

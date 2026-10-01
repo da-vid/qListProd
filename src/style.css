@@ -578,3 +578,33 @@ dialog .primary {
 .sticky-top button:focus-visible {
   outline-offset: -2px;
 }
+
+/* Decorative overlays never intercept scrolling, clicking, or dragging. */
+.list-edge-fade {
+  position: fixed;
+  height: 18px;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+.list-edge-fade.visible {
+  opacity: 0.85;
+}
+.edge-top {
+  background: linear-gradient(to bottom, #fcf0ad, #fcf0ad00);
+}
+.edge-bottom {
+  transform: translateY(-100%);
+  background: linear-gradient(to top, #fcf0ad, #fcf0ad00);
+}
+/* Keep the active row's text and focus outline above the decorative fades. */
+.item:focus-within {
+  position: relative;
+  z-index: 4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-edge-fade {
+    transition: none;
+  }
+}
