@@ -30,7 +30,7 @@ Example request body: `{"fixture":"gradient"}` (then `portrait` and `noise`). Th
 
 The parent connector can deploy and read logs but has no invoke action. CLI login is **not necessary for this text-only deployment path**. Prefer the existing Supabase Dashboard tester if the user can run a request using the existing project service-role authorization within their own session. Confirm the tester supports that authorization; its default anonymous key is deliberately rejected. No credentials need be copied into chat or saved on this Mac for a dashboard-run test.
 
-If automated invocation is required, request action-time permission for this exact scope before retrieving a privileged key: **Read the existing service-role key for only `qmpdinzendwpkqhtqskz`, use it solely in memory for a bounded set of requests to `qlist-photo-benchmark`, never print or persist it, and discard it immediately afterward. Create no new key, account, token or CLI login.** This is broader credential exposure than using the connected deployment tool, so do not infer approval merely from connecting Supabase. If no secure in-memory transfer path exists between tools, stop and use the user's dashboard instead.
+Do not retrieve, transmit or save the service-role key through chat/tool outputs. A simple chat approval is not a route for handling raw highly sensitive credentials. If the Dashboard tester requires a protected credential-selection or entry step, hand that exact step to the user in their existing authenticated session. Keep gateway JWT verification and the handler's admin check enabled. If an authorized session-based invocation route is unavailable, report that blocker rather than extracting credentials or weakening authentication.
 
 Transactional quota enforcement, storage cleanup and hosted text/photo failure isolation remain a subsequent implementation/test step. The packaging proof does not establish those properties.
 
@@ -41,3 +41,6 @@ Primary references:
 - [Supabase function limits](https://supabase.com/docs/guides/functions/limits)
 - [Supabase Dashboard testing](https://supabase.com/docs/guides/functions/quickstart-dashboard)
 - [Supabase function authentication](https://supabase.com/docs/guides/functions/auth)
+
+
+Full local regression rerun after the codec addition: 34 existing tests plus 23 photo/codec/handler tests passed (57 total); TypeScript, ordinary preview, photo preview, and normal release builds passed. No hosted invocation was performed.
