@@ -1,0 +1,13 @@
+{
+  "package": "@jsquash/jpeg",
+  "version": "1.6.0",
+  "decoderBytes": 166470,
+  "encoderBytes": 251524,
+  "textBundleBytes": 1169750,
+  "bundleSha256": "75a280f9a74ad26420d10cb68d8bbea9689e31b2e6bf6d2cd58c45aacdc27ab2",
+  "runtimeBinaryFetch": false,
+  "smokeTest": "passed",
+  "hostedDeploymentTested": false,
+  "deploymentPayloadBytes": 1824360,
+  "benchmarkExpiresAt": "2026-10-03T18:55:42.807Z"
+}

@@ -1,0 +1,360 @@
+{
+  "runtime": "v24.18.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "hostedTestPerformed": false,
+  "initCpuMs": 2.808,
+  "initWallMs": 1.2623749999999987,
+  "maxRSSMiB": 181.046875,
+  "warmP95CpuMs": 174.757,
+  "measurements": [
+    {
+      "round": 0,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 78.984,
+      "wallMs": 49.091833
+    },
+    {
+      "round": 0,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 36.69,
+      "wallMs": 29.163374999999988
+    },
+    {
+      "round": 0,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 170.284,
+      "wallMs": 161.08833300000003
+    },
+    {
+      "round": 1,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 49.321,
+      "wallMs": 39.90587499999998
+    },
+    {
+      "round": 1,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 31.661,
+      "wallMs": 26.833499999999958
+    },
+    {
+      "round": 1,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 174.757,
+      "wallMs": 168.282875
+    },
+    {
+      "round": 2,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 43.178,
+      "wallMs": 35.08325000000002
+    },
+    {
+      "round": 2,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 35.569,
+      "wallMs": 26.2845420000001
+    },
+    {
+      "round": 2,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 171.95,
+      "wallMs": 164.63933300000008
+    },
+    {
+      "round": 3,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 46.433,
+      "wallMs": 37.471124999999915
+    },
+    {
+      "round": 3,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 28.226,
+      "wallMs": 27.568040999999994
+    },
+    {
+      "round": 3,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 191.716,
+      "wallMs": 163.96558399999992
+    },
+    {
+      "round": 4,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 44.139,
+      "wallMs": 37.518542000000025
+    },
+    {
+      "round": 4,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 26.6,
+      "wallMs": 26.60287500000004
+    },
+    {
+      "round": 4,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 166.744,
+      "wallMs": 163.48016699999994
+    },
+    {
+      "round": 5,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 47.018,
+      "wallMs": 38.37866600000007
+    },
+    {
+      "round": 5,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 27.954,
+      "wallMs": 26.717041999999992
+    },
+    {
+      "round": 5,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 171.994,
+      "wallMs": 165.77120800000012
+    },
+    {
+      "round": 6,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 44.441,
+      "wallMs": 37.723166999999876
+    },
+    {
+      "round": 6,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 26.41,
+      "wallMs": 26.163958000000093
+    },
+    {
+      "round": 6,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 172.684,
+      "wallMs": 166.0229999999999
+    },
+    {
+      "round": 7,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 45.564,
+      "wallMs": 38.036749999999984
+    },
+    {
+      "round": 7,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 26.316,
+      "wallMs": 26.266083999999864
+    },
+    {
+      "round": 7,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 171.821,
+      "wallMs": 165.3471669999999
+    },
+    {
+      "round": 8,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 44.575,
+      "wallMs": 37.99299999999994
+    },
+    {
+      "round": 8,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 26.715,
+      "wallMs": 26.775041999999985
+    },
+    {
+      "round": 8,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 172.416,
+      "wallMs": 165.48029199999996
+    },
+    {
+      "round": 9,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 45.932,
+      "wallMs": 38.80483299999969
+    },
+    {
+      "round": 9,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 27.177,
+      "wallMs": 27.1571670000003
+    },
+    {
+      "round": 9,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 172.483,
+      "wallMs": 165.72787500000004
+    },
+    {
+      "round": 10,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 44.884,
+      "wallMs": 37.939082999999755
+    },
+    {
+      "round": 10,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 27.076,
+      "wallMs": 26.950250000000324
+    },
+    {
+      "round": 10,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 173.372,
+      "wallMs": 166.64916700000003
+    },
+    {
+      "round": 11,
+      "fixture": "gradient",
+      "status": "passed",
+      "sizes": {
+        "full": 19896,
+        "thumbnail": 1316
+      },
+      "cpuMs": 44.506,
+      "wallMs": 37.553499999999985
+    },
+    {
+      "round": 11,
+      "fixture": "portrait",
+      "status": "passed",
+      "sizes": {
+        "full": 15445,
+        "thumbnail": 1003
+      },
+      "cpuMs": 26.584,
+      "wallMs": 26.61824999999999
+    },
+    {
+      "round": 11,
+      "fixture": "noise",
+      "status": "This image is too complex for the free photo limit.",
+      "cpuMs": 171.294,
+      "wallMs": 164.81262500000003
+    }
+  ]
+}

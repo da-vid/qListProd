@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@imagemagick/magick-wasm": "0.0.44"
+    "@imagemagick/magick-wasm": "0.0.44",
+    "@jsquash/jpeg": "1.6.0"
   }
 }
