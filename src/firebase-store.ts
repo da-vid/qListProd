@@ -17,10 +17,17 @@ import {
   type ListState,
   type Store,
   ordered,
+  SavedMetadataWarning,
   validID,
   validate,
 } from "./model.ts";
 export const DEMO_PROJECT = "demo-qlist";
+export type DataNamespace = "" | "v2";
+function dataPath(namespace: DataNamespace, path: string): string {
+  if (namespace !== "" && namespace !== "v2")
+    throw new Error("Unsupported data namespace");
+  return namespace ? `${namespace}/${path}` : path;
+}
 export function emulatorDatabase(
   name: string,
   host = "127.0.0.1",
@@ -45,10 +52,11 @@ export async function reserveFirebaseList(
   db: Database,
   id: string,
   onlyNew: boolean,
+  namespace: DataNamespace = "",
 ): Promise<boolean> {
   if (!validID(id) || id === "new") throw new Error("Invalid list ID");
   const result = await runTransaction(
-    ref(db, `listClaims/${id}`),
+    ref(db, dataPath(namespace, `listClaims/${id}`)),
     (current) => (current === null ? true : undefined),
     { applyLocally: false },
   );
@@ -56,18 +64,24 @@ export async function reserveFirebaseList(
   if (!onlyNew) return true;
   // Legacy-shaped data may predate the claims registry. Never assign its ID to a generated list.
   const [items, attrs] = await Promise.all([
-    get(ref(db, `lists/${id}`)),
-    get(ref(db, `listAttrs/${id}`)),
+    get(ref(db, dataPath(namespace, `lists/${id}`))),
+    get(ref(db, dataPath(namespace, `listAttrs/${id}`))),
   ]);
   return !items.exists() && !attrs.exists();
 }
 export class FirebaseStore implements Store {
   readonly db: Database;
   readonly id: string;
-  constructor(db: Database, id: string) {
+  readonly namespace: DataNamespace;
+  constructor(db: Database, id: string, namespace: DataNamespace = "") {
     this.db = db;
     this.id = id;
+    dataPath(namespace, "");
+    this.namespace = namespace;
     if (!validID(id)) throw new Error("Invalid list ID");
+  }
+  private path(path: string) {
+    return dataPath(this.namespace, path);
   }
   subscribe(
     fn: (s: ListState) => void,
@@ -76,7 +90,7 @@ export class FirebaseStore implements Store {
   ) {
     let state: ListState = { title: "", items: [] };
     const a = onValue(
-      ref(this.db, `lists/${this.id}`),
+      ref(this.db, this.path(`lists/${this.id}`)),
       (snap) => {
         const items: Item[] = [];
         snap.forEach((child) => {
@@ -96,7 +110,7 @@ export class FirebaseStore implements Store {
       error,
     );
     const b = onValue(
-      ref(this.db, `listAttrs/${this.id}/listName`),
+      ref(this.db, this.path(`listAttrs/${this.id}/listName`)),
       (snap) => {
         state = {
           ...state,
@@ -117,34 +131,41 @@ export class FirebaseStore implements Store {
   }
   async apply(change: Change) {
     await this.write(change);
-    await runTransaction(
-      ref(this.db, `listAttrs/${this.id}/lastMod`),
-      (current) =>
-        Math.max(
-          typeof current === "number" ? current : 0,
-          Math.floor(Date.now() / 1000),
-        ),
-      { applyLocally: false },
-    );
+    try {
+      await runTransaction(
+        ref(this.db, this.path(`listAttrs/${this.id}/lastMod`)),
+        (current) =>
+          Math.max(
+            typeof current === "number" ? current : 0,
+            Math.floor(Date.now() / 1000),
+          ),
+        { applyLocally: false },
+      );
+    } catch {
+      throw new SavedMetadataWarning();
+    }
   }
   private async write(change: Change) {
     validate(change);
     if (change.type === "title") {
-      await set(ref(this.db, `listAttrs/${this.id}/listName`), change.title);
+      await set(
+        ref(this.db, this.path(`listAttrs/${this.id}/listName`)),
+        change.title,
+      );
       return;
     }
     if (change.type === "add") {
       const { key, priority, ...item } = change.item;
       // Random UUID-derived item key, reused on retry. Never derive identity from list length.
       const result = await runTransaction(
-        ref(this.db, `lists/${this.id}/${key}`),
+        ref(this.db, this.path(`lists/${this.id}/${key}`)),
         (current) => current ?? { ...item, ".priority": priority },
         { applyLocally: false },
       );
       if (!result.committed) throw new Error("Could not add item. Retry.");
       return;
     }
-    const target = ref(this.db, `lists/${this.id}/${change.key}`);
+    const target = ref(this.db, this.path(`lists/${this.id}/${change.key}`));
     // Keep a listener alive while transacting: an empty SDK cache is not evidence of deletion.
     let stop = () => {};
     await new Promise<void>((resolve, reject) => {

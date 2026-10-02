@@ -1,5 +1,9 @@
 # Deployment, verification, and rollback
 
+## Current preparation status — 2026-10-02
+
+The owner has confirmed the production project/database and provided its active rules and a private export. Private restore/write rehearsals have been completed outside Git. Explicit release, maintenance and same-schema read-only recovery artifacts, a gated migration runner and synthetic CI checks are now prepared. See [the release runbook](release-runbook.md) for the current procedure and evidence limits. Production is unchanged and automatic production builds remain blocked. The dated readiness notes below record earlier findings and are superseded where the current runbook records completed preparation.
+
 ## Verified production baseline (2026-10-01)
 
 - Repository: https://github.com/da-vid/qListProd

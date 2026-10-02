@@ -1,0 +1,25 @@
+{
+  "format": 1,
+  "target": "https://qwiklist.firebaseio.com",
+  "projectId": "project-8156335338801733535",
+  "namespace": "v2",
+  "commit": "COPY_FROM_CLEAN_RELEASE_REVIEW",
+  "candidateRulesSHA256": "COPY_FROM_CLEAN_RELEASE_REVIEW",
+  "artifacts": {
+    "modern": "COPY_FROM_CLEAN_RELEASE_REVIEW",
+    "maintenance": "COPY_FROM_CLEAN_RELEASE_REVIEW",
+    "rollback": "COPY_FROM_CLEAN_RELEASE_REVIEW"
+  },
+  "actions": [
+    "freeze",
+    "copy",
+    "verify",
+    "enable",
+    "freeze-modern",
+    "verify-recovery"
+  ],
+  "expiresAt": "SET_APPROVED_UTC_TIME_WITHIN_24_HOURS",
+  "maintenanceAccepted": false,
+  "legacyOfflineAccepted": false,
+  "releaseQAApproved": false
+}

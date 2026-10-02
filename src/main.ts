@@ -3,6 +3,7 @@ import Sortable from "sortablejs";
 import { installScrollFades } from "./scroll-fades.ts";
 import { installListViewport } from "./list-viewport.ts";
 import {
+  SavedMetadataWarning,
   type Change,
   type Item,
   type ListState,
@@ -24,6 +25,8 @@ let store: Store,
   dragging = false,
   failed: Change[] = [];
 const local = mode === "preview";
+const production = mode === "release";
+let writesAllowed = !production;
 const drafts = new Set<HTMLInputElement>();
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -53,7 +56,9 @@ const notice = element(
     ? "Development preview · Lists stay in this browser. Links do not sync across devices."
     : mode === "staging"
       ? "Staging preview · Shared test lists only. Your existing qList lists are unchanged."
-      : "Local Firebase emulator · Synthetic data only.",
+      : production
+        ? "qList has been updated. Older tabs need a refresh. Copy any unsaved text first; old offline edits do not transfer automatically."
+        : "Local Firebase emulator · Synthetic data only.",
 );
 const shell = element("div", "shell");
 const header = element("header");
@@ -306,29 +311,40 @@ nav.append(
 );
 function updateStatus() {
   status.className = "status" + (!online ? " offline" : "");
-  status.textContent = !ready
-    ? "Connecting…"
-    : failed.length
-      ? "Changes need attention"
-      : drafts.size
-        ? "Editing…"
-        : pending
-          ? online
-            ? "Saving…"
-            : "Offline · changes waiting"
-          : local
-            ? "Saved on this device"
-            : online
-              ? "All changes saved"
-              : "Offline · keep this tab open";
+  status.textContent =
+    production && !writesAllowed
+      ? "Maintenance · editing paused"
+      : !ready
+        ? "Connecting…"
+        : failed.length
+          ? "Changes need attention"
+          : drafts.size
+            ? "Editing…"
+            : pending
+              ? online
+                ? "Saving…"
+                : "Offline · changes waiting"
+              : local
+                ? "Saved on this device"
+                : online
+                  ? "All changes saved"
+                  : "Offline · keep this tab open";
 }
 async function save(change: Change) {
+  if (!writesAllowed) {
+    failed.push(change);
+    showError(
+      "Editing is paused for maintenance. Keep this tab open and copy any unsaved text before refreshing.",
+    );
+    updateStatus();
+    return;
+  }
   pending++;
   updateStatus();
   try {
     await store.apply(change);
   } catch (e) {
-    failed.push(change);
+    if (!(e instanceof SavedMetadataWarning)) failed.push(change);
     showError((e as Error).message || "Could not save. Please retry.");
   } finally {
     pending--;
@@ -378,6 +394,8 @@ function bindEditable(
 }
 function render(next: ListState, discardEdits = false) {
   state = next;
+  title.disabled = !ready || !writesAllowed;
+  add.disabled = !ready || !writesAllowed;
   // Retain fresh server state, but let Sortable own row positions until release.
   if (dragging) return;
   document.title = (state.title || "qList") + " · quick lists";
@@ -397,7 +415,7 @@ function render(next: ListState, discardEdits = false) {
   clearSlot.classList.toggle("available", canClear);
   clearSlot.inert = !canClear;
   clearSlot.setAttribute("aria-hidden", String(!canClear));
-  clear.disabled = !canClear;
+  clear.disabled = !canClear || !writesAllowed;
   empty.hidden = state.items.length > 0;
   const existing = new Map(
     [...list.children].map((x) => [
@@ -473,13 +491,16 @@ function render(next: ListState, discardEdits = false) {
     }
     row.className = "item" + (item.checked ? " done" : "");
     const inputs = row.querySelectorAll("input");
+    inputs[0].disabled = !writesAllowed;
+    inputs[1].disabled = !writesAllowed;
     inputs[0].checked = item.checked;
     inputs[0].setAttribute("aria-label", `Complete ${item.name}`);
     if (discardEdits || document.activeElement !== inputs[1])
       inputs[1].value = item.name;
     inputs[1].setAttribute("aria-label", `Edit ${item.name}`);
     const buttons = row.querySelectorAll("button");
-    buttons[0].disabled = !item.checked;
+    buttons[0].disabled = !item.checked || !writesAllowed;
+    buttons[1].disabled = !writesAllowed;
     buttons[0].hidden = !item.checked;
     buttons[0].setAttribute("aria-label", `Delete ${item.name}`);
     buttons[1].setAttribute("aria-label", `Reorder ${item.name}`);
@@ -526,6 +547,7 @@ window.addEventListener("beforeunload", (e) => {
 });
 async function start() {
   if (
+    !production &&
     ["qlist.cc", "www.qlist.cc", "qlist.netlify.app"].includes(
       location.hostname,
     )
@@ -547,7 +569,41 @@ async function start() {
     const { FirebaseStore, emulatorDatabase, reserveFirebaseList } =
       await import("./firebase-store.ts");
     let db;
-    if (mode === "staging") {
+    const namespace = production ? "v2" : "";
+    if (production) {
+      const { productionDatabase, watchWrites } =
+        await import("./production-store.ts");
+      db = productionDatabase(crypto.randomUUID(), location.hostname);
+      let accessRevision = 0;
+      await new Promise<void>((resolve) => {
+        watchWrites(db!, (enabled) => {
+          const revision = ++accessRevision;
+          writesAllowed = false;
+          render(state);
+          void (async () => {
+            // A custom URL opened during maintenance may not yet have a claim.
+            if (enabled && requested !== null)
+              await reserveFirebaseList(db!, requested, false, namespace);
+            if (revision === accessRevision) {
+              writesAllowed = enabled;
+              render(state);
+              resolve();
+            }
+          })().catch(() => {
+            if (revision === accessRevision) {
+              showError(
+                "Editing is paused. Keep any unsaved text and refresh when maintenance is complete.",
+              );
+              resolve();
+            }
+          });
+        });
+      });
+      if (!writesAllowed && requested === null)
+        throw new Error(
+          "New lists are paused for maintenance. Existing list links remain available. Copy unsaved text before refreshing.",
+        );
+    } else if (mode === "staging") {
       const { stagingDatabase } = await import("./staging-store.ts");
       db = stagingDatabase(crypto.randomUUID(), location.hostname);
     } else if (
@@ -559,18 +615,19 @@ async function start() {
     id =
       requested ??
       (await reserveGeneratedID((candidate) =>
-        reserveFirebaseList(db, candidate, true),
+        reserveFirebaseList(db, candidate, true, namespace),
       ));
-    if (requested !== null) await reserveFirebaseList(db, id, false);
-    store = new FirebaseStore(db, id);
+    if (requested !== null && writesAllowed)
+      await reserveFirebaseList(db, id, false, namespace);
+    store = new FirebaseStore(db, id, namespace);
   }
   const canonical = `/${encodeURIComponent(id)}`;
   if (location.pathname !== canonical || location.search || location.hash)
     history.replaceState(null, "", canonical);
   document.cookie = `lastList=${encodeURIComponent(id)}; Max-Age=5184000; Path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
   ready = true;
-  add.disabled = false;
-  title.disabled = false;
+  add.disabled = !writesAllowed;
+  title.disabled = !writesAllowed;
   store.subscribe(
     render,
     (b) => {

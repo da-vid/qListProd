@@ -18,7 +18,13 @@
     "test:staging-rules": "firebase emulators:exec --config firebase.staging-test.json --only database --project demo-qlist \"node --test --test-timeout=20000 test/staging-rules.integration.ts\"",
     "build:staging": "node scripts/build.mjs --staging",
     "test:staging-build": "node --test test/staging-build.integration.ts",
-    "test:staging-cloud": "node --test --test-timeout=30000 test/staging-cloud.integration.ts"
+    "test:staging-cloud": "node --test --test-timeout=30000 test/staging-cloud.integration.ts",
+    "test:candidate-rules": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/candidate-rules.integration.ts\"",
+    "build:release": "node scripts/build-release.mjs modern && node scripts/build-release.mjs maintenance && node scripts/build-release.mjs rollback",
+    "test:release-build": "node --test test/release-build.integration.ts",
+    "test:migration": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/migration.integration.ts\"",
+    "test:release-ui": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/release-ui.integration.ts\"",
+    "release:review": "node scripts/review-release.mjs"
   },
   "devDependencies": {
     "@types/node": "24.19.0",

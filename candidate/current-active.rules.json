@@ -1,0 +1,17 @@
+{
+  "rules": {
+    ".read": false,
+    "lists": {
+      "$list": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "listAttrs": {
+      "$list": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}

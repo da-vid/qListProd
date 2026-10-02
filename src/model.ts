@@ -217,3 +217,13 @@ export function validate(change: Change): void {
   )
     throw new Error("Enter an item between 1 and 1,000 characters.");
 }
+
+// The user operation is committed: retrying it could overwrite a newer edit.
+export class SavedMetadataWarning extends Error {
+  constructor() {
+    super(
+      "Your change was saved, but its activity timestamp could not be updated. Do not retry that change; check the current list before editing again.",
+    );
+    this.name = "SavedMetadataWarning";
+  }
+}
