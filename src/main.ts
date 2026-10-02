@@ -1,4 +1,5 @@
 import "./style.css";
+import { installAboutPrivacy } from "./about.ts";
 import Sortable from "sortablejs";
 import { installScrollFades } from "./scroll-fades.ts";
 import { installListViewport } from "./list-viewport.ts";
@@ -186,7 +187,7 @@ empty.append(
   element("strong", "", "just get started"),
   element("p", "", "no sign up, no spam. start your list right here!"),
 );
-const bottom = element("div", "bottom");
+const bottom = element("footer", "bottom");
 const progress = element("span");
 const clear = button("Clear all checked", "text-button", () => {
   const checkedCount = state.items.filter((x) => x.checked).length;
@@ -224,6 +225,7 @@ if (!production) app.append(notice);
 app.append(sticky, shell);
 const dialog = element("dialog");
 app.append(dialog);
+installAboutPrivacy(app, bottom);
 function labelDialog() {
   const heading = dialog.querySelector("h2")!;
   const description = dialog.querySelector("p")!;

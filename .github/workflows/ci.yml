@@ -27,6 +27,7 @@ jobs:
       - run: npm run test:emulator
       - run: npm run test:staging-rules
       - run: npm run test:candidate-rules
+      - run: npm run test:production-rules
       - run: npm run test:migration
       - run: npm run test:release-ui
       - run: npm run build:staging && npm run test:staging-build

@@ -608,3 +608,17 @@ dialog .primary {
     transition: none;
   }
 }
+
+.about-link {
+  font-size: 11px;
+  padding: 8px 0 8px 8px;
+  white-space: nowrap;
+}
+.about-dialog .notice-date {
+  font-size: 13px;
+  color: #666;
+}
+.about-dialog h3 {
+  margin: 22px 0 8px;
+  font-size: 17px;
+}

@@ -1,0 +1,68 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "lists": {
+      "$list": {
+        ".read": false
+      }
+    },
+    "listAttrs": {
+      "$list": {
+        ".read": false
+      }
+    },
+    "v2Control": {
+      ".read": false,
+      ".write": false,
+      "writesEnabled": {
+        ".read": true
+      }
+    },
+    "v2": {
+      "lists": {
+        "$list": {
+          ".read": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+          "$item": {
+            ".write": "root.child('v2Control/writesEnabled').val() === true && $list.length > 0 && $list.length <= 768 && $list !== 'new' && root.child('v2/listClaims').child($list).val() === true && (data.exists() || !newData.exists() || $item.matches(/^[a-f0-9]{32}$/)) && (newData.exists() || !data.exists() || data.child('checked').val() === true)",
+            ".validate": "newData.hasChildren(['ID','name','checked'])",
+            "ID": {
+              ".validate": "(newData.isString() || newData.isNumber()) && (data.exists() ? newData.val() === data.val() : newData.isString() && newData.val() === $item) && newData.getPriority() === null"
+            },
+            "name": {
+              ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 1000 && newData.val().matches(/.*[^ ].*/) && newData.getPriority() === null"
+            },
+            "checked": {
+              ".validate": "newData.isBoolean() && newData.getPriority() === null"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      },
+      "listAttrs": {
+        "$list": {
+          ".read": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+          "listName": {
+            ".write": "root.child('v2Control/writesEnabled').val() === true && $list.length > 0 && $list.length <= 768 && $list !== 'new' && root.child('v2/listClaims').child($list).val() === true && newData.exists()",
+            ".validate": "newData.isString() && newData.val().length <= 160 && newData.getPriority() === null"
+          },
+          "lastMod": {
+            ".write": "root.child('v2Control/writesEnabled').val() === true && $list.length > 0 && $list.length <= 768 && $list !== 'new' && root.child('v2/listClaims').child($list).val() === true && newData.exists()",
+            ".validate": "newData.isNumber() && newData.val() >= 0 && (newData.val() === data.val() || newData.val() <= now / 1000 + 300) && (!data.exists() || newData.val() >= data.val()) && newData.getPriority() === null"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      },
+      "listClaims": {
+        "$list": {
+          ".read": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+          ".write": "root.child('v2Control/writesEnabled').val() === true && $list.length > 0 && $list.length <= 768 && $list !== 'new' && !data.exists() && newData.val() === true && newData.getPriority() === null"
+        }
+      }
+    }
+  }
+}

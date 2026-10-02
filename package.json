@@ -24,7 +24,8 @@
     "test:release-build": "node --test test/release-build.integration.ts",
     "test:migration": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/migration.integration.ts\"",
     "test:release-ui": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/release-ui.integration.ts\"",
-    "release:review": "node scripts/review-release.mjs"
+    "release:review": "node scripts/review-release.mjs",
+    "test:production-rules": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/production-rules.integration.ts\""
   },
   "devDependencies": {
     "@types/node": "24.19.0",

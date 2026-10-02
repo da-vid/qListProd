@@ -476,3 +476,45 @@ test("built UI displays legacy priority fixtures exactly and appends below strin
     }
   }
 });
+
+test("About & Privacy is optional, dismissible and returns focus without recording acceptance", async () => {
+  const dom = await ui();
+  try {
+    const d = dom.window.document;
+    const link = d.querySelector<HTMLAnchorElement>("footer .about-link")!;
+    const notice = d.querySelector<HTMLDialogElement>(".about-dialog")!;
+    assert(link);
+    assert.equal(notice.open, false);
+    const stored = JSON.stringify(dom.window.localStorage);
+    const cookie = d.cookie;
+    link.focus();
+    link.click();
+    assert.equal(notice.open, true);
+    assert.equal(notice.getAttribute("aria-labelledby"), "about-heading");
+    assert.equal(d.activeElement, d.getElementById("about-heading"));
+    assert.equal(notice.querySelectorAll("input,form").length, 0);
+    assert.deepEqual(
+      [...notice.querySelectorAll("button")].map((b) => b.textContent),
+      ["Close"],
+    );
+    assert.match(notice.textContent!, /Effective October 1, 2026/);
+    assert.match(notice.textContent!, /Older copies may remain in backups\./);
+    assert.match(notice.textContent!, /Do Not Track or Global Privacy Control/);
+    notice.querySelector<HTMLButtonElement>("button")!.click();
+    assert.equal(notice.open, false);
+    assert.equal(d.activeElement, link);
+    link.click();
+    // Native dialogs dispatch cancel when Escape is pressed; JSDOM needs the event.
+    notice.dispatchEvent(new dom.window.Event("cancel", { cancelable: true }));
+    assert.equal(notice.open, false);
+    assert.equal(d.activeElement, link);
+    assert.equal(JSON.stringify(dom.window.localStorage), stored);
+    assert.equal(d.cookie, cookie);
+    assert.equal(
+      (d.querySelector(".add button") as HTMLButtonElement).disabled,
+      false,
+    );
+  } finally {
+    dom.window.close();
+  }
+});
