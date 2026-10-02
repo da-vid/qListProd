@@ -166,6 +166,13 @@ new Sortable(list, {
     render(state);
   },
 });
+function welcomeIcons(...glyphs: string[]) {
+  const row = element("div", "welcome-icons");
+  row.setAttribute("aria-hidden", "true");
+  for (const glyph of glyphs)
+    row.append(element("span", "welcome-icon", glyph));
+  return row;
+}
 const empty = element("div", "empty");
 empty.append(
   element("strong", "", "welcome to your qList!"),
@@ -174,6 +181,7 @@ empty.append(
     "",
     "qList is great for shopping lists, to-do lists, or any other quick list you need",
   ),
+  welcomeIcons("\uf007", "\uf178", "\uf0c0"),
   element("strong", "", "easy to share"),
   element(
     "p",
@@ -182,8 +190,10 @@ empty.append(
       ? "open this preview link in another tab to try updates together; different devices do not share preview lists"
       : "send this page’s URL to share and collaborate",
   ),
+  welcomeIcons("\uf108", "\uf109", "\uf10a", "\uf10b"),
   element("strong", "", "use it anywhere"),
   element("p", "", "works on your computer, phone, and tablet’s web browser"),
+  welcomeIcons("\uf0e7"),
   element("strong", "", "just get started"),
   element("p", "", "no sign up, no spam. start your list right here!"),
 );

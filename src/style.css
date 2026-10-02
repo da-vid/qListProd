@@ -1,3 +1,11 @@
+/* Original, unmodified Font Awesome 4.4.0 artwork; license: /assets/fontawesome-license.txt */
+@font-face {
+  font-family: "qList Welcome Icons";
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url("./assets/fontawesome-webfont.woff") format("woff");
+}
 @font-face {
   font-family: Lato;
   font-style: normal;
@@ -627,4 +635,22 @@ dialog .primary {
 .about-dialog h3 {
   margin: 22px 0 8px;
   font-size: 17px;
+}
+
+.welcome-icons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+  color: #b0a879;
+}
+.welcome-icon {
+  font-family: "qList Welcome Icons";
+  font-size: 23px;
+  line-height: 1;
+  font-style: normal;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
