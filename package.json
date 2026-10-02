@@ -1,0 +1,46 @@
+{
+  "name": "qlist-development-baseline",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "packageManager": "npm@11.16.0",
+  "scripts": {
+    "dev": "vite --mode preview",
+    "dev:emulator": "vite --mode emulator",
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test --test-timeout=15000 test/*.test.ts",
+    "test:emulator": "firebase emulators:exec --only database --project demo-qlist \"node --test --test-timeout=15000 test/firebase.integration.ts\"",
+    "check": "npm run typecheck && npm run build && npm test",
+    "test:staging-rules": "firebase emulators:exec --config firebase.staging-test.json --only database --project demo-qlist \"node --test --test-timeout=20000 test/staging-rules.integration.ts\"",
+    "build:staging": "node scripts/build.mjs --staging",
+    "test:staging-build": "node --test test/staging-build.integration.ts",
+    "test:staging-cloud": "node --test --test-timeout=30000 test/staging-cloud.integration.ts",
+    "test:candidate-rules": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/candidate-rules.integration.ts\"",
+    "build:release": "node scripts/build-release.mjs modern && node scripts/build-release.mjs maintenance && node scripts/build-release.mjs rollback",
+    "test:release-build": "node --test test/release-build.integration.ts",
+    "test:migration": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/migration.integration.ts\"",
+    "test:release-ui": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/release-ui.integration.ts\"",
+    "release:review": "node scripts/review-release.mjs",
+    "test:production-rules": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/production-rules.integration.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "24.19.0",
+    "@types/sortablejs": "1.15.9",
+    "firebase-tools": "15.32.1",
+    "jsdom": "30.1.1",
+    "prettier": "3.9.9",
+    "typescript": "7.0.2",
+    "vite": "8.3.2"
+  },
+  "dependencies": {
+    "firebase": "12.19.0",
+    "sortablejs": "1.15.7"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.5"
+  }
+}

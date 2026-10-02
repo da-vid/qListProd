@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+.DS_Store
+
+*-debug.log
+.firebase/
+
+dist-staging/
+
+release-artifacts/

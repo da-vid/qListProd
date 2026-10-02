@@ -1,0 +1,40 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "lists": {
+      "$list": {
+        ".read": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+        "$item": {
+          ".write": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+          ".validate": "newData.hasChildren(['ID','name','checked']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 1000 && newData.child('checked').isBoolean()",
+          "ID": {},
+          "name": {},
+          "checked": {},
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "listAttrs": {
+      "$list": {
+        ".read": true,
+        "listName": {
+          ".write": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+          ".validate": "newData.isString() && newData.val().length <= 160"
+        },
+        "lastMod": {
+          ".write": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+          ".validate": "newData.isNumber() && newData.val() >= 0"
+        }
+      }
+    },
+    "listClaims": {
+      "$list": {
+        ".read": "$list.length > 0 && $list.length <= 768 && $list !== 'new'",
+        ".write": "$list.length > 0 && $list.length <= 768 && $list !== 'new' && !data.exists() && newData.val() === true"
+      }
+    }
+  }
+}
