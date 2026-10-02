@@ -56,9 +56,7 @@ const notice = element(
     ? "Development preview · Lists stay in this browser. Links do not sync across devices."
     : mode === "staging"
       ? "Staging preview · Shared test lists only. Your existing qList lists are unchanged."
-      : production
-        ? "qList has been updated. Older tabs need a refresh. Copy any unsaved text first; old offline edits do not transfer automatically."
-        : "Local Firebase emulator · Synthetic data only.",
+      : "Local Firebase emulator · Synthetic data only.",
 );
 const shell = element("div", "shell");
 const header = element("header");
@@ -212,25 +210,18 @@ clear.disabled = true;
 controls.append(title, addForm, clearSlot);
 sticky.append(header, controls);
 bottom.append(progress);
-const note = element(
-  "p",
-  "note",
-  local
-    ? "Your preview lists are saved on this device, in this browser. Open the same link in another tab to try updates together. Clearing browser data removes these sample lists."
-    : "Anyone with a list link can edit it. Keep this tab open until changes are saved. Offline changes are held in this session only; do not close or reload while changes are pending.",
-);
-main.append(
-  errorBox,
-  reorderHelp,
-  reorderStatus,
-  list,
-  empty,
-  meta,
-  bottom,
-  note,
-);
+main.append(errorBox, reorderHelp, reorderStatus, list, empty, meta, bottom);
+if (local)
+  main.append(
+    element(
+      "p",
+      "note",
+      "Your preview lists are saved on this device, in this browser. Open the same link in another tab to try updates together. Clearing browser data removes these sample lists.",
+    ),
+  );
 shell.append(main);
-app.append(notice, sticky, shell);
+if (!production) app.append(notice);
+app.append(sticky, shell);
 const dialog = element("dialog");
 app.append(dialog);
 function labelDialog() {
