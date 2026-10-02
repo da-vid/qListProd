@@ -1,0 +1,8 @@
+{
+  "name": "qlist-photo-processing-lab",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@imagemagick/magick-wasm": "0.0.44"
+  }
+}

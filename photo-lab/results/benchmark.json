@@ -1,0 +1,222 @@
+{
+  "runtime": "v24.21.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "wasmBytes": 15447097,
+  "hostedTestPerformed": false,
+  "coldMaxCpuMs": 225.684,
+  "warmP95CpuMs": 67.81,
+  "maxRSSMiB": 171.34375,
+  "results": [
+    {
+      "fixture": "photo-lab/fixtures/gradient.jpg",
+      "inputBytes": 24186,
+      "fullBytes": 24215,
+      "thumbnailBytes": 1336,
+      "measures": [
+        {
+          "cpuMs": 182.144,
+          "wallMs": 93.78004200000001,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 36.631,
+          "wallMs": 31.000666999999993,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 35.28,
+          "wallMs": 31.725291,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 32.289,
+          "wallMs": 31.474041999999997,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 30.827,
+          "wallMs": 30.60670799999997,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 32.181,
+          "wallMs": 30.36583300000001,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 31.323,
+          "wallMs": 30.545375000000035,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 32.083,
+          "wallMs": 30.630124999999964,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 35.499,
+          "wallMs": 30.63495800000004,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 31.81,
+          "wallMs": 30.995542,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 35.104,
+          "wallMs": 31.04133300000001,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 40.37,
+          "wallMs": 31.616749999999968,
+          "status": "passed"
+        }
+      ],
+      "maxRSSMiB": 169.875,
+      "totalProcessCpuMs": 619.549
+    },
+    {
+      "fixture": "photo-lab/fixtures/noise.jpg",
+      "inputBytes": 426972,
+      "fullBytes": 0,
+      "thumbnailBytes": 0,
+      "measures": [
+        {
+          "cpuMs": 225.684,
+          "wallMs": 137.835083,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 71.323,
+          "wallMs": 60.78645799999998,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 62.666,
+          "wallMs": 58.98400000000004,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 62.472,
+          "wallMs": 60.712333,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 66.069,
+          "wallMs": 60.99516699999998,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 62.035,
+          "wallMs": 59.89504199999999,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 59.524,
+          "wallMs": 59.43020800000005,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 61.079,
+          "wallMs": 59.725415999999996,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 64.478,
+          "wallMs": 60.09591599999999,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 65.542,
+          "wallMs": 59.860667000000035,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 60.399,
+          "wallMs": 59.52983299999994,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        },
+        {
+          "cpuMs": 67.81,
+          "wallMs": 59.67720799999995,
+          "status": "This image is too complex for the free photo limit. Choose a smaller image."
+        }
+      ],
+      "maxRSSMiB": 171.34375,
+      "totalProcessCpuMs": 995.763
+    },
+    {
+      "fixture": "photo-lab/fixtures/portrait.jpg",
+      "inputBytes": 18041,
+      "fullBytes": 18030,
+      "thumbnailBytes": 1111,
+      "measures": [
+        {
+          "cpuMs": 175.085,
+          "wallMs": 87.00441700000002,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 29.107,
+          "wallMs": 23.965417000000002,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 28.827,
+          "wallMs": 23.343875000000025,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 26.064,
+          "wallMs": 23.271792000000005,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 23.922,
+          "wallMs": 23.282916,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 25.412,
+          "wallMs": 23.27891599999998,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 23.818,
+          "wallMs": 23.347417000000007,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 24.867,
+          "wallMs": 22.920165999999995,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 37.014,
+          "wallMs": 24.100833000000023,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 23.913,
+          "wallMs": 22.90983399999999,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 23.633,
+          "wallMs": 22.512042000000008,
+          "status": "passed"
+        },
+        {
+          "cpuMs": 30.316,
+          "wallMs": 22.462249999999983,
+          "status": "passed"
+        }
+      ],
+      "maxRSSMiB": 170.734375,
+      "totalProcessCpuMs": 537.966
+    }
+  ]
+}

@@ -8,6 +8,9 @@
   },
   "packageManager": "npm@11.16.0",
   "scripts": {
+    "dev:photos": "vite --mode photo-preview --port 4174 --open /photos.html",
+    "build:photos": "node scripts/build-photos.mjs",
+    "test:photos": "node --test --test-timeout=15000 photo-lab/*.test.ts",
     "dev": "vite --mode preview",
     "dev:emulator": "vite --mode emulator",
     "build": "node scripts/build.mjs",

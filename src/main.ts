@@ -25,7 +25,7 @@ let store: Store,
   pending = 0,
   dragging = false,
   failed: Change[] = [];
-const local = mode === "preview";
+const local = mode === "preview" || mode === "photo-preview";
 const production = mode === "release";
 let writesAllowed = !production;
 const drafts = new Set<HTMLInputElement>();
@@ -550,6 +550,11 @@ window.addEventListener("beforeunload", (e) => {
 });
 async function start() {
   if (
+    mode === "photo-preview" &&
+    !["localhost", "127.0.0.1"].includes(location.hostname)
+  )
+    throw new Error("The photo prototype runs only on localhost.");
+  if (
     !production &&
     ["qlist.cc", "www.qlist.cc", "qlist.netlify.app"].includes(
       location.hostname,
@@ -558,7 +563,10 @@ async function start() {
     throw new Error(
       "This development build cannot run on the production site.",
     );
-  const requested = routeRequest(location.pathname, document.cookie);
+  const requested =
+    mode === "photo-preview"
+      ? "PhotoDemo"
+      : routeRequest(location.pathname, document.cookie);
   let id: string;
   if (local) {
     id =

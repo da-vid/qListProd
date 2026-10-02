@@ -1,4 +1,7 @@
 node_modules/
+node_modules
+dist-photos/
+.photo-cache/
 dist/
 .env
 .env.*
