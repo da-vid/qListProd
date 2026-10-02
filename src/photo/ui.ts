@@ -25,6 +25,7 @@ export function installPhotoUI(
       message: HTMLElement;
       thumb?: string;
       lifetime: AbortController;
+      revision: number;
     }
   >();
   const cleanupQueue = new Set<string>();
@@ -66,10 +67,7 @@ export function installPhotoUI(
     cleanupQueue.add(key);
     cleanupStatus();
     try {
-      await run(async (signal) => {
-        const photo = await adapter.get(key, signal);
-        if (photo) await adapter.remove(key, photo.version, signal);
-      });
+      await run((signal) => adapter.deleteItem(key, signal));
       cleanupQueue.delete(key);
     } catch {
       /* Keep only a local retry marker; do not roll back the text deletion. */
@@ -79,6 +77,7 @@ export function installPhotoUI(
   function thumbnail(key: string, record?: PhotoRecord) {
     const entry = rows.get(key);
     if (!entry) return;
+    entry.revision++;
     if (entry.thumb) win.URL.revokeObjectURL(entry.thumb);
     entry.bar.querySelector(".photo-thumbnail")?.remove();
     entry.thumb = undefined;
@@ -101,17 +100,19 @@ export function installPhotoUI(
   async function refresh(key: string) {
     const entry = rows.get(key);
     if (!entry) return;
+    const revision = ++entry.revision;
     try {
       const p = await run(
         (signal) => adapter.get(key, signal),
         entry.lifetime.signal,
       );
-      if (rows.get(key) === entry) {
+      if (rows.get(key) === entry && entry.revision === revision) {
         thumbnail(key, p);
         report(key, "");
       }
     } catch (e) {
-      if (!entry.lifetime.signal.aborted) report(key, error(e));
+      if (!entry.lifetime.signal.aborted && entry.revision === revision)
+        report(key, error(e));
     }
   }
   function open(key: string, expanded = false) {
@@ -299,7 +300,13 @@ export function installPhotoUI(
         message,
       );
       row.append(bar);
-      rows.set(key, { row, bar, message, lifetime: new AbortController() });
+      rows.set(key, {
+        row,
+        bar,
+        message,
+        lifetime: new AbortController(),
+        revision: 0,
+      });
       void refresh(key);
     });
     for (const [key, entry] of rows)

@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   MockPhotos,
+  FULL_LIMIT,
+  THUMB_LIMIT,
   bounded,
   type PreparedPhoto,
 } from "../src/photo/adapter.ts";
@@ -87,6 +89,8 @@ test("list allowlist, quota, paused service, rate and timeout fail closed", asyn
     "paused",
     "quota",
     "rate",
+    "forbidden",
+    "server",
     "timeout",
   ] as const) {
     const mock = new MockPhotos();
@@ -101,4 +105,60 @@ test("timeout also bounds an adapter which ignores cancellation", async () => {
     bounded(() => new Promise(() => {}), 15),
     /timed out/,
   );
+});
+test("deletion fences an initial upload even when its caller never cancels", async () => {
+  const mock = new MockPhotos();
+  const raw = await photo.full.arrayBuffer();
+  const full = new Blob([raw]);
+  let release!: (data: ArrayBuffer) => void;
+  Object.defineProperty(full, "arrayBuffer", {
+    value: () =>
+      new Promise<ArrayBuffer>((resolve) => {
+        release = resolve;
+      }),
+  });
+  const pending = mock.put("item", null, { ...photo, full }, signal());
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  await mock.deleteItem("item", signal());
+  release(raw);
+  await assert.rejects(pending, /deleted/);
+  await assert.rejects(mock.put("item", null, photo, signal()), /deleted/);
+  await mock.deleteItem("item", signal());
+  assert.equal(mock.records.size, 0);
+  assert.equal(mock.used, 0);
+  assert.equal(mock.reserved, 0);
+});
+test("full/thumbnail output limits reject before reading bytes and keep accounting unchanged", async () => {
+  const mock = new MockPhotos();
+  for (const [field, size] of [
+    ["full", FULL_LIMIT + 1],
+    ["thumbnail", THUMB_LIMIT + 1],
+  ] as const) {
+    const blob = new Blob([new Uint8Array(size)]);
+    let read = false;
+    Object.defineProperty(blob, "arrayBuffer", {
+      value: async () => {
+        read = true;
+        return new ArrayBuffer(0);
+      },
+    });
+    await assert.rejects(
+      mock.put("item", null, { ...photo, [field]: blob }, signal()),
+      /size limit/,
+    );
+    assert.equal(read, false);
+  }
+  assert.equal(mock.used, 0);
+  assert.equal(mock.reserved, 0);
+  for (const cap of [-1, NaN, Infinity, 1.5])
+    assert.throws(() => new MockPhotos(cap), /capacity/);
+});
+test("returned photo metadata cannot be mutated to corrupt later cleanup accounting", async () => {
+  const mock = new MockPhotos();
+  const record = await mock.put("item", null, photo, signal());
+  assert.throws(() => {
+    record.full = new Blob(["different"]);
+  }, TypeError);
+  await mock.remove("item", record.version, signal());
+  assert.equal(mock.used, 0);
 });

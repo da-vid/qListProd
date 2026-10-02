@@ -1,5 +1,4 @@
-// Synthetic-only handler. Runtime configuration supplies an existing admin credential;
-// this code creates, stores and prints no credential. Keep gateway verify_jwt=true too.
+// Synthetic-only handler. Existing admin credential; never logged or returned.
 type Result = {
   full: Uint8Array;
   thumbnail: Uint8Array;
@@ -7,7 +6,7 @@ type Result = {
   height: number;
 };
 type Dependencies = {
-  adminKey: () => string | undefined;
+  authorize: (req: Request) => Promise<boolean>;
   initialize: () => Promise<(bytes: Uint8Array) => Promise<Result>>;
   fixtures: Record<string, string>;
   expiresAt: number;
@@ -20,9 +19,11 @@ export function createBenchmarkHandler(deps: Dependencies) {
   const response = (status: number, data: unknown) =>
     Response.json(data, { status, headers: { "Cache-Control": "no-store" } });
   return async (req: Request) => {
-    const key = deps.adminKey();
-    if (!key || req.headers.get("authorization") !== `Bearer ${key}`)
-      return response(401, { error: "Unauthorized" });
+    let authorized = false;
+    try {
+      authorized = await deps.authorize(req);
+    } catch {}
+    if (!authorized) return response(401, { error: "Unauthorized" });
     if (req.method !== "POST") return response(405, { error: "POST required" });
     if (Date.now() > deps.expiresAt)
       return response(410, { error: "Synthetic benchmark has expired" });
@@ -61,7 +62,6 @@ export function createBenchmarkHandler(deps: Dependencies) {
     } catch {
       return response(400, { error: "Choose a bundled synthetic fixture" });
     }
-    // Body reads yield; recheck the admission gate immediately before native work.
     if (busy || requests >= 12)
       return response(429, { error: "Worker benchmark limit reached" });
     busy = true;

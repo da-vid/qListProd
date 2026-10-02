@@ -1,5 +1,7 @@
 # Smaller JPEG codec: packaging experiment
 
+Update: the parent completed the authenticated v4 synthetic benchmark. See [current evidence and storage-trial plan](photo-storage-trial-plan.md); earlier local packaging findings below remain historical evidence.
+
 The parent verified the isolated Supabase Free project has no application tables, buckets, policies or Edge Functions. That inventory is sufficient for this packaging investigation; no additional database read is needed yet. No hosted resources were created here.
 
 ## Result
@@ -22,9 +24,9 @@ Run `node --test photo-lab/small-codec.test.ts photo-lab/benchmark-handler.test.
 
 The deployment payload matches the parent's exact `deploy_edge_function` contract: project `qmpdinzendwpkqhtqskz`, function `qlist-photo-benchmark`, entry `index.ts`, text-only files, **`verify_jwt: true`**. Regenerate immediately before deployment because the benchmark handler expires 24 hours after building. The payload includes package and codec licenses.
 
-The handler also requires the exact existing runtime `SUPABASE_SERVICE_ROLE_KEY` in the Authorization bearer header; it does not accept an anonymous project key. It creates/configures no credential. Missing runtime credentials fail closed. Only named, bundled synthetic fixtures are accepted, with a 128-byte request-body limit, no user-image upload, no database/storage writes, one active request and twelve accepted requests **per worker**. The worker counter is not a global/project quota; this is an admin-only benchmark, not the planned public photo gateway. Reported timings are explicitly wall time; memory snapshots are not peak measurements. Obtain CPU/peak enforcement evidence separately from hosted logs/metrics where available.
+The generator now preserves the parent's verified v4 entry: pinned `@supabase/server@1.9.0/core`, `verifyAuth` with `secret:default`, and gateway `verify_jwt: true`. Its handler uses an authorization callback and fails closed if authorization fails. The old raw-key comparison is removed. The benchmark accepts bundled synthetic fixtures only; it writes no database or storage data. Its twelve-call ceiling is per worker, not a global quota.
 
-Example request body: `{"fixture":"gradient"}` (then `portrait` and `noise`). The noisy fixture should return rejection. No endpoint has been deployed or invoked here.
+Example request body: `{"fixture":"gradient"}` (then `portrait` and `noise`). The noisy fixture should return rejection. The parent deployed and invoked v4; this local task has not redeployed it.
 
 ## Remaining invocation gate
 

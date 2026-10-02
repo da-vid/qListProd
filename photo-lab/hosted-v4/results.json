@@ -1,0 +1,81 @@
+{
+  "project": "qmpdinzendwpkqhtqskz",
+  "function": "qlist-photo-benchmark",
+  "version": 4,
+  "verify_jwt": true,
+  "runs": [
+    {
+      "observedAt": "2026-10-02T22:54:38Z",
+      "fixture": "gradient",
+      "cold": true,
+      "status": "passed",
+      "fullBytes": 19896,
+      "thumbnailBytes": 1316,
+      "width": 1280,
+      "height": 960,
+      "wallMs": 196.825532,
+      "memoryBefore": {
+        "rss": 0,
+        "heapTotal": 17801216,
+        "heapUsed": 14659848,
+        "external": 3237652
+      },
+      "memoryAfter": {
+        "rss": 0,
+        "heapTotal": 18329600,
+        "heapUsed": 14590888,
+        "external": 28601742
+      },
+      "cpuMs": 194,
+      "peakMemory": null,
+      "shutdownTelemetry": {
+        "cpu_time_used": 194,
+        "memory_total": 17349452,
+        "reason": "EarlyDrop"
+      }
+    },
+    {
+      "observedAt": "2026-10-02T22:56:07Z",
+      "fixture": "portrait",
+      "cold": true,
+      "status": "passed",
+      "fullBytes": 15445,
+      "thumbnailBytes": 1003,
+      "width": 720,
+      "height": 1280,
+      "wallMs": 168.570872,
+      "memoryAfter": {
+        "rss": 0,
+        "heapTotal": 20766720,
+        "heapUsed": 17140416,
+        "external": 41009774
+      },
+      "peakMemory": null,
+      "cpuMs": 217
+    },
+    {
+      "fixture": "noise",
+      "observedAt": "2026-10-02T22:57:18Z",
+      "cold": true,
+      "status": "rejected",
+      "httpStatus": 422,
+      "wallMs": 392.522413,
+      "cpuMs": 440,
+      "memoryAfter": {
+        "rss": 0,
+        "heapTotal": 18067456,
+        "heapUsed": 14724400,
+        "external": 58131199
+      },
+      "peakMemory": null,
+      "shutdownReason": "EarlyDrop",
+      "localSameBundleError": "This image is too complex for the free photo limit."
+    }
+  ],
+  "scopeLimitations": [
+    "Three cold single-request samples, no hosted warm percentile",
+    "Memory values are snapshots, not peaks",
+    "No hosted storage upload/read quotas tested",
+    "No production qList photos enabled"
+  ]
+}

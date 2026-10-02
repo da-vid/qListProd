@@ -32,6 +32,8 @@ for (const mode of [
   "paused",
   "quota",
   "rate",
+  "forbidden",
+  "server",
   "timeout",
 ]) {
   const option = document.createElement("option");

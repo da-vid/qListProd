@@ -12,9 +12,18 @@ export interface PhotoAdapter {
     signal: AbortSignal,
   ): Promise<PhotoRecord>;
   remove(key: string, expected: number, signal: AbortSignal): Promise<void>;
+  // Permanent fence for a deleted text-item key, including uploads not committed yet.
+  deleteItem(key: string, signal: AbortSignal): Promise<void>;
 }
 export type Fault =
-  "healthy" | "offline" | "paused" | "quota" | "rate" | "timeout";
+  | "healthy"
+  | "offline"
+  | "paused"
+  | "quota"
+  | "rate"
+  | "forbidden"
+  | "server"
+  | "timeout";
 // Executable local model only. Real quota enforcement must be a database transaction.
 export class MockPhotos implements PhotoAdapter {
   fault: Fault = "healthy";
@@ -25,9 +34,12 @@ export class MockPhotos implements PhotoAdapter {
   records = new Map<string, PhotoRecord>();
   private revision = 0;
   private active = new Set<string>();
+  private deletedItems = new Set<string>();
   readonly capacity: number;
   readonly list: string;
   constructor(capacity = 2 * 1024 * 1024, list = "PhotoDemo") {
+    if (!Number.isSafeInteger(capacity) || capacity < 0)
+      throw new PhotoError("Invalid photo capacity.");
     this.capacity = capacity;
     this.list = list;
   }
@@ -48,6 +60,8 @@ export class MockPhotos implements PhotoAdapter {
           paused: "The free photo service is paused.",
           quota: "The free photo limit is full.",
           rate: "Too many photo requests. Try later.",
+          forbidden: "The photo service rejected this request (403).",
+          server: "The photo service is unavailable (503).",
           timeout: "Photos timed out.",
         }[this.fault],
       );
@@ -64,6 +78,9 @@ export class MockPhotos implements PhotoAdapter {
     signal: AbortSignal,
   ) {
     await this.gate(signal);
+    signal.throwIfAborted();
+    if (this.deletedItems.has(key))
+      throw new PhotoError("This text item was deleted.");
     if (this.active.has(key))
       throw new PhotoError("A photo save is already in progress.");
     const bytes = photo.full.size + photo.thumbnail.size;
@@ -88,10 +105,12 @@ export class MockPhotos implements PhotoAdapter {
         maxEdge: 192,
       });
       signal.throwIfAborted();
+      if (this.deletedItems.has(key))
+        throw new PhotoError("This text item was deleted.");
       const old = this.records.get(key);
       if ((old?.version ?? null) !== expected)
         throw new PhotoError("This photo changed. Reopen it before saving.");
-      const record = { ...photo, version: ++this.revision };
+      const record = Object.freeze({ ...photo, version: ++this.revision });
       this.records.set(key, record);
       this.used += bytes;
       if (old) this.garbage.push(old);
@@ -111,6 +130,17 @@ export class MockPhotos implements PhotoAdapter {
       throw new PhotoError("This photo changed. Reopen it before removing.");
     this.records.delete(key);
     this.garbage.push(old);
+    this.cleanup();
+  }
+  async deleteItem(key: string, signal: AbortSignal) {
+    await this.gate(signal);
+    signal.throwIfAborted();
+    this.deletedItems.add(key);
+    const old = this.records.get(key);
+    if (old) {
+      this.records.delete(key);
+      this.garbage.push(old);
+    }
     this.cleanup();
   }
   cleanup() {

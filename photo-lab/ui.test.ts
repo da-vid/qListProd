@@ -150,7 +150,15 @@ test("built qList text add/edit/check/delete works through every photo-service f
   )!;
   const source = await readFile(`dist-photos/assets/${file}`, "utf8");
   assert.doesNotMatch(source, /firebaseio\.com|supabase\.co/);
-  for (const fault of ["offline", "paused", "quota", "rate", "timeout"]) {
+  for (const fault of [
+    "offline",
+    "paused",
+    "quota",
+    "rate",
+    "forbidden",
+    "server",
+    "timeout",
+  ]) {
     const dom = new JSDOM('<div id="app"></div>', {
       url: "http://127.0.0.1:4174/photos.html",
       runScripts: "outside-only",
@@ -278,6 +286,42 @@ test("deleting a text row during a photo save aborts it without resurrecting eit
     assert.equal(live.size, 0);
     assert.equal(dom.window.document.querySelector("dialog"), null);
     assert.equal(dom.window.document.querySelector(".item"), null);
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
+
+test("a delayed stale refresh cannot remove a newly saved thumbnail", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+  );
+  setup(dom);
+  const mock = new MockPhotos();
+  let release!: () => void;
+  let reads = 0;
+  const originalGet = mock.get.bind(mock);
+  mock.get = async (key, signal) => {
+    if (++reads === 1)
+      return new Promise((resolve) => {
+        release = () => resolve(undefined);
+      });
+    return originalGet(key, signal);
+  };
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  try {
+    click(dom, "Add photo");
+    await tick();
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Save photo");
+    await tick();
+    assert.ok(dom.window.document.querySelector(".photo-thumbnail"));
+    release();
+    await tick();
+    assert.ok(dom.window.document.querySelector(".photo-thumbnail"));
   } finally {
     ui.close();
     dom.window.close();

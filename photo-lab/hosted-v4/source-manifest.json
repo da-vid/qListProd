@@ -1,0 +1,13 @@
+{
+  "hosted-results.json": "2345bdeabad362779543bdf7a896b2f1d694618c9824e857db667ea56bfd1dec",
+  "README.txt": "4f7d880d5774dd8ea4ce2f279548b6b835880a73694ed38cbd0aa721bcf7b01b",
+  "package.json": "9802008b78c1ab1b6db3918ff3f4bb5b4bbef2ce928d1c0d483f582c19374725",
+  "package-lock.json": "7a34c053cc6c3eb81c95f4eb405bcbe71f720ca74d93dbbe16e4322afdb427b9",
+  "NEXT_STAGE.txt": "d0944a0a660db97b450f6a895398ba335fb0f2b0c3c47ea21f2e3db6c74b4294",
+  "source/LICENSE": "8c3690b09c168f196446cf5904332023bbc15eb92b6a7cee470ac829e6a65d20",
+  "source/codec.js": "75a280f9a74ad26420d10cb68d8bbea9689e31b2e6bf6d2cd58c45aacdc27ab2",
+  "source/fixtures.js": "bda03b92994e8d381ef70a559bf7bb54423cdd9ca518d904cf3cd0ba04b0d629",
+  "source/handler.ts": "ecafbc3293ec0a53a442c1b166ba897eaeeb4ac82fc3be2a728ebeb58dcc5e7d",
+  "source/LICENSE.codec.md": "8213556ea36ce3a0f2883db06238463e2452fdad68e3d2e2e4ace2189477a37e",
+  "source/index.ts": "bd341af3071c692071f2b68e1c7bca87cd25c99a94a641bb4264fd90534fb697"
+}

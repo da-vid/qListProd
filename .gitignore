@@ -3,6 +3,7 @@ node_modules
 dist-photos/
 .photo-cache/
 photo-lab/generated-small/
+photo-lab/hosted-v4-transfer/
 dist/
 .env
 .env.*

@@ -13,7 +13,8 @@ const request = (
 test("benchmark denies missing/wrong admin authentication before initialization", async () => {
   let initialized = false;
   const handler = createBenchmarkHandler({
-    adminKey: () => "local-test-only",
+    authorize: async (req) =>
+      req.headers.get("authorization") === "Bearer local-test-only",
     initialize: async () => {
       initialized = true;
       throw new Error();
@@ -33,7 +34,8 @@ test("benchmark denies missing/wrong admin authentication before initialization"
 });
 test("benchmark enforces expiry and per-worker request ceiling without accepting image uploads", async () => {
   const deps = {
-    adminKey: () => "local-test-only",
+    authorize: async (req: Request) =>
+      req.headers.get("authorization") === "Bearer local-test-only",
     initialize: async () => async () => ({
       full: new Uint8Array(2),
       thumbnail: new Uint8Array(1),

@@ -8,6 +8,6 @@
   "runtimeBinaryFetch": false,
   "smokeTest": "passed",
   "hostedDeploymentTested": false,
-  "deploymentPayloadBytes": 1824360,
-  "benchmarkExpiresAt": "2026-10-03T18:59:01.129Z"
+  "deploymentPayloadBytes": 1824404,
+  "benchmarkExpiresAt": "2026-10-03T23:16:53.068Z"
 }

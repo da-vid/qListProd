@@ -1,5 +1,7 @@
 # qList photo prototype — local review
 
+This records the first local stage. See [the current storage-trial plan](photo-storage-trial-plan.md) for verified hosted v4 evidence and subsequent local safeguards.
+
 Worktree: `qList-photo-prototype`; branch: `codex/photo-prototype`; base: `c7b163aacbf71422ac5774703072c6141b8101d4`.
 
 This is a local experiment, with a working mock UI and a separate image-processing benchmark. It does not provision Supabase, publish to Netlify, modify Firebase, or contain account credentials. All included images are programmatically generated gradients/noise. The ordinary qList build does not import the photo feature.

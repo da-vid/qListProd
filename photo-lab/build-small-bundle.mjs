@@ -68,7 +68,19 @@ for (const name of ["gradient", "portrait", "noise"])
     await readFile(new URL(`fixtures/${name}.jpg`, root))
   ).toString("base64");
 const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
-const entry = `import {initialize} from './codec.js';\nimport {createBenchmarkHandler} from './handler.ts';\nimport {fixtures} from './fixtures.js';\nexport default {fetch:createBenchmarkHandler({adminKey:()=>Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),initialize,fixtures,expiresAt:${expiresAt},memory:()=>{try{return Deno.memoryUsage();}catch{return null;}}})};\n`;
+const approvedEntry = await readFile(
+  new URL("hosted-v4/index.ts", root),
+  "utf8",
+);
+if (
+  !approvedEntry.includes("npm:@supabase/server@1.9.0/core") ||
+  !approvedEntry.includes("auth:'secret:default'") ||
+  (approvedEntry.match(/expiresAt:\d+/g) ?? []).length !== 1
+)
+  throw new Error(
+    "Approved v4 authentication template changed; review before building",
+  );
+const entry = approvedEntry.replace(/expiresAt:\d+/, `expiresAt:${expiresAt}`);
 const files = [
   { name: "index.ts", content: entry },
   { name: "codec.js", content: output.toString() },
