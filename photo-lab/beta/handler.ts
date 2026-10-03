@@ -1,6 +1,37 @@
 import { bounded } from "../../src/photo/adapter.ts";
 import { BetaEngine } from "./engine.ts";
 import { BetaError, demand } from "./ledger.ts";
+// Some hosted runtimes represent a bodyless POST as an empty stream.
+// Accept EOF only; never buffer or accept meaningful non-upload bytes.
+export async function requireEmptyPhotoBody(request: Request, signal: AbortSignal) {
+  if (!request.body) return;
+  const reader = request.body.getReader();
+  try {
+    await bounded(async (readSignal) => {
+      let rejectAbort!: (reason: unknown) => void;
+      const stopped = new Promise<never>((_, reject) => { rejectAbort = reject; });
+      const abort = () => {
+        rejectAbort(readSignal.reason);
+        void reader.cancel().catch(() => {});
+      };
+      readSignal.addEventListener("abort", abort, { once: true });
+      try {
+        readSignal.throwIfAborted();
+        for (let n = 0; n < 16; n++) {
+          const { value, done } = await Promise.race([reader.read(), stopped]);
+          if (done) return;
+          demand(value.byteLength === 0, "This photo action takes no body.", 400);
+        }
+        demand(false, "This photo action takes no body.", 400);
+      } finally {
+        readSignal.removeEventListener("abort", abort);
+      }
+    }, 1000, signal);
+  } finally {
+    void reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
 const encode = (b: Uint8Array) => {
   let s = "";
   for (const n of b) s += String.fromCharCode(n);
@@ -88,7 +119,7 @@ export function createBetaHandler(options: {
           ),
         );
       }
-      demand(!request.body, "This photo action takes no body.", 400);
+      await requireEmptyPhotoBody(request, signal);
       if (action === "get") {
         demand(id === "", "Invalid photo read.", 400);
         const p = await engine.get(list, item, signal);

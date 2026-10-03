@@ -1,6 +1,6 @@
 # qList photos — local production review
 
-Prepared October 3, 2026. **Nothing in this directory has been deployed.** The user approved ordinary shared-list photo access and asked for a camera icon beside each grab handle, without larger rows or persistent explanatory notices. This supersedes the earlier selected-list beta proposal. External setup and final deployment remain for the parent task to review and apply.
+Initially prepared October 3, 2026. **The reviewed frontend is now published; see [DEPLOYED.md](DEPLOYED.md).** The setup sequence below records initial preparation and must not be reapplied to the live database. The user approved ordinary shared-list photo access and asked for a camera icon beside each grab handle, without larger rows or persistent explanatory notices. This supersedes the earlier selected-list beta proposal. The parent owns backend acceptance and further hosted changes.
 
 ## Result
 
@@ -27,7 +27,7 @@ Lost deletion hints, older clients or interrupted cleanup can leave bounded, cha
 
 ## Local validation
 
-- 147 Node tests: text UI/model, release/CSP isolation, normalization, mock/HTTP contracts, full photo failure cases, trial and beta ledger behavior, public namespace isolation, zero network/Firebase calls across photo lifecycle paths, invented-name global-cap exhaustion, version/empty-generation races, confirmed vs failed text deletion and production SDK routing.
+- 151 Node tests: text UI/model, release/CSP isolation, normalization, mock/HTTP contracts, full photo failure cases, trial and beta ledger behavior, public namespace isolation, zero network/Firebase calls across photo lifecycle paths, invented-name global-cap exhaustion, version/empty-generation races, confirmed vs failed text deletion and production SDK routing.
 - Root and beta TypeScript checks; frozen, cached Deno production entrypoint check.
 - Normal, isolated photo-preview, modern, maintenance and rollback builds.
 - Temporary local PostgreSQL: 11 checks covering service/anonymous privileges, CAS races, quota guards, actual JPEG round trip, cleanup failure/retry, unchanged legacy state and pg-safeupdate. No hosted database used.
@@ -66,4 +66,4 @@ python3 photo-service/build-review.py
 
 Browser harnesses require the loopback preview running and installed Chrome. PostgreSQL starts an isolated temporary Unix-socket cluster. For Deno, use the committed import map/lockfile and `check --cached-only --frozen` after dependencies have been supplied. Firebase emulator tests require Java 21 and the demo-only configuration; never substitute the live project.
 
-Remaining release conditions: external-action review, hosted acceptance and final clean artifact publication. Real iPhone/Safari/HEIC behavior remains unverified. Public namespace access, zero photo-generated Firebase traffic and no automatic expiry are implemented as requested; no additional beta-list selection is needed.
+Initial hosted acceptance and frontend publication are recorded in DEPLOYED.md. The parent owns live browser acceptance and any subsequent changes. Real iPhone/Safari/HEIC behavior remains unverified. Public namespace access, zero photo-generated Firebase traffic and no automatic expiry are implemented as requested; no additional beta-list selection is needed.

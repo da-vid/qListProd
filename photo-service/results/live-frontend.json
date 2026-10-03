@@ -1,0 +1,15 @@
+{
+  "deploy_id": "6ac1220e13abc27982b0a504",
+  "url": "https://www.qlist.cc/",
+  "source_commit": "e41f68d464f1f55642563d5c12798389b6b2e231",
+  "release_json_sha256": "04b78d0a36739e250b30c2a1699929aa73e0506fc4a243523f9bce0a36cb5a2b",
+  "public_files_hash_verified": 14,
+  "headers_consumed_by_netlify": [
+    "content-security-policy"
+  ],
+  "camera_code_verified": true,
+  "photo_endpoint_verified": true,
+  "frontend_bytes_unchanged": true,
+  "user_data_writes": 0,
+  "browser_interaction_tested": false
+}

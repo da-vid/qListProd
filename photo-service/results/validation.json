@@ -1,6 +1,6 @@
 {
-  "node_tests": 147,
-  "node_pass": 147,
+  "node_tests": 151,
+  "node_pass": 151,
   "postgres_checks": 11,
   "firebase_demo_emulator_checks": 2,
   "typechecks": [
@@ -22,11 +22,13 @@
   ],
   "photo_contract_network_calls": 0,
   "browser_external_requests": 0,
-  "hosted_changes": false,
+  "hosted_changes": true,
   "physical_iPhone_Safari_HEIC_tested": false,
   "limitations": [
     "Lost text-delete hints may leave charged orphan photos.",
     "Client text observations are not server-certified existence.",
     "Application quotas bound admitted storage, not total incoming request traffic."
-  ]
+  ],
+  "canonical_handler_sha256": "33a05ecc619007823626945ab4c2f93410443be9f9bfff02709e6c74283e898d",
+  "hosted_change_scope": "Exact reviewed frontend published; backend redeployment belongs to parent."
 }

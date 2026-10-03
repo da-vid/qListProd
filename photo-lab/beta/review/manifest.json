@@ -27,7 +27,7 @@
   ],
   "sources": {
     "photo-lab/beta/index.ts": "678705c73aafa39ab03a8e0137620b4f941a00456f16220f2ab9b60c2d0372e6",
-    "photo-lab/beta/handler.ts": "7d3e90775f62a0732272b04c06fcf2f6b7a530508c313d3ac0d56621a8762109",
+    "photo-lab/beta/handler.ts": "33a05ecc619007823626945ab4c2f93410443be9f9bfff02709e6c74283e898d",
     "photo-lab/beta/engine.ts": "6446a51d9c40d2f2c83ca944587a4df7aa96359570677ec29609415a57284856",
     "photo-lab/beta/ledger.ts": "8a950b13d7ac02d1dc6d2d0e52e48eaf1b1a958e4a498c678907c2db285c2483",
     "photo-lab/beta/namespace.ts": "822f10c7b1311fe17d686320b73bf5865dc1248e3e57650e9d6fb767a0df1a65",
@@ -48,5 +48,5 @@
     "src/photo/cleanup-journal.ts": "7dc9541fbc9b7ea79ab087fd72f4b817f4f6995123dedf445dabeb99f1b5fadf",
     "src/photo/ui.ts": "5e190471d8bf44d88a23c32fdf4e9b12f790edb8600d91b158e0096036c6fc4f"
   },
-  "payload_sha256": "2384e9a66a45d46982b9ae4ffbe16471e9361b10e2462e709b97c4a7f306a73b"
+  "payload_sha256": "bc086931d21635018d07def7d2799218272d5254c615be7c307e527d5e9e24fa"
 }
