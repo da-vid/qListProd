@@ -1,3 +1,7 @@
+src/photo/ui.ts 54ms (unchanged)
+photo-lab/beta/cleanup-journal.test.ts 4ms
+photo-service/access.test.ts 9ms (unchanged)
+photo-service/browser.mjs 24ms
 
 > qlist-development-baseline@0.1.0 typecheck
 > tsc --noEmit
@@ -12,7 +16,7 @@
 
 vite v8.3.2 building client environment for preview...
 transforming...
-✓ 12 modules transformed.
+✓ 13 modules transformed.
 rendering chunks...
 computing gzip size...
 dist/index.html                                 0.57 kB │ gzip:  0.35 kB
@@ -20,9 +24,9 @@ dist/assets/lato400-CG_hRXtg.woff              35.70 kB
 dist/assets/lato700-CAHKbBpl.woff              35.89 kB
 dist/assets/fontawesome-webfont-CX1dGGVw.woff  81.28 kB
 dist/assets/index-DRPEDXlX.css                  8.45 kB │ gzip:  2.65 kB
-dist/assets/index-E9K9zlUP.js                  58.53 kB │ gzip: 21.28 kB
+dist/assets/index-CScDJwth.js                  58.88 kB │ gzip: 21.46 kB
 
-✓ built in 51ms
+✓ built in 36ms
 Built browser-local review preview in dist. Production remains disabled.
 
 > qlist-development-baseline@0.1.0 build:photos
@@ -30,7 +34,7 @@ Built browser-local review preview in dist. Production remains disabled.
 
 vite v8.3.2 building client environment for photo-preview...
 transforming...
-✓ 21 modules transformed.
+✓ 22 modules transformed.
 rendering chunks...
 computing gzip size...
 dist-photos/photos.html                                0.40 kB │ gzip:  0.26 kB
@@ -39,16 +43,16 @@ dist-photos/assets/lato400-CG_hRXtg.woff              35.70 kB
 dist-photos/assets/lato700-CAHKbBpl.woff              35.89 kB
 dist-photos/assets/fontawesome-webfont-CX1dGGVw.woff  81.28 kB
 dist-photos/assets/photos-BgcvZ-27.css                 9.43 kB │ gzip:  2.89 kB
-dist-photos/assets/photos--euhAABM.js                 74.79 kB │ gzip: 26.56 kB
+dist-photos/assets/photos-ZIECuDU1.js                 75.43 kB │ gzip: 26.87 kB
 
-✓ built in 35ms
+✓ built in 37ms
 
 > qlist-development-baseline@0.1.0 build:release
 > node scripts/build-release.mjs modern && node scripts/build-release.mjs maintenance && node scripts/build-release.mjs rollback
 
 vite v8.3.2 building client environment for release...
 transforming...
-✓ 33 modules transformed.
+✓ 34 modules transformed.
 rendering chunks...
 computing gzip size...
 release-artifacts/modern/index.html                                  0.57 kB │ gzip:  0.35 kB
@@ -59,12 +63,12 @@ release-artifacts/modern/assets/production-entry-dHQwl2Oz.css        0.98 kB │
 release-artifacts/modern/assets/index-DRPEDXlX.css                   8.45 kB │ gzip:  2.65 kB
 release-artifacts/modern/assets/production-config-CPzEyIwr.js        0.28 kB │ gzip:  0.23 kB
 release-artifacts/modern/assets/production-store-LFpQtdk_.js         0.30 kB │ gzip:  0.23 kB
-release-artifacts/modern/assets/firebase-store-B0Q7R0jh.js           2.78 kB │ gzip:  1.30 kB
-release-artifacts/modern/assets/production-entry-D89jIN8N.js        13.57 kB │ gzip:  5.64 kB
-release-artifacts/modern/assets/index-BoEOMMOV.js                   58.53 kB │ gzip: 21.36 kB
+release-artifacts/modern/assets/firebase-store-BB9hBscf.js           2.77 kB │ gzip:  1.29 kB
+release-artifacts/modern/assets/production-entry-BbyzT6-s.js        14.46 kB │ gzip:  5.94 kB
+release-artifacts/modern/assets/index-D5y0v8tQ.js                   58.89 kB │ gzip: 21.52 kB
 release-artifacts/modern/assets/index.esm-fGDxllVm.js              156.50 kB │ gzip: 47.12 kB
 
-✓ built in 54ms
+✓ built in 50ms
 Prepared modern artifact at release-artifacts/modern; no publish was performed. Working tree is dirty: deployment approval must use a clean committed rebuild.
 vite v8.3.2 building client environment for release...
 transforming...
@@ -78,7 +82,7 @@ release-artifacts/maintenance/assets/fontawesome-webfont-CX1dGGVw.woff  81.28 kB
 release-artifacts/maintenance/assets/index-DRPEDXlX.css                  8.45 kB │ gzip: 2.65 kB
 release-artifacts/maintenance/assets/index-llmCTJ1A.js                   1.25 kB │ gzip: 0.66 kB
 
-✓ built in 31ms
+✓ built in 33ms
 Prepared maintenance artifact at release-artifacts/maintenance; no publish was performed. Working tree is dirty: deployment approval must use a clean committed rebuild.
 vite v8.3.2 building client environment for release...
 transforming...
@@ -92,156 +96,160 @@ release-artifacts/rollback/assets/fontawesome-webfont-CX1dGGVw.woff   81.28 kB
 release-artifacts/rollback/assets/index-DRPEDXlX.css                   8.45 kB │ gzip:  2.65 kB
 release-artifacts/rollback/assets/index-iAdDZMOa.js                  161.72 kB │ gzip: 49.36 kB
 
-✓ built in 46ms
+✓ built in 44ms
 Prepared rollback artifact at release-artifacts/rollback; no publish was performed. Working tree is dirty: deployment approval must use a clean committed rebuild.
-✔ concurrent reservations cannot spend the same remaining capacity (2.805209ms)
-✔ replacement keeps the old photo until success; failed cleanup keeps bytes counted (1.932541ms)
-✔ compare-and-swap rejects stale replacement/removal without losing the current photo (2.612083ms)
-✔ invalid image and cancellation release reservations without committing (0.182625ms)
-✔ list allowlist, quota, paused service, rate and timeout fail closed (19.973792ms)
-✔ timeout also bounds an adapter which ignores cancellation (18.241375ms)
-✔ deletion fences an initial upload even when its caller never cancels (1.424959ms)
-✔ full/thumbnail output limits reject before reading bytes and keep accounting unchanged (0.486959ms)
-✔ returned photo metadata cannot be mutated to corrupt later cleanup accounting (0.294916ms)
-✔ benchmark denies missing/wrong admin authentication before initialization (42.130541ms)
-✔ benchmark enforces expiry and per-worker request ceiling without accepting image uploads (11.306458ms)
-✔ disabled defaults deny before connection; no credential or public client policy (98.584042ms)
-✔ anonymous same-link request verifies authoritative text and protects scope for all routes (150.441083ms)
-✔ empty, malformed, progressive, oversize and metadata inputs fail before physical storage (41.200708ms)
-✔ same operation replay and changed fingerprint cannot upload twice or restore superseded current photo (132.1555ms)
-✔ deletion while PUT acknowledgment is withheld fences later commits and retains unknown charge (51.866958ms)
-✔ failed PUT remains unknown across snapshot restoration; status retry never refunds or reuploads (83.915542ms)
-✔ cleanup failure retains both replacement charges; explicit retry and service restoration preserve current bytes (66.745166ms)
-✔ global storage cap refuses new uploads without blocking reads or removal; upload rate is separate (50.116459ms)
-✔ text disappears after processing; no commit and no stale read, kill switch keeps existing photos (86.915125ms)
-✔ Firebase verifier is pinned, read-only, bounded and refuses malformed text without trusting caller claims (1.731208ms)
-✔ unknown writes stay charged without permanently occupying encoding slots; expired never-written saves are fenced (110.59875ms)
-✔ cleanup intents survive restoration, stay list-scoped and cannot overwrite another tab’s item marker (11.862958ms)
-✔ present or malformed text never authorizes item deletion; photo-only remove allows re-add (170.377125ms)
-✔ reads, status and confirmed deletion work with uploads disabled and storage exhausted; no product expiry (94.195041ms)
-✔ restart without browser journal: ordinary reads reconcile a server-known orphan only after authoritative NULL (55.462083ms)
-✔ late immutable write receipt after deletion settles then cleans; missing unknown outcome never refunds (117.953167ms)
-✔ cleanup failure survives restart and retries without text authority or upload admission (49.531917ms)
-✔ Storage adapter rejects public/drifted bucket and uses immutable server-derived JPEG keys (0.721833ms)
-✔ absence proof requires exact NoSuchKey; ambiguous responses never release charges (0.191541ms)
-✔ CORS is a browser boundary, no-origin link holders work, client secrets are rejected (90.961833ms)
-✔ single-image gateway reserves before processor, creates own outputs and replays without another decode (11.844083ms)
-✔ invalid envelope, metadata, oversized and nonbaseline JPEG never reach the mock processor (6.8415ms)
-✔ changed request fingerprint, wrong list and stale version are rejected without losing the current photo (3.010416ms)
-✔ concurrent last-capacity admissions and deletion during processing remain bounded (2.276875ms)
-✔ source JPEG accepts orientation metadata before decode and enforces actual header dimensions (5.349708ms)
-✔ HEIC hints and actual container header produce helpful rejection without claiming decode support (7.888583ms)
-✔ oversized source and pre-aborted selection stop before browser allocation (3.165875ms)
-✔ progressive source is accepted only by source validation; normalized wire contract remains baseline (10.206792ms)
-✔ server strips metadata and generates bounded independent JPEG outputs (233.691916ms)
-✔ rejects wrong format, oversized, truncated, trailing and malformed segments before decode (2.630291ms)
-✔ rejects decompression-bomb dimensions and unsupported components before decoder (0.382792ms)
-✔ rejects corrupted entropy even if valid-size headers and EOI remain (7.082833ms)
-✔ complex noisy input fails closed instead of exceeding storage allowance (106.491291ms)
-✔ JPEG parser terminates on bounded deterministic malformed inputs (4.119208ms)
-✔ quota boundary and idempotent reserve/commit retries do not double count (2.328959ms)
-✔ two replacements race by version; loser stays accounted until cleanup is confirmed (0.22025ms)
-✔ expired/partial uploads keep reservations until writers stop and objects are absent (0.186958ms)
-✔ deleting an item fences pending initial uploads and future retries cannot resurrect it (0.146292ms)
-✔ remove/re-add cannot let a stale null-version upload win an ABA race (0.291542ms)
-✔ failed cleanup blocks quota, stale removal cannot delete a replacement, and retries are safe (0.137125ms)
-✔ invalid/oversized reservations and trial request/concurrency limits fail closed (0.197625ms)
-✔ photo count includes reservations and permits replacement at the count cap (1.383917ms)
-✔ unknown-item deletion markers cannot bypass the bounded trial metadata limit (0.275375ms)
-✔ small codec reencodes bounded pixels and strips every metadata marker (147.726708ms)
-✔ small codec rejects truncated entropy and recovers on the next valid decode (84.898917ms)
-✔ small codec rejects bad format, length, dimensions and trailing data before decode (4.12275ms)
-✔ small codec rejects concurrent decoding rather than sharing mutable WASM state (119.720875ms)
-✔ authorization failure or error never creates an admin client (16.69275ms)
-✔ deadline and method fail before SQL access (0.839417ms)
-✔ only named synthetic cases, no IDs, lists, paths, booleans or reset (28.754ms)
-✔ body byte limit, content type, encoding and dishonest length (0.869709ms)
-✔ stalled body is canceled and cannot start SQL (1004.948792ms)
-✔ status works with no-store and simulated phase label (0.429375ms)
-✔ SQL/SDK failures are sanitized, not echoed (0.171167ms)
-✔ a client that ignores abort cannot hang or trigger an unsafe refund (27.951417ms)
-✔ unauthorized, expired and malformed requests never connect to privileged services (43.186625ms)
-✔ wrong media type, encoding and dishonest body length fail before connecting (0.454708ms)
-✔ status/reconcile do not initialize codec or create bucket; errors are sanitized (15.647584ms)
-✔ stalled body and uncooperative RPC have bounded lifetimes (56.841666ms)
-✔ official SDK creates exactly the restricted bucket and refuses drift or ambiguous absence (11.535709ms)
-✔ official SDK upload uses JPEG bytes, no overwrite, and only reviewed immutable keys (2.061083ms)
-✔ official SDK stream download, physical remove, and strict NoSuchKey verification (2.934667ms)
-✔ exact NoSuchKey permits semantic404 over legacy400 and modern404 (16.897958ms)
-✔ ambiguous missing, auth, tenant, conflicting semantic status and server errors never prove absence (3.438166ms)
-✔ cleanup fences exact current version and only deletes the two fixed settled pairs (7.038291ms)
-✔ wrong batch, extra operation, wrong version, nonfixed item and unsettled writer stop before fencing or storage (0.65125ms)
-✔ failed delete or uncertain absence retain every byte and never acknowledge cleanup (0.423125ms)
-✔ cleanup HTTP command routes through the existing auth and strict input gate (4.92175ms)
-✔ failure on the second pair refunds only the verified first pair and a later cleanup can finish (2.671ms)
-✔ continuation readiness uses only existing-bucket metadata and empty listing; never creates a bucket (28.895042ms)
-✔ continuation readiness rejects configuration drift, occupied listing and malformed listing envelopes (3.668542ms)
-✔ PostgREST failure envelopes preserve SQL fence errors without treating them as success (1.24075ms)
-✔ continuation HTTP command is auth/expiry gated, rejects arbitrary fields and never auto-retries a lost claim (7.879375ms)
-✔ all canonical migration and rollback budget updates have the reviewed explicit scope predicate (0.882833ms)
-✔ removing the WHERE clause from any canonical budget update is caught (0.194125ms)
-✔ comments, string literals, unrelated WHERE clauses and broadened scopes cannot satisfy the guard (0.067167ms)
-✔ continuation changes only its own markers and retains historical source guards and expiry (0.197333ms)
-✔ canonical runtime bodies exactly match the reviewed hosted fix and supplied source hashes (3.391208ms)
-✔ preview/cancel/save/replace/remove/expand and URL cleanup use separate photo state (381.21025ms)
-✔ late preparation cannot resurrect a cancelled dialog or leak preview URLs (72.877666ms)
-✔ built qList text add/edit/check/delete works through every photo-service fault (1177.452833ms)
-✔ text deletion survives photo cleanup failure and retry removes the orphan (52.715666ms)
-✔ deleting a text row during a photo save aborts it without resurrecting either item (137.652167ms)
-✔ a delayed stale refresh cannot remove a newly saved thumbnail (96.215542ms)
-✔ lost save response checks operation status and displays the current record without another upload (73.162125ms)
-✔ an initial photo read cannot replace a newly chosen preview or unsupported-file error (95.967958ms)
-✔ preparation timeout aborts the normalizer and a new selection can recover (160.152125ms)
-✔ streamed JPEG boundary accepts limit-1 and limit, rejects limit+1 including understated length (24.303917ms)
-✔ unsupported encodings, MIME spoofing, empty bodies and malformed JPEG fail closed (4.823333ms)
-✔ dimensions at the 1280 edge are allowed; larger decoded dimensions are rejected before codec (1.8725ms)
-✔ a stalled upload is cancelled at its deadline without an unbounded body read (19.240417ms)
-✔ empty and excessive chunk streams terminate without waiting for the deadline (14.268583ms)
-✔ general access requires a real claim/item and keeps identical item keys isolated between lists (145.515333ms)
-✔ production Storage and ledger are distinct from beta and admin trial resources (0.714125ms)
-✔ production build guard fails before changing the preview artifact (190.715375ms)
-✔ published output contains only the modern frontend and strict preview headers (2.509833ms)
-✔ two local clients merge independent changes and deletion wins stale edits (9.004959ms)
-✔ storage failure rejects the write instead of reporting it saved (0.370375ms)
-✔ custom names with prefix punctuation remain isolated (0.25325ms)
-✔ local checked-only deletion uses latest shared storage state (0.412167ms)
-✔ strict export parsing rejects duplicate keys, directives and unsafe numbers (1.656875ms)
-✔ plan preserves arrays, metadata, historical IDs and title-only claims (0.843458ms)
-✔ offline plan writes private new files and refuses accidental live execution (21.099083ms)
-✔ legacy case-sensitive links, trailing slash and lastList cookie survive (3.616792ms)
-✔ new links use six cryptographically generated characters (2.272583ms)
-✔ moving an item changes only its priority with stable tie ordering (0.341208ms)
-✔ custom names, short IDs, encoded names and longer legacy IDs round-trip (0.655792ms)
-✔ generated reservation retries collisions and stops without an unsafe fallback (0.721917ms)
-✔ drag targets use current anchor keys and reject deleted targets (0.462917ms)
-✔ legacy moves across priority types keep exact requested order or fail without normalization (2.018209ms)
-✔ production database and runtime hosts are pinned; previews cannot open it (0.474375ms)
-✔ release manifests verify all bytes and keep variants separate (9.32725ms)
-✔ maintenance artifact preserves the URL and explains old offline edits (50.714334ms)
-✔ release preparation rejects hosting-context or configuration overrides (247.157583ms)
-✔ edge fades distinguish top, middle, bottom, fitting and offscreen lists (0.72525ms)
-✔ fade positions and visibility refresh after scroll, mutations, sticky resize and visual viewport changes (49.360583ms)
-✔ staging config is pinned to the approved independent project (0.69075ms)
-✔ staging refuses production and unrelated hosts (0.424542ms)
-✔ built UI adds, edits, checks, orders, deletes and preserves focus (229.56475ms)
-✔ share explains preview limits and completed removal requires confirmation (98.867041ms)
-✔ production origin refuses persistence and hosted bundle excludes Firebase endpoints (28.739834ms)
-✔ pasted title and item values save on input/blur and survive reopening (102.06ms)
-✔ dialogs have accessible names and copy confirmation stays inside the dialog (51.3735ms)
-✔ discarding an invalid item edit restores the persisted visible value (424.086667ms)
-✔ unknown custom URL opens an empty independent list and persists on edit (90.598041ms)
-✔ keyboard Home/End ordering persists and unchecking hides deletion again (245.809125ms)
-✔ sticky clear action follows current checks, sits below input, and returns hidden focus safely (95.123083ms)
-✔ clear confirmation uses singular and plural checked-item counts (117.25175ms)
-✔ built UI displays legacy priority fixtures exactly and appends below string priorities (206.449334ms)
-✔ About & Privacy is optional, dismissible and returns focus without recording acceptance (37.27375ms)
-✔ drag scroll zones follow the visible list below the sticky controls (0.389584ms)
-✔ sticky geometry keeps focused rows visible and cancels covered drop targets (43.199458ms)
-ℹ tests 143
+✔ concurrent reservations cannot spend the same remaining capacity (6.120708ms)
+✔ replacement keeps the old photo until success; failed cleanup keeps bytes counted (1.600291ms)
+✔ compare-and-swap rejects stale replacement/removal without losing the current photo (1.60375ms)
+✔ invalid image and cancellation release reservations without committing (0.168792ms)
+✔ list allowlist, quota, paused service, rate and timeout fail closed (17.729542ms)
+✔ timeout also bounds an adapter which ignores cancellation (16.103917ms)
+✔ deletion fences an initial upload even when its caller never cancels (1.234542ms)
+✔ full/thumbnail output limits reject before reading bytes and keep accounting unchanged (0.5985ms)
+✔ returned photo metadata cannot be mutated to corrupt later cleanup accounting (0.401542ms)
+✔ benchmark denies missing/wrong admin authentication before initialization (18.636417ms)
+✔ benchmark enforces expiry and per-worker request ceiling without accepting image uploads (2.666209ms)
+✔ disabled defaults deny before connection; no credential or public client policy (78.336209ms)
+✔ anonymous same-link namespaces protect scope without text existence checks (158.081667ms)
+✔ empty, malformed, progressive, oversize and metadata inputs fail before physical storage (38.406625ms)
+✔ same operation replay and changed fingerprint cannot upload twice or restore superseded current photo (115.271ms)
+✔ deletion while PUT acknowledgment is withheld fences later commits and retains unknown charge (56.096875ms)
+✔ failed PUT remains unknown across snapshot restoration; status retry never refunds or reuploads (112.463708ms)
+✔ cleanup failure retains both replacement charges; explicit retry and service restoration preserve current bytes (78.629375ms)
+✔ global storage cap refuses new uploads without blocking reads or removal; upload rate is separate (67.717916ms)
+✔ lost text-delete hint retains charged photo; upload stop keeps existing photos (108.704791ms)
+✔ unknown writes stay charged without permanently occupying encoding slots; expired never-written saves are fenced (120.2615ms)
+✔ cleanup intents survive restoration, stay list-scoped and cannot overwrite another tab’s item marker (11.520792ms)
+✔ unversioned deletion is refused; versioned removal allows re-add (172.197541ms)
+✔ reads, status and confirmed deletion work with uploads disabled and storage exhausted; no product expiry (65.950833ms)
+✔ lost browser hints never infer text absence or release charged current photos (44.890541ms)
+✔ late immutable write receipt after deletion settles then cleans; missing unknown outcome never refunds (133.124042ms)
+✔ cleanup failure survives restart and retries without text authority or upload admission (50.157792ms)
+✔ Storage adapter rejects public/drifted bucket and uses immutable server-derived JPEG keys (0.684875ms)
+✔ absence proof requires exact NoSuchKey; ambiguous responses never release charges (0.298542ms)
+✔ CORS is a browser boundary, no-origin link holders work, client secrets are rejected (58.714083ms)
+✔ single-image gateway reserves before processor, creates own outputs and replays without another decode (11.528542ms)
+✔ invalid envelope, metadata, oversized and nonbaseline JPEG never reach the mock processor (5.293666ms)
+✔ changed request fingerprint, wrong list and stale version are rejected without losing the current photo (1.658584ms)
+✔ concurrent last-capacity admissions and deletion during processing remain bounded (2.622875ms)
+✔ source JPEG accepts orientation metadata before decode and enforces actual header dimensions (1.848ms)
+✔ HEIC hints and actual container header produce helpful rejection without claiming decode support (9.624375ms)
+✔ oversized source and pre-aborted selection stop before browser allocation (1.98325ms)
+✔ progressive source is accepted only by source validation; normalized wire contract remains baseline (6.615583ms)
+✔ server strips metadata and generates bounded independent JPEG outputs (301.917ms)
+✔ rejects wrong format, oversized, truncated, trailing and malformed segments before decode (2.035791ms)
+✔ rejects decompression-bomb dimensions and unsupported components before decoder (0.135792ms)
+✔ rejects corrupted entropy even if valid-size headers and EOI remain (9.404834ms)
+✔ complex noisy input fails closed instead of exceeding storage allowance (199.389625ms)
+✔ JPEG parser terminates on bounded deterministic malformed inputs (2.798916ms)
+✔ quota boundary and idempotent reserve/commit retries do not double count (2.479958ms)
+✔ two replacements race by version; loser stays accounted until cleanup is confirmed (0.534583ms)
+✔ expired/partial uploads keep reservations until writers stop and objects are absent (0.37225ms)
+✔ deleting an item fences pending initial uploads and future retries cannot resurrect it (0.241458ms)
+✔ remove/re-add cannot let a stale null-version upload win an ABA race (0.214334ms)
+✔ failed cleanup blocks quota, stale removal cannot delete a replacement, and retries are safe (0.208208ms)
+✔ invalid/oversized reservations and trial request/concurrency limits fail closed (0.362292ms)
+✔ photo count includes reservations and permits replacement at the count cap (1.339959ms)
+✔ unknown-item deletion markers cannot bypass the bounded trial metadata limit (0.249416ms)
+✔ small codec reencodes bounded pixels and strips every metadata marker (103.642709ms)
+✔ small codec rejects truncated entropy and recovers on the next valid decode (97.112666ms)
+✔ small codec rejects bad format, length, dimensions and trailing data before decode (2.122958ms)
+✔ small codec rejects concurrent decoding rather than sharing mutable WASM state (102.41275ms)
+✔ authorization failure or error never creates an admin client (22.09075ms)
+✔ deadline and method fail before SQL access (0.345459ms)
+✔ only named synthetic cases, no IDs, lists, paths, booleans or reset (4.353333ms)
+✔ body byte limit, content type, encoding and dishonest length (0.508666ms)
+✔ stalled body is canceled and cannot start SQL (1001.25775ms)
+✔ status works with no-store and simulated phase label (0.463459ms)
+✔ SQL/SDK failures are sanitized, not echoed (0.179ms)
+✔ a client that ignores abort cannot hang or trigger an unsafe refund (28.090166ms)
+✔ unauthorized, expired and malformed requests never connect to privileged services (27.775542ms)
+✔ wrong media type, encoding and dishonest body length fail before connecting (0.424542ms)
+✔ status/reconcile do not initialize codec or create bucket; errors are sanitized (1.088708ms)
+✔ stalled body and uncooperative RPC have bounded lifetimes (55.7955ms)
+✔ official SDK creates exactly the restricted bucket and refuses drift or ambiguous absence (4.764833ms)
+✔ official SDK upload uses JPEG bytes, no overwrite, and only reviewed immutable keys (0.502875ms)
+✔ official SDK stream download, physical remove, and strict NoSuchKey verification (1.348667ms)
+✔ exact NoSuchKey permits semantic404 over legacy400 and modern404 (27.896792ms)
+✔ ambiguous missing, auth, tenant, conflicting semantic status and server errors never prove absence (3.731917ms)
+✔ cleanup fences exact current version and only deletes the two fixed settled pairs (10.167291ms)
+✔ wrong batch, extra operation, wrong version, nonfixed item and unsettled writer stop before fencing or storage (1.194458ms)
+✔ failed delete or uncertain absence retain every byte and never acknowledge cleanup (1.036584ms)
+✔ cleanup HTTP command routes through the existing auth and strict input gate (6.740042ms)
+✔ failure on the second pair refunds only the verified first pair and a later cleanup can finish (0.94225ms)
+✔ continuation readiness uses only existing-bucket metadata and empty listing; never creates a bucket (27.869125ms)
+✔ continuation readiness rejects configuration drift, occupied listing and malformed listing envelopes (2.912708ms)
+✔ PostgREST failure envelopes preserve SQL fence errors without treating them as success (3.644041ms)
+✔ continuation HTTP command is auth/expiry gated, rejects arbitrary fields and never auto-retries a lost claim (5.82775ms)
+✔ all canonical migration and rollback budget updates have the reviewed explicit scope predicate (0.848792ms)
+✔ removing the WHERE clause from any canonical budget update is caught (0.177541ms)
+✔ comments, string literals, unrelated WHERE clauses and broadened scopes cannot satisfy the guard (0.064459ms)
+✔ continuation changes only its own markers and retains historical source guards and expiry (0.194375ms)
+✔ canonical runtime bodies exactly match the reviewed hosted fix and supplied source hashes (5.705666ms)
+✔ preview/cancel/save/replace/remove/expand and URL cleanup use separate photo state (371.579625ms)
+✔ late preparation cannot resurrect a cancelled dialog or leak preview URLs (76.347916ms)
+✔ built qList text add/edit/check/delete works through every photo-service fault (1160.9085ms)
+✔ text deletion survives photo cleanup failure and retry removes the orphan (53.087ms)
+✔ deleting a text row during a photo save aborts it without resurrecting either item (138.7235ms)
+✔ a delayed stale refresh cannot remove a newly saved thumbnail (90.629ms)
+✔ lost save response checks operation status and displays the current record without another upload (73.918ms)
+✔ an initial photo read cannot replace a newly chosen preview or unsupported-file error (94.6595ms)
+✔ preparation timeout aborts the normalizer and a new selection can recover (159.389791ms)
+✔ streamed JPEG boundary accepts limit-1 and limit, rejects limit+1 including understated length (31.396541ms)
+✔ unsupported encodings, MIME spoofing, empty bodies and malformed JPEG fail closed (3.395791ms)
+✔ dimensions at the 1280 edge are allowed; larger decoded dimensions are rejected before codec (0.889708ms)
+✔ a stalled upload is cancelled at its deadline without an unbounded body read (20.144375ms)
+✔ empty and excessive chunk streams terminate without waiting for the deadline (21.829916ms)
+✔ public namespaces need no text existence proof and all photo operations make zero network calls (176.381833ms)
+✔ malformed namespaces fail before storage; invented namespaces share one global cap (1277.548208ms)
+✔ empty-photo revisions prevent stale resurrection and stale removal cannot erase a re-added photo (31.20225ms)
+✔ production Storage and ledger are distinct from beta and admin trial resources (0.538916ms)
+✔ DOM disappearance and failed text writes never authorize photo removal (120.563334ms)
+✔ confirmed existing text write removes only the captured photo revision; no extra text operation (28.15725ms)
+✔ confirmed text deletion with metadata warning still cleans; edits never trigger cleanup (19.627708ms)
+✔ production build guard fails before changing the preview artifact (208.232334ms)
+✔ published output contains only the modern frontend and strict preview headers (2.902083ms)
+✔ two local clients merge independent changes and deletion wins stale edits (7.62675ms)
+✔ storage failure rejects the write instead of reporting it saved (0.294708ms)
+✔ custom names with prefix punctuation remain isolated (0.593709ms)
+✔ local checked-only deletion uses latest shared storage state (2.610666ms)
+✔ strict export parsing rejects duplicate keys, directives and unsafe numbers (1.821083ms)
+✔ plan preserves arrays, metadata, historical IDs and title-only claims (0.789ms)
+✔ offline plan writes private new files and refuses accidental live execution (25.732833ms)
+✔ legacy case-sensitive links, trailing slash and lastList cookie survive (6.379625ms)
+✔ new links use six cryptographically generated characters (4.146208ms)
+✔ moving an item changes only its priority with stable tie ordering (0.733041ms)
+✔ custom names, short IDs, encoded names and longer legacy IDs round-trip (0.619375ms)
+✔ generated reservation retries collisions and stops without an unsafe fallback (0.610583ms)
+✔ drag targets use current anchor keys and reject deleted targets (0.338416ms)
+✔ legacy moves across priority types keep exact requested order or fail without normalization (1.011166ms)
+✔ production database and runtime hosts are pinned; previews cannot open it (0.499625ms)
+✔ release manifests verify all bytes and keep variants separate (15.61025ms)
+✔ maintenance artifact preserves the URL and explains old offline edits (59.761125ms)
+✔ release preparation rejects hosting-context or configuration overrides (290.660875ms)
+✔ edge fades distinguish top, middle, bottom, fitting and offscreen lists (0.648583ms)
+✔ fade positions and visibility refresh after scroll, mutations, sticky resize and visual viewport changes (73.743125ms)
+✔ staging config is pinned to the approved independent project (1.4945ms)
+✔ staging refuses production and unrelated hosts (0.498208ms)
+✔ built UI adds, edits, checks, orders, deletes and preserves focus (232.207542ms)
+✔ share explains preview limits and completed removal requires confirmation (99.983833ms)
+✔ production origin refuses persistence and hosted bundle excludes Firebase endpoints (29.165ms)
+✔ pasted title and item values save on input/blur and survive reopening (103.739042ms)
+✔ dialogs have accessible names and copy confirmation stays inside the dialog (51.176084ms)
+✔ discarding an invalid item edit restores the persisted visible value (425.133209ms)
+✔ unknown custom URL opens an empty independent list and persists on edit (86.126208ms)
+✔ keyboard Home/End ordering persists and unchecking hides deletion again (240.087292ms)
+✔ sticky clear action follows current checks, sits below input, and returns hidden focus safely (91.46425ms)
+✔ clear confirmation uses singular and plural checked-item counts (117.752917ms)
+✔ built UI displays legacy priority fixtures exactly and appends below string priorities (206.608583ms)
+✔ About & Privacy is optional, dismissible and returns focus without recording acceptance (30.75375ms)
+✔ drag scroll zones follow the visible list below the sticky controls (0.393041ms)
+✔ sticky geometry keeps focused rows visible and cancels covered drop targets (48.160625ms)
+ℹ tests 147
 ℹ suites 0
-ℹ pass 143
+ℹ pass 147
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 3232.009125
+ℹ duration_ms 3181.909333

@@ -6,6 +6,8 @@ import { pathToFileURL } from "node:url";
 import { fixture } from "../photo-lab/beta/test-support.ts";
 const { chromium } = await import(pathToFileURL(process.argv[2]));
 const f = await fixture();
+let now = Date.now();
+Object.defineProperty(f.engine, "now", { value: () => now });
 f.ledger.value.control = {
   enabled: true,
   maintenance: true,
@@ -49,6 +51,7 @@ const results = {
 };
 try {
   for (const width of [320, 390, 1024]) {
+    now += 60000; // Independent layout scenarios use distinct simulated rate windows.
     const context = await browser.newContext({
       viewport: { width, height: 844 },
       isMobile: width < 500,
@@ -221,7 +224,38 @@ try {
     await item.locator(".photo-thumbnail").waitFor({ state: "detached" });
     f.ledger.value.control.enabled = true;
     await item.locator("input[type=checkbox]").check();
-    assert(await item.locator(".delete-item").isVisible());
+    await item.locator(".delete-item").waitFor({ state: "visible" });
+    // Re-attach after removal, then use the real text-save callback to remove the observed photo.
+    await item.getByRole("button", { name: "Add photo", exact: true }).click();
+    await page
+      .locator("dialog input[type=file]")
+      .last()
+      .setInputFiles(
+        new URL("../photo-lab/fixtures/browser/phone-12mp.jpg", import.meta.url)
+          .pathname,
+      );
+    await page.getByRole("button", { name: "Save photo", exact: true }).click();
+    await item.locator(".photo-thumbnail").waitFor();
+    // Use the other row for deletion so the saved row can still provide wrapped layout evidence.
+    const other = page.locator(`.item[data-key="${keys[1]}"]`);
+    await other.getByRole("button", { name: "Add photo", exact: true }).click();
+    await page
+      .locator("dialog input[type=file]")
+      .last()
+      .setInputFiles(
+        new URL("../photo-lab/fixtures/browser/phone-12mp.jpg", import.meta.url)
+          .pathname,
+      );
+    await page.getByRole("button", { name: "Save photo", exact: true }).click();
+    await other.locator(".photo-thumbnail").waitFor();
+    const beforeDelete = f.paths.size;
+    await other.locator("input[type=checkbox]").check();
+    await other.locator(".delete-item").click();
+    await other.waitFor({ state: "detached" });
+    await page.waitForFunction(
+      () => !document.querySelector(".photo-cleanup")?.textContent,
+    );
+    assert.equal(f.paths.size, beforeDelete - 1);
     // Layout robustness for a tall/wrapped editor: does not force row height or overlap controls.
     const wrapped = await item.evaluate((row) => {
       const field = row.querySelector(".name");
@@ -255,6 +289,8 @@ try {
       cameraKeyboardNoReorder: true,
       handleKeyboardReorder: true,
       removeWhileUploadsPaused: true,
+      reattachAfterRemoval: true,
+      confirmedTextDeleteCleanup: true,
     });
     await context.close();
   }

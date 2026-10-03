@@ -2,7 +2,7 @@
 """Generate inert, source-complete disabled deployment input and hashes. Never deploys."""
 import hashlib,json,pathlib
 root=pathlib.Path(__file__).resolve().parents[2];out=root/'photo-lab/beta/review';out.mkdir(exist_ok=True)
-names=['photo-lab/beta/'+n for n in ['index.ts','handler.ts','engine.ts','ledger.ts','text-authority.ts','sdk.ts']]
+names=['photo-lab/beta/'+n for n in ['index.ts','handler.ts','engine.ts','ledger.ts','namespace.ts','sdk.ts']]
 names+=['photo-lab/storage-trial/phase-b/codec.js','photo-lab/storage-trial/deno.json','photo-lab/storage-trial/deno.lock','photo-lab/upload-boundary.ts','src/photo/jpeg.ts','src/photo/adapter.ts','src/model.ts']
 files=[{'name':name,'content':(root/name).read_text()} for name in names]
 assert 'const RUNTIME_ENABLED = false' in files[0]['content']

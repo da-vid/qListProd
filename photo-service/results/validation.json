@@ -1,0 +1,32 @@
+{
+  "node_tests": 147,
+  "node_pass": 147,
+  "postgres_checks": 11,
+  "firebase_demo_emulator_checks": 2,
+  "typechecks": [
+    "root TypeScript",
+    "beta TypeScript",
+    "Deno frozen cached production entry"
+  ],
+  "builds": [
+    "normal",
+    "photo preview",
+    "modern",
+    "maintenance",
+    "rollback"
+  ],
+  "browser_widths": [
+    320,
+    390,
+    1024
+  ],
+  "photo_contract_network_calls": 0,
+  "browser_external_requests": 0,
+  "hosted_changes": false,
+  "physical_iPhone_Safari_HEIC_tested": false,
+  "limitations": [
+    "Lost text-delete hints may leave charged orphan photos.",
+    "Client text observations are not server-certified existence.",
+    "Application quotas bound admitted storage, not total incoming request traffic."
+  ]
+}

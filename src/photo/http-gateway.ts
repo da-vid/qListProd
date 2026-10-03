@@ -1,8 +1,13 @@
 import type { PhotoGateway, PhotoUpload, OperationStatus } from "./gateway.ts";
 import type { PhotoRecord } from "./adapter.ts";
 import { inspectJpeg, PhotoError } from "./jpeg.ts";
-// Used only by the isolated beta harness. No public client import or runtime URL override.
+// Public shared-link namespaces; all photo traffic goes only to the pinned photo service.
 export class HttpPhotoGateway implements PhotoGateway {
+  private versions = new Map<string, { version: number; present: boolean }>();
+  observedVersion(key: string) {
+    return this.versions.get(key)?.version;
+  }
+  private expectations = new Map<string, number>();
   private operations = new Map<string, string>();
   readonly endpoint: string;
   readonly list: string;
@@ -83,9 +88,14 @@ export class HttpPhotoGateway implements PhotoGateway {
     signal: AbortSignal,
   ): Promise<PhotoRecord | undefined> {
     const value = await this.call("get", key, "", signal);
-    if (value === null) return undefined;
-    if (!Number.isSafeInteger(value.version) || value.version < 1)
+    if (!Number.isSafeInteger(value.version) || value.version < 0)
       throw new PhotoError("Invalid photo version.");
+    this.versions.set(key, {
+      version: value.version,
+      present: value.full !== null,
+    });
+    if (value.full === null) return undefined;
+    if (value.version < 1) throw new PhotoError("Invalid photo version.");
     const bytes = Uint8Array.from(atob(value.full), (c) => c.charCodeAt(0));
     const p = inspectJpeg(bytes, { maxBytes: 393216, maxEdge: 1280 });
     if (p.sanitized.length !== bytes.length)
@@ -101,6 +111,15 @@ export class HttpPhotoGateway implements PhotoGateway {
     upload: PhotoUpload,
     signal: AbortSignal,
   ) {
+    if (expected === null && this.expectations.has(upload.operationId))
+      expected = this.expectations.get(upload.operationId)!;
+    if (expected === null) {
+      await this.get(key, signal);
+      const observed = this.versions.get(key)!;
+      if (observed.present) throw new PhotoError("Photo changed. Reopen it.");
+      expected = observed.version;
+    }
+    this.expectations.set(upload.operationId, expected);
     this.operations.set(upload.operationId, key);
     await this.call(
       "put",
@@ -124,8 +143,9 @@ export class HttpPhotoGateway implements PhotoGateway {
   }
   async remove(key: string, expected: number, signal: AbortSignal) {
     await this.call("remove", key, String(expected), signal);
+    this.versions.delete(key);
   }
   async deleteItem(key: string, signal: AbortSignal) {
-    await this.call("delete", key, "", signal);
+    throw new PhotoError("Use an observed photo revision to remove it.");
   }
 }

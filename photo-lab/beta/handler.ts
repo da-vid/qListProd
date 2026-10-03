@@ -53,7 +53,7 @@ export function createBetaHandler(options: {
         item = params.get("item")!,
         id = params.get("id")!;
       demand(
-        ["get", "put", "status", "remove", "delete"].includes(action),
+        ["get", "put", "status", "remove"].includes(action),
         "Invalid photo action.",
         400,
       );
@@ -62,9 +62,7 @@ export function createBetaHandler(options: {
         "Client credentials are not used here.",
         400,
       );
-      const maintenance = ["get", "status", "remove", "delete"].includes(
-        action,
-      );
+      const maintenance = ["get", "status", "remove"].includes(action);
       demand(
         maintenance ? options.maintenanceEnabled : options.enabled,
         "Photos are paused.",
@@ -97,31 +95,17 @@ export function createBetaHandler(options: {
         // Best-effort bounded recovery over one server-known item in this same allowed list.
         // No public scan route, upload capability, TTL or browser cleanup journal dependency.
         await engine.reconcile(list, signal).catch(() => {});
-        return json(
-          p
-            ? {
-                version: p.version,
-                full: encode(p.full),
-              }
-            : null,
-        );
+        return json({
+          version: p.version,
+          full: "full" in p ? encode(p.full) : null,
+        });
       }
       if (action === "status") {
         demand(/^[0-9a-f-]{36}$/.test(id), "Invalid operation.", 400);
         return json((await engine.status(list, item, id, signal)) ?? null);
       }
-      demand(
-        action === "delete" ? id === "" : /^\d{1,12}$/.test(id),
-        "Invalid removal.",
-        400,
-      );
-      await engine.remove(
-        list,
-        item,
-        action === "delete" ? undefined : Number(id),
-        action === "delete",
-        signal,
-      );
+      demand(/^\d{1,12}$/.test(id), "Invalid removal.", 400);
+      await engine.remove(list, item, Number(id), signal);
       return json({ ok: true });
     } catch (e) {
       return json(

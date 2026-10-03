@@ -65,14 +65,6 @@ export async function fixture(ledger: Ledger = new MemoryLedger()) {
     ledger,
     storage,
     process,
-    text: async (list, item) => {
-      if (!textAvailable) throw Error("Synthetic text outage");
-      return {
-        listExists: list === "PhotoDemo",
-        itemExists: textItems.has(item),
-        itemAbsent: list === "PhotoDemo" && !textItems.has(item),
-      };
-    },
   });
   const handler = createBetaHandler({
     enabled: true,

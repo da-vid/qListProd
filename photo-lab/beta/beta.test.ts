@@ -4,7 +4,6 @@ import assert from "node:assert/strict";
 import { fixture, signal, upload } from "./test-support.ts";
 import { MemoryLedger, RESERVATION, PROJECT, transact } from "./ledger.ts";
 import { createBetaHandler } from "./handler.ts";
-import { firebaseTextAuthority } from "./text-authority.ts";
 import { HttpPhotoGateway } from "../../src/photo/http-gateway.ts";
 const req = (
   action: string,
@@ -38,11 +37,11 @@ test("disabled defaults deny before connection; no credential or public client p
   assert.equal((await f.handler(req("get"))).status, 200);
   assert.equal(f.reads, 0);
 });
-test("anonymous same-link request verifies authoritative text and protects scope for all routes", async () => {
+test("anonymous same-link namespaces protect scope without text existence checks", async () => {
   const f = await fixture();
   for (const list of ["Missing", "PhotoDemo/other", "new", "__proto__"])
     assert.notEqual((await f.handler(req("get", list))).status, 200);
-  for (const item of ["missing", "../item", "a/b", "__proto__"])
+  for (const item of ["../item", "a/b", "__proto__"])
     assert.notEqual(
       (
         await f.handler(
@@ -139,7 +138,7 @@ test("deletion while PUT acknowledgment is withheld fences later commits and ret
   );
   await ready;
   f.textItems.delete("item");
-  await f.client.deleteItem("item", signal());
+  await f.client.remove("item", 0, signal());
   let op = (await f.ledger.load(signal())).state.ops[u.operationId];
   assert.equal(op.state, "cleanup");
   assert.equal(op.writes[0], "writing");
@@ -182,7 +181,7 @@ test("cleanup failure retains both replacement charges; explicit retry and servi
     2,
   );
   f.textAvailable = false;
-  await assert.rejects(() => f.client.get("item", signal()));
+  assert(await f.client.get("item", signal()));
   f.textAvailable = true;
   f.cleanupFails = false;
   await f.engine.cleanup("PhotoDemo", "item", signal());
@@ -220,7 +219,7 @@ test("global storage cap refuses new uploads without blocking reads or removal; 
   await f.client.remove(key, photo!.version, signal());
   assert.equal(f.paths.size, 0);
 });
-test("text disappears after processing; no commit and no stale read, kill switch keeps existing photos", async () => {
+test("lost text-delete hint retains charged photo; upload stop keeps existing photos", async () => {
   const f = await fixture();
   const original = f.engine.process;
   const engine = f.engine;
@@ -231,46 +230,13 @@ test("text disappears after processing; no commit and no stale read, kill switch
       return result;
     },
   });
-  await assert.rejects(() =>
-    f.client.put("item", null, upload(f.jpeg), signal()),
-  );
-  assert.equal(f.paths.size, 0);
+  await f.client.put("item", null, upload(f.jpeg), signal());
+  assert.equal(f.paths.size, 1);
   const g = await fixture();
   await g.client.put("item", null, upload(g.jpeg), signal());
   (g.ledger as MemoryLedger).value.control.enabled = false;
   assert.equal((await g.handler(req("get"))).status, 200);
   assert.equal(g.paths.size, 1);
-});
-test("Firebase verifier is pinned, read-only, bounded and refuses malformed text without trusting caller claims", async () => {
-  const urls: string[] = [];
-  let value: any = { ID: "item", name: "Synthetic apples", checked: false };
-  const verify = firebaseTextAuthority(async (input, init) => {
-    urls.push(String(input));
-    assert.equal(init?.method, "GET");
-    assert.equal(init?.credentials, "omit");
-    return Response.json(String(input).includes("listClaims") ? true : value);
-  });
-  assert.deepEqual(await verify("Synthetic list", "item", signal()), {
-    listExists: true,
-    itemExists: true,
-    itemAbsent: false,
-  });
-  assert(
-    urls.every((u) => u.startsWith("https://qwiklist.firebaseio.com/v2/")),
-  );
-  assert(urls[0].includes("Synthetic%20list"));
-  for (value of [
-    null,
-    {},
-    { ID: "item", name: " ", checked: false },
-    { ID: "item", name: "x", checked: "false" },
-    { ID: "item", name: "x", checked: false, photo: "forged" },
-  ])
-    assert.equal(
-      (await verify("PhotoDemo", "item", signal())).itemExists,
-      false,
-    );
-  await assert.rejects(() => verify("PhotoDemo", "../item", signal()));
 });
 
 test("unknown writes stay charged without permanently occupying encoding slots; expired never-written saves are fenced", async () => {

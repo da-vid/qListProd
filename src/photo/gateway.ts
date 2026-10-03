@@ -12,6 +12,7 @@ export type OperationStatus = {
   record?: PhotoRecord;
 };
 export interface PhotoGateway {
+  observedVersion?(key: string): number | undefined;
   get(key: string, signal: AbortSignal): Promise<PhotoRecord | undefined>;
   put(
     key: string,

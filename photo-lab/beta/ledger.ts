@@ -51,7 +51,6 @@ export type Item = {
   epoch: number;
   version: number;
   current?: string;
-  deleted: boolean;
 };
 export type State = {
   ops: Record<string, Operation>;

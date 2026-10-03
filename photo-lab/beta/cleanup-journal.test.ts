@@ -18,17 +18,26 @@ test("cleanup intents survive restoration, stay list-scoped and cannot overwrite
   };
   const a = cleanupJournal(store, "PhotoDemo"),
     b = cleanupJournal(store, "PhotoDemo");
-  a.add("key");
-  b.add("other");
-  a.remove("key");
-  assert.deepEqual(b.load(), ["other"]);
+  a.add({ key: "key", version: 1 });
+  b.add({ key: "other", version: 2 });
+  a.remove({ key: "key", version: 1 });
+  assert.deepEqual(b.load(), [{ key: "other", version: 2 }]);
   assert.deepEqual(cleanupJournal(store, "different").load(), []);
-  assert.deepEqual(cleanupJournal(store, "PhotoDemo").load(), ["other"]);
-  b.remove("other");
-  for (let n = 0; n < 100; n++) a.add(String(n));
-  assert.throws(() => a.add("overflow"));
-  a.add("0");
+  assert.deepEqual(cleanupJournal(store, "PhotoDemo").load(), [
+    { key: "other", version: 2 },
+  ]);
+  b.remove({ key: "other", version: 2 });
+  a.add({ key: "same", version: 1 });
+  b.add({ key: "same", version: 2 });
+  a.remove({ key: "same", version: 1 });
+  assert.deepEqual(b.load(), [{ key: "same", version: 2 }]);
+  b.remove({ key: "same", version: 2 });
+  data.set("qlist.photo.cleanup.v1:PhotoDemo:old", "1");
+  assert.deepEqual(a.load(), []); // Never replay old unversioned hints.
+  for (let n = 0; n < 100; n++) a.add({ key: String(n), version: 1 });
+  assert.throws(() => a.add({ key: "overflow", version: 1 }));
+  a.add({ key: "0", version: 1 });
   for (const value of data.values()) assert.equal(value, "1");
-  data.set("qlist.photo.cleanup.v1:PhotoDemo:corrupt", "not a marker");
+  data.set("qlist.photo.cleanup.v2:PhotoDemo:corrupt", "not a marker");
   assert.throws(() => a.load());
 });

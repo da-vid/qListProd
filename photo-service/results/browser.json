@@ -6,7 +6,7 @@
       "width": 320,
       "before": [
         {
-          "key": "fa52ca3f4ef640cf8eb259ddf3334e1b",
+          "key": "232a0d4c84a8474f8127e5507d4c656e",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -35,7 +35,7 @@
           "padding": "0px 5px 0px 10px"
         },
         {
-          "key": "20790b873dcc4842a92effa6c911d9dd",
+          "key": "b85c0052d01d496183e0968b2bef2a32",
           "row": {
             "x": 0,
             "y": 211.140625,
@@ -66,7 +66,7 @@
       ],
       "after": [
         {
-          "key": "fa52ca3f4ef640cf8eb259ddf3334e1b",
+          "key": "232a0d4c84a8474f8127e5507d4c656e",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -102,7 +102,7 @@
           "padding": "0px 5px 0px 10px"
         },
         {
-          "key": "20790b873dcc4842a92effa6c911d9dd",
+          "key": "b85c0052d01d496183e0968b2bef2a32",
           "row": {
             "x": 0,
             "y": 211.140625,
@@ -140,7 +140,7 @@
       ],
       "saved": [
         {
-          "key": "fa52ca3f4ef640cf8eb259ddf3334e1b",
+          "key": "232a0d4c84a8474f8127e5507d4c656e",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -176,7 +176,7 @@
           "padding": "0px 5px 0px 10px"
         },
         {
-          "key": "20790b873dcc4842a92effa6c911d9dd",
+          "key": "b85c0052d01d496183e0968b2bef2a32",
           "row": {
             "x": 0,
             "y": 211.140625,
@@ -213,19 +213,21 @@
         }
       ],
       "wrapped": {
-        "height": 118.9375,
+        "height": 138.125,
         "cameraWithin": true,
         "padding": "0px 5px 0px 10px"
       },
       "cameraKeyboardNoReorder": true,
       "handleKeyboardReorder": true,
-      "removeWhileUploadsPaused": true
+      "removeWhileUploadsPaused": true,
+      "reattachAfterRemoval": true,
+      "confirmedTextDeleteCleanup": true
     },
     {
       "width": 390,
       "before": [
         {
-          "key": "6004a493334549f198f63691b8ac0775",
+          "key": "2505fffbe7194f3a9cc4949d41a5bdcd",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -254,7 +256,7 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "234dbdd12bec4eec9248dbb253252260",
+          "key": "ff82fd4395dc4ecc91146f119cf1ede2",
           "row": {
             "x": 0,
             "y": 211.140625,
@@ -285,7 +287,7 @@
       ],
       "after": [
         {
-          "key": "6004a493334549f198f63691b8ac0775",
+          "key": "2505fffbe7194f3a9cc4949d41a5bdcd",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -321,7 +323,7 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "234dbdd12bec4eec9248dbb253252260",
+          "key": "ff82fd4395dc4ecc91146f119cf1ede2",
           "row": {
             "x": 0,
             "y": 211.140625,
@@ -359,7 +361,7 @@
       ],
       "saved": [
         {
-          "key": "6004a493334549f198f63691b8ac0775",
+          "key": "2505fffbe7194f3a9cc4949d41a5bdcd",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -395,7 +397,7 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "234dbdd12bec4eec9248dbb253252260",
+          "key": "ff82fd4395dc4ecc91146f119cf1ede2",
           "row": {
             "x": 0,
             "y": 211.140625,
@@ -432,19 +434,21 @@
         }
       ],
       "wrapped": {
-        "height": 80.5625,
+        "height": 99.75,
         "cameraWithin": true,
         "padding": "0px 5px 0px 16px"
       },
       "cameraKeyboardNoReorder": true,
       "handleKeyboardReorder": true,
-      "removeWhileUploadsPaused": true
+      "removeWhileUploadsPaused": true,
+      "reattachAfterRemoval": true,
+      "confirmedTextDeleteCleanup": true
     },
     {
       "width": 1024,
       "before": [
         {
-          "key": "1395112a2836486c90c66adbe4babe30",
+          "key": "5fc9a899e7e34a44a460ec233412f920",
           "row": {
             "x": 262,
             "y": 168.125,
@@ -473,7 +477,7 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "377e2069097f4c2db7719078b62689e7",
+          "key": "bc6d06e63a304fef9c8381a528f1313d",
           "row": {
             "x": 262,
             "y": 213.125,
@@ -504,7 +508,7 @@
       ],
       "after": [
         {
-          "key": "1395112a2836486c90c66adbe4babe30",
+          "key": "5fc9a899e7e34a44a460ec233412f920",
           "row": {
             "x": 262,
             "y": 168.125,
@@ -540,7 +544,7 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "377e2069097f4c2db7719078b62689e7",
+          "key": "bc6d06e63a304fef9c8381a528f1313d",
           "row": {
             "x": 262,
             "y": 213.125,
@@ -578,7 +582,7 @@
       ],
       "saved": [
         {
-          "key": "1395112a2836486c90c66adbe4babe30",
+          "key": "5fc9a899e7e34a44a460ec233412f920",
           "row": {
             "x": 262,
             "y": 168.125,
@@ -614,7 +618,7 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "377e2069097f4c2db7719078b62689e7",
+          "key": "bc6d06e63a304fef9c8381a528f1313d",
           "row": {
             "x": 262,
             "y": 213.125,
@@ -651,13 +655,15 @@
         }
       ],
       "wrapped": {
-        "height": 66.6875,
+        "height": 88.53125,
         "cameraWithin": true,
         "padding": "0px 5px 0px 16px"
       },
       "cameraKeyboardNoReorder": true,
       "handleKeyboardReorder": true,
-      "removeWhileUploadsPaused": true
+      "removeWhileUploadsPaused": true,
+      "reattachAfterRemoval": true,
+      "confirmedTextDeleteCleanup": true
     }
   ],
   "external_requests": 0,

@@ -1,12 +1,9 @@
 i  emulators: Starting emulators: database
 i  emulators: Detected demo project ID "demo-qlist", emulated services will use a demo configuration and attempts to access non-emulated services for this project will fail.
-⚠  It appears you are running in a CI environment. You can avoid downloading the Database Emulator repeatedly by caching the /Users/david/.cache/firebase/emulators directory.
-i  database: downloading firebase-database-emulator-v4.11.2.jar...
-
 i  database: Database Emulator logging to database-debug.log
 i  Running script: node --test --test-concurrency=1 --test-timeout=60000 test/production-rules.integration.ts test/release-ui.integration.ts
-✔ production privacy rules deny legacy reads without changing v2 or retained data (599.8125ms)
-✔ production UI maintenance transitions and read-only recovery use the same schema (DOM simulator) (558.806208ms)
+✔ production privacy rules deny legacy reads without changing v2 or retained data (242.094625ms)
+✔ production UI maintenance transitions and read-only recovery use the same schema (DOM simulator) (446.062375ms)
 ℹ tests 2
 ℹ suites 0
 ℹ pass 2
@@ -14,7 +11,7 @@ i  Running script: node --test --test-concurrency=1 --test-timeout=60000 test/pr
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 2059.823209
+ℹ duration_ms 1075.817625
 ✔  Script exited successfully (code 0)
 i  emulators: Shutting down emulators.
 i  database: Stopping Database Emulator

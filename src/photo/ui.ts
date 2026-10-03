@@ -1,7 +1,8 @@
 import { bounded, type PhotoRecord } from "./adapter.ts";
 import { normalizePhoto, type NormalizedPhoto } from "./normalize.ts";
 import { type PhotoGateway, type PhotoUpload } from "./gateway.ts";
-import type { CleanupJournal } from "./cleanup-journal.ts";
+import { PHOTO_DELETE_INTENT, type PhotoDeleteIntent } from "./text-delete.ts";
+import type { CleanupIntent, CleanupJournal } from "./cleanup-journal.ts";
 type Options = {
   minimal?: boolean;
   cleanupJournal?: CleanupJournal;
@@ -26,20 +27,22 @@ export function installPhotoUI(
       thumb?: string;
       lifetime: AbortController;
       revision: number;
+      photoVersion?: number;
     }
   >();
-  const cleanupQueue = new Set<string>();
+  const cleanupQueue = new Map<string, CleanupIntent>();
+  const intentKey = (i: CleanupIntent) => JSON.stringify(i);
   let journalError = false;
   try {
-    for (const key of options.cleanupJournal?.load() ?? [])
-      cleanupQueue.add(key);
+    for (const intent of options.cleanupJournal?.load() ?? [])
+      cleanupQueue.set(intentKey(intent), intent);
   } catch {
     journalError = true;
   }
-  function persistCleanup(key: string, removing = false) {
+  function persistCleanup(intent: CleanupIntent, removing = false) {
     try {
-      if (removing) options.cleanupJournal?.remove(key);
-      else options.cleanupJournal?.add(key);
+      if (removing) options.cleanupJournal?.remove(intent);
+      else options.cleanupJournal?.add(intent);
       journalError = false;
     } catch {
       journalError = true;
@@ -83,14 +86,14 @@ export function installPhotoUI(
         " Photo cleanup retry data could not be saved or restored. Keep this tab open and retry when available.";
   }
   cleanupStatus();
-  async function cleanup(key: string) {
-    cleanupQueue.add(key);
-    persistCleanup(key);
+  async function cleanup(intent: CleanupIntent) {
+    cleanupQueue.set(intentKey(intent), intent);
+    persistCleanup(intent);
     cleanupStatus();
     try {
-      await run((signal) => adapter.deleteItem(key, signal));
-      cleanupQueue.delete(key);
-      persistCleanup(key, true);
+      await run((signal) => adapter.remove(intent.key, intent.version, signal));
+      cleanupQueue.delete(intentKey(intent));
+      persistCleanup(intent, true);
     } catch {
       /* Keep only a local retry marker; do not roll back the text deletion. */
     }
@@ -100,6 +103,7 @@ export function installPhotoUI(
     const entry = rows.get(key);
     if (!entry) return;
     entry.revision++;
+    entry.photoVersion = record?.version ?? adapter.observedVersion?.(key);
     if (entry.thumb) win.URL.revokeObjectURL(entry.thumb);
     entry.bar.querySelector(".photo-thumbnail")?.remove();
     entry.thumb = undefined;
@@ -158,6 +162,7 @@ export function installPhotoUI(
     let url: string | undefined,
       selected: PhotoUpload | undefined,
       existing: PhotoRecord | undefined,
+      observedVersion: number | undefined,
       busy = false,
       generation = 0;
     function close() {
@@ -262,13 +267,16 @@ export function installPhotoUI(
             ),
             undefined)
           : await run(
-              (s) => adapter.put(key, existing?.version ?? null, selected!, s),
+              (s) =>
+                adapter.put(
+                  key,
+                  existing?.version ?? observedVersion ?? null,
+                  selected!,
+                  s,
+                ),
               controller.signal,
             );
-        if (!rows.has(key)) {
-          void cleanup(key);
-          return;
-        }
+        if (!rows.has(key)) return;
         thumbnail(key, result);
         report(
           key,
@@ -350,6 +358,8 @@ export function installPhotoUI(
       .then((record) => {
         if (controller.signal.aborted) return;
         existing = record;
+        observedVersion = record?.version ?? adapter.observedVersion?.(key);
+        entry.photoVersion = observedVersion;
         // A file chosen before the initial read completed owns the preview/status.
         if (generation !== 0) return;
         controls.forEach((b) => (b.disabled = false));
@@ -408,19 +418,30 @@ export function installPhotoUI(
         if (entry.thumb) win.URL.revokeObjectURL(entry.thumb);
         rows.delete(key);
         if (currentDialog?.key === key) currentDialog.close();
-        void cleanup(key);
+        // DOM disappearance cancels UI only; it does not authorize removal.
       }
   }
+  const onDeleteIntent = (event: Event) => {
+    const intent = (event as CustomEvent<PhotoDeleteIntent>).detail;
+    const version = rows.get(intent.key)?.photoVersion;
+    if (version === undefined) return; // A lost/unobserved hint may leave a charged orphan.
+    const removal = { key: intent.key, version };
+    intent.confirm = () => {
+      void cleanup(removal);
+    };
+  };
+  root.addEventListener(PHOTO_DELETE_INTENT, onDeleteIntent);
   const observer = new win.MutationObserver(reconcile);
   observer.observe(root, { childList: true, subtree: true });
   reconcile();
   return {
     async retry() {
-      await Promise.all([...cleanupQueue].map(cleanup));
+      await Promise.all([...cleanupQueue.values()].map(cleanup));
       await Promise.all([...rows.keys()].map(refresh));
     },
     close() {
       observer.disconnect();
+      root.removeEventListener(PHOTO_DELETE_INTENT, onDeleteIntent);
       currentDialog?.close();
       for (const entry of rows.values()) {
         entry.lifetime.abort();

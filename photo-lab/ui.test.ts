@@ -1,3 +1,4 @@
+import { applyWithPhotoCleanup } from "../src/photo/text-delete.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
@@ -227,9 +228,9 @@ test("built qList text add/edit/check/delete works through every photo-service f
         .click();
       await tick();
       assert.equal(dom.window.document.querySelectorAll(".item").length, 0);
-      assert.match(
-        dom.window.document.querySelector(".photo-cleanup")!.textContent!,
-        /cleanup is waiting/,
+      assert.equal(
+        dom.window.document.querySelector(".photo-cleanup")!.textContent,
+        "", // No observed photo revision: never invent an unversioned deletion hint.
       );
       change(dom, '[aria-label="Photo service simulation"]', "healthy");
       click(dom, "Retry photos");
@@ -266,7 +267,13 @@ test("text deletion survives photo cleanup failure and retry removes the orphan"
   try {
     await tick();
     mock.fault = "offline";
-    dom.window.document.querySelector(".item")!.remove();
+    await applyWithPhotoCleanup(
+      dom.window.document.querySelector("#app")!,
+      { type: "delete", key: "a" },
+      async () => {
+        dom.window.document.querySelector(".item")!.remove();
+      },
+    );
     await tick();
     assert.equal(mock.records.size, 1);
     assert.equal(dom.window.document.querySelector(".item"), null);

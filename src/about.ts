@@ -42,7 +42,7 @@ export function installAboutPrivacy(app: HTMLElement, footer: HTMLElement) {
       [
         "Lists are stored using Google Firebase, photos use Supabase, and Netlify hosts the website. These providers process technical information such as IP addresses and browser details. The current app has no advertising or analytics integration.",
         "A cookie remembers your last list for up to 60 days. Firebase also uses browser storage for technical operation. qList does not currently respond to Do Not Track or Global Privacy Control signals.",
-        "Anyone with a list link can also view, replace or remove its photos. Photos are compressed JPEGs with image metadata removed. Deleting an item queues its photo for removal; service failures may delay cleanup. Photos do not expire automatically. Older copies may remain in backups.",
+        "Anyone with a list link can also view, replace or remove its photos. Photos are compressed JPEGs with image metadata removed. A confirmed item deletion queues removal of its observed photo. Interrupted cleanup can leave a stored photo. Photos do not expire automatically. Older copies may remain in backups.",
       ],
     ],
     [

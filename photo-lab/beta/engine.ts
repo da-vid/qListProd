@@ -11,7 +11,7 @@ import {
   type Ledger,
   type Operation,
 } from "./ledger.ts";
-import { validScope, type TextAuthority } from "./text-authority.ts";
+import { validScope } from "./namespace.ts";
 export type Pair = { full: Uint8Array; thumbnail: Uint8Array };
 export type StoragePort = {
   put(key: string, bytes: Uint8Array, signal: AbortSignal): Promise<void>;
@@ -31,19 +31,16 @@ const hash = async (bytes: Uint8Array) =>
 export class BetaEngine {
   readonly ledger: Ledger;
   readonly storage: StoragePort;
-  readonly text: TextAuthority;
   readonly process: (input: Uint8Array) => Promise<Pair>;
   readonly now: () => number;
   constructor(deps: {
     ledger: Ledger;
     storage: StoragePort;
-    text: TextAuthority;
     process: (input: Uint8Array) => Promise<Pair>;
     now?: () => number;
   }) {
     this.ledger = deps.ledger;
     this.storage = deps.storage;
-    this.text = deps.text;
     this.process = deps.process;
     this.now = deps.now ?? Date.now;
   }
@@ -74,20 +71,6 @@ export class BetaEngine {
       s.state.requests++;
     });
   }
-  async verify(
-    list: string,
-    item: string,
-    signal: AbortSignal,
-    allowMissing = false,
-  ) {
-    const check = await this.text(list, item, signal);
-    demand(
-      check.listExists && (check.itemExists || allowMissing),
-      "The text list or item is unavailable.",
-      404,
-    );
-    return check;
-  }
   async put(
     list: string,
     item: string,
@@ -105,7 +88,6 @@ export class BetaEngine {
       "Invalid save request.",
       400,
     );
-    await this.verify(list, item, signal);
     const fresh = await transact(this.ledger, signal, (s) => {
       open(s, list, this.now());
       const old = s.state.ops[id];
@@ -122,12 +104,8 @@ export class BetaEngine {
           item,
           epoch: 0,
           version: 0,
-          deleted: false,
         });
-      demand(
-        !it.deleted && (it.current ? it.version : 0) === expected,
-        "This photo changed. Reopen it.",
-      );
+      demand(it.version === expected, "This photo changed. Reopen it.");
       demand(
         !Object.values(s.state.ops).some(
           (o) => o.list === list && o.item === item && o.state === "pending",
@@ -199,9 +177,8 @@ export class BetaEngine {
           demand(
             op.state === "pending" &&
               op.lease > this.now() &&
-              !it.deleted &&
               it.epoch === op.epoch &&
-              (it.current ? it.version : 0) === expected &&
+              it.version === expected &&
               op.writes[n] === "planned",
             "Save was fenced.",
           );
@@ -213,7 +190,6 @@ export class BetaEngine {
           s.state.ops[id].writes[n] = "stored";
         });
       }
-      await this.verify(list, item, signal);
       const version = await transact(this.ledger, signal, (s) => {
         open(s, list, this.now());
         const op = s.state.ops[id],
@@ -222,9 +198,8 @@ export class BetaEngine {
           op.state === "pending" &&
             op.lease > this.now() &&
             op.writes.every((w) => w === "stored") &&
-            !it.deleted &&
             it.epoch === op.epoch &&
-            (it.current ? it.version : 0) === expected,
+            it.version === expected,
           "Save was fenced.",
         );
         if (it.current) s.state.ops[it.current].state = "cleanup";
@@ -251,26 +226,16 @@ export class BetaEngine {
     }
   }
   async get(list: string, item: string, signal: AbortSignal) {
-    const check = await this.text(list, item, signal);
-    if (check.itemAbsent) {
-      await this.fenceDeleted(list, item, signal);
-      await this.cleanup(list, item, signal);
-    }
-    demand(
-      check.listExists && check.itemExists,
-      "The text list or item is unavailable.",
-      404,
-    );
     const op = await transact(this.ledger, signal, (s) => {
       maintain(s, list);
       const it = s.state.items[scope(list, item)];
-      if (!it?.current) return undefined;
+      if (!it?.current) return { version: it?.version ?? 0 };
       // Observability only, never a lifetime read allowance.
       s.state.reads++;
       s.state.readBytes += RESERVATION;
       return structuredClone(s.state.ops[it.current]);
     });
-    if (!op) return undefined;
+    if (!("id" in op)) return op;
     const bytes = await this.storage.read(objectKey(op.id), signal);
     demand(
       bytes.length === op.sizes[0] && (await hash(bytes)) === op.hashes[0],
@@ -278,16 +243,6 @@ export class BetaEngine {
       503,
     );
     inspectJpeg(bytes, { maxBytes: RESERVATION, maxEdge: 1280 });
-    const after = await this.text(list, item, signal);
-    if (after.itemAbsent) {
-      await this.fenceDeleted(list, item, signal);
-      await this.cleanup(list, item, signal);
-    }
-    demand(
-      after.listExists && after.itemExists,
-      "The text list or item is unavailable.",
-      404,
-    );
     const latest = await this.ledger.load(signal);
     maintain(latest, list);
     demand(
@@ -316,7 +271,7 @@ export class BetaEngine {
   }
   // No public scan route. The server invokes this on reads (or an existing trusted operator).
   // Durable cursor works after restart/lost browser state; one tracked item per invocation.
-  // Only definite authoritative absence fences a deleted text item. No TTL.
+  // Only previously recorded photo work is reconciled. Text absence is never inferred.
   async reconcile(list: string, signal: AbortSignal) {
     await this.admit(list, "maintenance", signal, true);
     const selected = await transact(this.ledger, signal, (s) => {
@@ -342,17 +297,11 @@ export class BetaEngine {
       return { item: it.item, epoch: it.epoch };
     });
     if (!selected) return { scanned: 0 };
-    // An outage must not block already-authorized cleanup or become a deletion signal.
-    const check = await this.text(list, selected.item, signal).catch(
-      () => undefined,
-    );
-    if (check?.itemAbsent) await this.fenceDeleted(list, selected.item, signal);
     await this.cleanup(list, selected.item, signal);
     const s = await this.ledger.load(signal);
     return {
       scanned: 1,
       item: selected.item,
-      textUnavailable: !check,
       unknownWriters: Object.values(s.state.ops).filter(
         (o) =>
           o.list === list &&
@@ -360,15 +309,6 @@ export class BetaEngine {
           o.writes.includes("writing"),
       ).length,
     };
-  }
-  private async fenceDeleted(list: string, item: string, signal: AbortSignal) {
-    await transact(this.ledger, signal, (s) => {
-      maintain(s, list);
-      const it = s.state.items[scope(list, item)];
-      if (!it || it.deleted) return;
-      it.deleted = true;
-      this.fence(s.state, list, item);
-    });
   }
   private fence(
     state: import("./ledger.ts").State,
@@ -389,32 +329,25 @@ export class BetaEngine {
     list: string,
     item: string,
     expected: number | undefined,
-    deleted: boolean,
     signal: AbortSignal,
   ) {
-    if (deleted) {
-      // DOM disappearance is merely a hint. Present, malformed or unreachable text cannot delete photos.
-      const check = await this.text(list, item, signal);
-      demand(
-        check.itemAbsent,
-        "Text deletion is not confirmed. Photo retained.",
-        409,
-      );
-      await this.fenceDeleted(list, item, signal);
-    } else
-      await transact(this.ledger, signal, (s) => {
-        maintain(s, list);
-        const it = s.state.items[scope(list, item)];
-        if (!it) return;
-        demand(
-          Number.isSafeInteger(expected) && expected! > 0,
-          "Invalid version.",
-          400,
-        );
-        if (!it.current) return;
-        demand(it.version === expected, "Photo changed. Reopen it.");
-        this.fence(s.state, list, item);
-      });
+    demand(
+      Number.isSafeInteger(expected) && expected! >= 0,
+      "Invalid version.",
+      400,
+    );
+    await transact(this.ledger, signal, (s) => {
+      maintain(s, list);
+      const it = s.state.items[scope(list, item)];
+      if (!it) {
+        demand(expected === 0, "Photo changed. Reopen it.");
+        return;
+      }
+      // A receipt retry may finish old cleanup, but must never fence a later generation.
+      if (!it.current && it.version === expected! + 1) return;
+      demand(it.version === expected, "Photo changed. Reopen it.");
+      this.fence(s.state, list, item);
+    });
     await this.cleanup(list, item, signal);
   }
   // Cleanup consumes only explicitly fenced, settled objects. No retained-photo TTL.

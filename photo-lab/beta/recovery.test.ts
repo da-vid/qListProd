@@ -4,40 +4,13 @@ import { fixture, signal, upload } from "./test-support.ts";
 import { BetaEngine } from "./engine.ts";
 import { MemoryLedger, PROJECT, RESERVATION, scope } from "./ledger.ts";
 import { createBetaHandler } from "./handler.ts";
-import { firebaseTextAuthority } from "./text-authority.ts";
 
-test("present or malformed text never authorizes item deletion; photo-only remove allows re-add", async () => {
+test("unversioned deletion is refused; versioned removal allows re-add", async () => {
   const f = await fixture();
   const photo = await f.client.put("item", null, upload(f.jpeg), signal());
-  await assert.rejects(
-    () => f.client.deleteItem("item", signal()),
-    /not confirmed/,
-  );
+  await assert.rejects(() => f.client.deleteItem("item", signal()), /revision/);
+  await f.engine.reconcile("PhotoDemo", signal());
   assert.equal(f.paths.size, 1);
-  assert.equal(
-    (await f.ledger.load(signal())).state.items[scope("PhotoDemo", "item")]
-      .deleted,
-    false,
-  );
-  const original = f.engine.text;
-  for (const value of [{}, { name: "bad" }, [], false, "", 0]) {
-    const text = firebaseTextAuthority(async (url) =>
-      Response.json(String(url).includes("listClaims") ? true : value),
-    );
-    const check = await text("PhotoDemo", "item", signal());
-    assert.equal(check.itemAbsent, false);
-    Object.defineProperty(f.engine, "text", {
-      value: text,
-      configurable: true,
-    });
-    await assert.rejects(
-      () => f.client.deleteItem("item", signal()),
-      /not confirmed/,
-    );
-    await f.engine.reconcile("PhotoDemo", signal());
-    assert.equal(f.paths.size, 1);
-  }
-  Object.defineProperty(f.engine, "text", { value: original });
   await f.client.remove("item", photo.version, signal());
   const replacement = await f.client.put(
     "item",
@@ -52,7 +25,7 @@ test("reads, status and confirmed deletion work with uploads disabled and storag
   const f = await fixture(),
     l = f.ledger as MemoryLedger,
     u = upload(f.jpeg);
-  await f.client.put("item", null, u, signal());
+  const photo = await f.client.put("item", null, u, signal());
   const legacy = structuredClone(l.value.legacy);
   Object.defineProperty(f.engine, "now", {
     value: () => Date.now() + 90 * 86400000,
@@ -83,12 +56,12 @@ test("reads, status and confirmed deletion work with uploads disabled and storag
   assert.deepEqual(l.value.state.ops, beforeStatus.state.ops);
   assert.equal((await call("put", crypto.randomUUID() + ":0")).status, 503);
   f.textItems.delete("item");
-  assert.equal((await call("delete")).status, 200);
+  assert.equal((await call("remove", String(photo.version))).status, 200);
   assert.equal(f.paths.size, 0);
   assert.equal(l.value.legacy.operations, legacy.operations);
 });
 
-test("restart without browser journal: ordinary reads reconcile a server-known orphan only after authoritative NULL", async () => {
+test("lost browser hints never infer text absence or release charged current photos", async () => {
   const f = await fixture();
   await f.client.put("item", null, upload(f.jpeg), signal());
   f.textItems.delete("item");
@@ -100,7 +73,6 @@ test("restart without browser journal: ordinary reads reconcile a server-known o
     ledger: restored,
     storage: f.storage,
     process: f.engine.process,
-    text: f.engine.text,
   });
   const handler = createBetaHandler({
     enabled: false,
@@ -118,11 +90,8 @@ test("restart without browser journal: ordinary reads reconcile a server-known o
   assert.equal(f.paths.size, 1);
   f.textAvailable = true;
   assert.equal((await handler(req())).status, 200);
-  assert.equal(f.paths.size, 0);
-  assert.equal(
-    restored.value.state.items[scope("PhotoDemo", "item")].deleted,
-    true,
-  );
+  assert.equal(f.paths.size, 1);
+  assert(restored.value.state.items[scope("PhotoDemo", "item")].current);
 });
 
 test("late immutable write receipt after deletion settles then cleans; missing unknown outcome never refunds", async () => {
@@ -141,7 +110,7 @@ test("late immutable write receipt after deletion settles then cleans; missing u
   await started;
   f.textItems.delete("item");
   (f.ledger as MemoryLedger).value.control.enabled = false;
-  await f.client.deleteItem("item", signal());
+  await f.client.remove("item", 0, signal());
   await f.engine.reconcile("PhotoDemo", signal());
   assert.equal(
     (await f.ledger.load(signal())).state.ops[u.operationId].writes[0],
@@ -186,7 +155,6 @@ test("cleanup failure survives restart and retries without text authority or upl
   const engine = new BetaEngine({
     ledger: restored,
     storage: f.storage,
-    text: f.engine.text,
     process: f.engine.process,
   });
   await engine.reconcile("PhotoDemo", signal());

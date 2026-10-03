@@ -3,7 +3,6 @@ import { createAdminClient } from "@supabase/server/core";
 import { createBetaHandler } from "../photo-lab/beta/handler.ts";
 import { BetaEngine } from "../photo-lab/beta/engine.ts";
 import { sdkPorts } from "../photo-lab/beta/sdk.ts";
-import { firebaseTextAuthority } from "../photo-lab/beta/text-authority.ts";
 import { initialize } from "../photo-lab/storage-trial/phase-b/codec.js";
 const RUNTIME_ENABLED = true;
 const MAINTENANCE_ENABLED = true;
@@ -54,7 +53,6 @@ export default {
       return new BetaEngine({
         ...ports,
         storage,
-        text: firebaseTextAuthority(),
         process: async (bytes) => {
           processor ??= initialize();
           return (await processor)(bytes);

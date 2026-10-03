@@ -3,7 +3,6 @@ import { createAdminClient } from "@supabase/server/core";
 import { createBetaHandler } from "./handler.ts";
 import { BetaEngine } from "./engine.ts";
 import { sdkPorts } from "./sdk.ts";
-import { firebaseTextAuthority } from "./text-authority.ts";
 import { initialize } from "../storage-trial/phase-b/codec.js";
 const RUNTIME_ENABLED = false;
 const MAINTENANCE_ENABLED = false;
@@ -53,7 +52,6 @@ export default {
       return new BetaEngine({
         ...ports,
         storage,
-        text: firebaseTextAuthority(),
         process: async (bytes) => {
           processor ??= initialize();
           return (await processor)(bytes);

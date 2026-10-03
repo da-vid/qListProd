@@ -26,11 +26,11 @@
     "production client release"
   ],
   "sources": {
-    "photo-lab/beta/index.ts": "36f97d50279e0fba14e16e04de0c825cf699b249eb2f858d168c6d007f2c631e",
-    "photo-lab/beta/handler.ts": "2c581b31a47a6df7ebb9549a5ef55cc3236f7a22cfd12cf7b35095c9f10c3e99",
-    "photo-lab/beta/engine.ts": "d8a6347f869b7546a91273876d42570ecb5b0fc38f0927187d1902135348d2fe",
-    "photo-lab/beta/ledger.ts": "e679f27b062d611ad0ba53d1893b71b83f0bbef5bb8323e9c9da474f7b3eb76c",
-    "photo-lab/beta/text-authority.ts": "5af54d6eb344529fd78471023832afcf7dc6fe59a80ffde3291be3b40aac3a53",
+    "photo-lab/beta/index.ts": "678705c73aafa39ab03a8e0137620b4f941a00456f16220f2ab9b60c2d0372e6",
+    "photo-lab/beta/handler.ts": "7d3e90775f62a0732272b04c06fcf2f6b7a530508c313d3ac0d56621a8762109",
+    "photo-lab/beta/engine.ts": "6446a51d9c40d2f2c83ca944587a4df7aa96359570677ec29609415a57284856",
+    "photo-lab/beta/ledger.ts": "8a950b13d7ac02d1dc6d2d0e52e48eaf1b1a958e4a498c678907c2db285c2483",
+    "photo-lab/beta/namespace.ts": "822f10c7b1311fe17d686320b73bf5865dc1248e3e57650e9d6fb767a0df1a65",
     "photo-lab/beta/sdk.ts": "fc85817babfcc1cb1b3691635e8035e894041df13a1718013d87c20577a1d68d",
     "photo-lab/storage-trial/phase-b/codec.js": "75a280f9a74ad26420d10cb68d8bbea9689e31b2e6bf6d2cd58c45aacdc27ab2",
     "photo-lab/storage-trial/deno.json": "694ef4e84bcf73a45cb2db779526afe4f985e0f6d04a50af13fa490b8cbd9bae",
@@ -44,9 +44,9 @@
     "photo-lab/beta/stop.sql": "66ad3525cb10c9938a69be4d4e941d7c4162def32a1c231892101adc3de882ca",
     "photo-lab/beta/verification.sql": "7dd798e6a11f1962b52119ac5137fb8922bfd46447a83ff17233e3c6c3cc5a40",
     "src/photo/beta-entry.ts": "8bab5cc9d7c689fd44e68ea4a4cdd8f18e9413f8429302a59068142087cce419",
-    "src/photo/http-gateway.ts": "d34671db2657adecae881efa4732cd7469fed909c7f1010c0038f9ad1b904b57",
-    "src/photo/cleanup-journal.ts": "e4823a6b2476fe8d0167beaeef0ae99092eaad6b8eb62d119af6f43d609c74ba",
-    "src/photo/ui.ts": "b23dd449d5df7c86161f482833696ed45f5a99a43b7fcf369ffdab13d814d4ab"
+    "src/photo/http-gateway.ts": "a7a8ef1f859af10e57a880764df8420f9882651a7a832d343c8cc7437c0e23ed",
+    "src/photo/cleanup-journal.ts": "7dc9541fbc9b7ea79ab087fd72f4b817f4f6995123dedf445dabeb99f1b5fadf",
+    "src/photo/ui.ts": "5e190471d8bf44d88a23c32fdf4e9b12f790edb8600d91b158e0096036c6fc4f"
   },
-  "payload_sha256": "7bd2f58f2e27ce646ab52470f64a4d60a46ec36e5dffdb888e38d931521f4b30"
+  "payload_sha256": "2384e9a66a45d46982b9ae4ffbe16471e9361b10e2462e709b97c4a7f306a73b"
 }

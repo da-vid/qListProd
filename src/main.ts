@@ -1,4 +1,5 @@
 import "./style.css";
+import { applyWithPhotoCleanup } from "./photo/text-delete.ts";
 import { installAboutPrivacy } from "./about.ts";
 import Sortable from "sortablejs";
 import { installScrollFades } from "./scroll-fades.ts";
@@ -345,7 +346,7 @@ async function save(change: Change) {
   pending++;
   updateStatus();
   try {
-    await store.apply(change);
+    await applyWithPhotoCleanup(app, change, () => store.apply(change));
   } catch (e) {
     if (!(e instanceof SavedMetadataWarning)) failed.push(change);
     showError((e as Error).message || "Could not save. Please retry.");
