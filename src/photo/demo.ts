@@ -1,23 +1,22 @@
 import "../main.ts";
 import "./photo.css";
-import { MockPhotos, type Fault } from "./adapter.ts";
+import { type Fault } from "./adapter.ts";
+import { MockPhotoGateway } from "./gateway.ts";
+import { normalizePhoto } from "./normalize.ts";
+import { processMockUpload } from "./prepare.ts";
 import { installPhotoUI } from "./ui.ts";
 import fullURL from "../../photo-lab/fixtures/clean-full.jpg?url";
-import thumbURL from "../../photo-lab/fixtures/clean-thumbnail.jpg?url";
 if (
   import.meta.env.MODE !== "photo-preview" ||
   !["127.0.0.1", "localhost"].includes(location.hostname)
 )
   throw new Error("Local photo preview only.");
-const adapter = new MockPhotos();
+const adapter = new MockPhotoGateway(processMockUpload);
 const root = document.querySelector<HTMLElement>("#app")!;
 const ui = installPhotoUI(root, adapter, {
-  synthetic: async () => {
-    const [full, thumbnail] = await Promise.all([
-      fetch(fullURL).then((r) => r.blob()),
-      fetch(thumbURL).then((r) => r.blob()),
-    ]);
-    return { full, thumbnail };
+  synthetic: async (signal) => {
+    const full = await fetch(fullURL, { signal }).then((r) => r.blob());
+    return normalizePhoto(full, signal);
   },
 });
 const controls = document.createElement("aside");

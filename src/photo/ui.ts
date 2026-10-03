@@ -1,18 +1,14 @@
-import {
-  bounded,
-  type PhotoAdapter,
-  type PreparedPhoto,
-  type PhotoRecord,
-} from "./adapter.ts";
-import { preparePhoto } from "./prepare.ts";
+import { bounded, type PhotoRecord } from "./adapter.ts";
+import { normalizePhoto, type NormalizedPhoto } from "./normalize.ts";
+import { type PhotoGateway, type PhotoUpload } from "./gateway.ts";
 type Options = {
-  prepare?: (file: Blob) => Promise<PreparedPhoto>;
-  synthetic?: () => Promise<PreparedPhoto>;
+  prepare?: (file: Blob, signal: AbortSignal) => Promise<NormalizedPhoto>;
+  synthetic?: (signal: AbortSignal) => Promise<NormalizedPhoto>;
   timeout?: number;
 };
 export function installPhotoUI(
   root: HTMLElement,
-  adapter: PhotoAdapter,
+  adapter: PhotoGateway,
   options: Options = {},
 ) {
   const doc = root.ownerDocument,
@@ -132,7 +128,7 @@ export function installPhotoUI(
     preview.alt = "Photo preview";
     preview.hidden = true;
     let url: string | undefined,
-      selected: PreparedPhoto | undefined,
+      selected: PhotoUpload | undefined,
       existing: PhotoRecord | undefined,
       busy = false,
       generation = 0;
@@ -163,11 +159,14 @@ export function installPhotoUI(
       library = make("input");
     for (const input of [camera, library]) {
       input.type = "file";
-      input.accept = "image/jpeg";
+      input.accept = "image/jpeg,.jpg,.jpeg,image/heic,image/heif,.heic,.heif";
       input.hidden = true;
       input.addEventListener("change", () => {
         const file = input.files?.[0];
-        if (file) void select(() => (options.prepare ?? preparePhoto)(file));
+        if (file)
+          void select((signal) =>
+            (options.prepare ?? normalizePhoto)(file, signal),
+          );
         input.value = "";
       });
     }
@@ -176,7 +175,7 @@ export function installPhotoUI(
       libraryButton = button("Photo library", () => library.click());
     const synthetic = options.synthetic
       ? button("Try synthetic image", () => {
-          void select(options.synthetic!);
+          void select((signal) => options.synthetic!(signal));
         })
       : undefined;
     const controls = [
@@ -194,21 +193,30 @@ export function installPhotoUI(
       preview.src = url;
       preview.hidden = false;
     }
-    async function select(prepare: () => Promise<PreparedPhoto>) {
+    async function select(
+      prepare: (signal: AbortSignal) => Promise<NormalizedPhoto>,
+    ) {
       const version = ++generation;
       selected = undefined;
       save.disabled = true;
+      if (url) win.URL.revokeObjectURL(url);
+      url = undefined;
+      preview.hidden = true;
+      controls.forEach((b) => (b.disabled = true));
       status.textContent = "Preparing JPEG…";
       try {
-        const photo = await prepare();
+        const photo = await run(prepare, controller.signal);
         if (controller.signal.aborted || version !== generation) return;
-        selected = photo;
-        display(photo.full);
+        selected = { operationId: win.crypto.randomUUID(), jpeg: photo.jpeg };
+        display(photo.jpeg);
         save.disabled = false;
         status.textContent = "Preview only. Save to attach this photo.";
       } catch (e) {
         if (!controller.signal.aborted && version === generation)
           status.textContent = error(e);
+      } finally {
+        if (!controller.signal.aborted && version === generation)
+          controls.forEach((b) => (b.disabled = false));
       }
     }
     async function commit(deleting: boolean) {
@@ -237,6 +245,31 @@ export function installPhotoUI(
         report(key, deleting ? "Photo removed." : "Photo saved in this tab.");
         close();
       } catch (e) {
+        if (!deleting && selected && !controller.signal.aborted) {
+          try {
+            const operation = await run(
+              (s) => adapter.status(selected!.operationId, s),
+              controller.signal,
+            );
+            if (operation?.state === "committed") {
+              const current = await run(
+                (s) => adapter.get(key, s),
+                controller.signal,
+              );
+              if (rows.has(key)) thumbnail(key, current);
+              report(key, "Photo save confirmed in this tab.");
+              close();
+              return;
+            }
+            if (operation?.state === "pending") {
+              status.textContent =
+                "The photo save is still being checked. Keep this window open and retry later. Text edits still work.";
+              return;
+            }
+          } catch {
+            /* Unavailable status is not proof that a save failed. */
+          }
+        }
         if (!controller.signal.aborted)
           status.textContent = error(e) + " Text edits still work.";
       } finally {
@@ -250,7 +283,7 @@ export function installPhotoUI(
       heading,
       make(
         "p",
-        "Local prototype · JPEG only · photos disappear when this tab reloads.",
+        "Local preview · JPEG photos · nothing is uploaded. Photos disappear when this tab reloads.",
       ),
       status,
       preview,
@@ -269,6 +302,8 @@ export function installPhotoUI(
       .then((record) => {
         if (controller.signal.aborted) return;
         existing = record;
+        // A file chosen before the initial read completed owns the preview/status.
+        if (generation !== 0) return;
         controls.forEach((b) => (b.disabled = false));
         remove.hidden = expanded || !record;
         if (record) display(record.full);

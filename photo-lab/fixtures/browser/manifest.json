@@ -1,0 +1,121 @@
+{
+  "generator": "generate-browser-fixtures.mjs",
+  "real_user_images": false,
+  "entries": [
+    {
+      "name": "progressive.jpg",
+      "bytes": 1949,
+      "sha256": "ffb03f99bdc579f808d7074e936e532da88499b5c0077d056bee38bc930f2bfa",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "description": "Progressive JPEG source; normalization must emit baseline"
+    },
+    {
+      "name": "orientation-1.jpg",
+      "bytes": 1465,
+      "sha256": "7360b0f90cd0132a518ee6fd90037fade02b70708cfeaaa713d304d494d118fe",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 1
+    },
+    {
+      "name": "orientation-2.jpg",
+      "bytes": 1465,
+      "sha256": "c37eaa428eff25baa35505a41ff3e9770f98556b9682fda18488512800016a78",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 2
+    },
+    {
+      "name": "orientation-3.jpg",
+      "bytes": 1465,
+      "sha256": "5ecc33d5986c311c15dc2556cdc89becb5bd84e91a1d10ac57074257de6ddaec",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 3
+    },
+    {
+      "name": "orientation-4.jpg",
+      "bytes": 1465,
+      "sha256": "13f641e398c6bdd0a7472d3fcd79ac5e12dbd79326343a9206665e2d74fe12c9",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 4
+    },
+    {
+      "name": "orientation-5.jpg",
+      "bytes": 1465,
+      "sha256": "9f33c52d1060df171c55a2d5dc29b2078d28efb68c8a7b2e358f5c1129bfdea3",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 5
+    },
+    {
+      "name": "orientation-6.jpg",
+      "bytes": 1465,
+      "sha256": "f9d71bfff95af9f9261eae366b94e32eea6b5887416e3276cb0608fe82d152e3",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 6
+    },
+    {
+      "name": "orientation-7.jpg",
+      "bytes": 1465,
+      "sha256": "2f1cba69ba359ea06fb0bf127b50283943e9e4d290b803350332e569e118449c",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 7
+    },
+    {
+      "name": "orientation-8.jpg",
+      "bytes": 1465,
+      "sha256": "9d7c076ee432bd5f51c0fe1aa2c10afc16a40dc2fe21ec152d6876ba20848d7f",
+      "synthetic": true,
+      "width": 320,
+      "height": 240,
+      "exif_orientation": 8
+    },
+    {
+      "name": "phone-12mp.jpg",
+      "bytes": 3037451,
+      "sha256": "66ad7b7c37cb75f1d3d6b123c0399dbb5fd1af82e4ac42e796fdec12e54b24bb",
+      "synthetic": true,
+      "width": 4032,
+      "height": 3024,
+      "description": "Deterministic textured quadrants, phone-sized source; no real photo"
+    },
+    {
+      "name": "portrait-24mp.jpg",
+      "bytes": 5873941,
+      "sha256": "8622926589069d75e677160e19f068fd7e79db0b0ba3789951a91f7277b1a329",
+      "synthetic": true,
+      "width": 4000,
+      "height": 6000,
+      "description": "Deterministic textured portrait at the source pixel ceiling; no real photo"
+    },
+    {
+      "name": "detail-1280.jpg",
+      "bytes": 3969112,
+      "sha256": "294e250a1facde634b7f1a43ee0ed2e2771d497c35857c309caae14650833cb1",
+      "synthetic": true,
+      "width": 1280,
+      "height": 1280,
+      "description": "Deterministic full-range noise to exercise JPEG quality fallback"
+    },
+    {
+      "name": "unsupported.heic",
+      "bytes": 24,
+      "sha256": "aa851079b2c21112b6443adcd50ad28d61fb79e486786db29b90c979fded2b64",
+      "synthetic": true,
+      "description": "Header-only HEIC type-detection fixture; not a decodable HEIC image"
+    }
+  ]
+}

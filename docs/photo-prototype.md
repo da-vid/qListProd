@@ -1,6 +1,8 @@
 # qList photo prototype — local review
 
-**Current status — October 3, 2026:** the isolated hosted synthetic continuation passed all four remaining cases, with zero residual charges/objects. The browser UI is still a local mock; production photos are disabled. See [the current selected-list beta plan](photo-selected-list-beta-plan.md) and its linked acceptance evidence. Material below describes earlier stages and must not be treated as pending setup, permission to rerun a trial, or permission to enable public photos. Existing expiry is unchanged.
+**Local normalization update — October 3, 2026:** single-JPEG normalization and the local mock gateway are complete. See [the current local acceptance report](photo-local-normalization.md) for 121 passing tests, synthetic browser evidence, and explicit real-device limitations. Historical preparation/test counts below describe earlier stages.
+
+**Hosted status — October 3, 2026:** the isolated hosted synthetic continuation passed all four remaining cases, with zero residual charges/objects. The browser UI is still a local mock; production photos are disabled. See [the current selected-list beta plan](photo-selected-list-beta-plan.md) and its linked acceptance evidence. Material below describes earlier stages and must not be treated as pending setup, permission to rerun a trial, or permission to enable public photos. Existing expiry is unchanged.
 
 
 This records the first local stage. See [the current storage-trial plan](photo-storage-trial-plan.md) for verified hosted v4 evidence and subsequent local safeguards.

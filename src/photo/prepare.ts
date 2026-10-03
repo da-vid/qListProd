@@ -1,60 +1,45 @@
-import { inspectJpeg, MAX_EDGE, PhotoError } from "./jpeg.ts";
+import { inspectJpeg, PhotoError } from "./jpeg.ts";
 import { FULL_LIMIT, THUMB_LIMIT, type PreparedPhoto } from "./adapter.ts";
-function encode(canvas: HTMLCanvasElement, quality: number) {
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob(
-      (blob) =>
-        blob
-          ? resolve(blob)
-          : reject(new PhotoError("This browser could not prepare the photo.")),
-      "image/jpeg",
-      quality,
-    ),
+import { encodeJpeg } from "./normalize.ts";
+
+// Browser-only stand-in for server processing. Hosted codec remains authoritative;
+// browser canvas encoders are not claimed byte-identical to the tested server codec.
+export async function processMockUpload(
+  bytes: Uint8Array,
+  signal: AbortSignal,
+): Promise<PreparedPhoto> {
+  const header = inspectJpeg(bytes);
+  const bitmap = await createImageBitmap(
+    new Blob([Uint8Array.from(header.sanitized)], { type: "image/jpeg" }),
   );
-}
-export async function preparePhoto(file: Blob): Promise<PreparedPhoto> {
-  if (file.size > 10 * 1024 * 1024)
-    throw new PhotoError("Choose a JPEG smaller than 10 MiB.");
-  // Bound decoded dimensions before asking the browser to allocate pixels. Keep EXIF for orientation only here.
-  inspectJpeg(new Uint8Array(await file.arrayBuffer()), {
-    maxBytes: 10 * 1024 * 1024,
-    maxEdge: 8192,
-    maxPixels: 24_000_000,
-    baselineOnly: false,
-  });
-  const bitmap = await createImageBitmap(file, {
-    imageOrientation: "from-image",
-  });
+  const fullCanvas = document.createElement("canvas"),
+    thumbCanvas = document.createElement("canvas");
   try {
-    const canvas = document.createElement("canvas"),
-      ratio = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-    canvas.width = Math.max(1, Math.round(bitmap.width * ratio));
-    canvas.height = Math.max(1, Math.round(bitmap.height * ratio));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new PhotoError("Photo preparation is unavailable.");
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    let full = await encode(canvas, 0.78);
-    for (const quality of [0.65, 0.5, 0.35]) {
-      if (full.size <= FULL_LIMIT) break;
-      full = await encode(canvas, quality);
-    }
-    if (full.size > FULL_LIMIT)
+    signal.throwIfAborted();
+    fullCanvas.width = header.width;
+    fullCanvas.height = header.height;
+    const ctx = fullCanvas.getContext("2d"),
+      thumb = thumbCanvas.getContext("2d");
+    if (!ctx || !thumb)
+      throw new PhotoError("Photo preparation is unavailable.");
+    ctx.drawImage(bitmap, 0, 0);
+    const full = await encodeJpeg(fullCanvas, 0.78, FULL_LIMIT, signal);
+    const scale = Math.min(1, 192 / Math.max(header.width, header.height));
+    thumbCanvas.width = Math.max(1, Math.round(header.width * scale));
+    thumbCanvas.height = Math.max(1, Math.round(header.height * scale));
+    thumb.drawImage(bitmap, 0, 0, thumbCanvas.width, thumbCanvas.height);
+    const thumbnail = await encodeJpeg(thumbCanvas, 0.65, THUMB_LIMIT, signal);
+    if (!full || !thumbnail)
       throw new PhotoError(
-        "This photo is too complex. Choose a smaller photo.",
+        "This photo is too detailed to save. Choose a smaller JPEG copy.",
       );
-    const thumb = document.createElement("canvas"),
-      scale = Math.min(1, 192 / Math.max(canvas.width, canvas.height));
-    thumb.width = Math.max(1, Math.round(canvas.width * scale));
-    thumb.height = Math.max(1, Math.round(canvas.height * scale));
-    const thumbCtx = thumb.getContext("2d");
-    if (!thumbCtx)
-      throw new PhotoError("Thumbnail preparation is unavailable.");
-    thumbCtx.drawImage(canvas, 0, 0, thumb.width, thumb.height);
-    const thumbnail = await encode(thumb, 0.65);
-    if (thumbnail.size > THUMB_LIMIT)
-      throw new PhotoError("Thumbnail exceeds the free size limit.");
     return { full, thumbnail };
   } finally {
     bitmap.close();
+    fullCanvas.width =
+      fullCanvas.height =
+      thumbCanvas.width =
+      thumbCanvas.height =
+        1;
   }
 }

@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "runtime": "v24.21.0",
+  "scope": "Actual browser-normalized synthetic inputs processed locally with the unchanged hosted codec; no upload",
+  "cases": [
+    {
+      "name": "progressive.jpg",
+      "input_bytes": 1026,
+      "input_sha256": "088d9a8e1a9ba90b28757d895c475a6211f7500a0c9b4db5fe476782f1b37f30",
+      "full_bytes": 1249,
+      "thumbnail_bytes": 671,
+      "width": 320,
+      "height": 240,
+      "metadata_stripped": true
+    },
+    {
+      "name": "phone-12mp.jpg",
+      "input_bytes": 165005,
+      "input_sha256": "add568d79661b86473d7a66b47563c75205c07c62cb5f6b287203ec6d06aa176",
+      "full_bytes": 75404,
+      "thumbnail_bytes": 587,
+      "width": 1280,
+      "height": 960,
+      "metadata_stripped": true
+    },
+    {
+      "name": "portrait-24mp.jpg",
+      "input_bytes": 141567,
+      "input_sha256": "ecf8c18bd3f90e470f2047ec4ef79593aaf491425a561b83ca3921bb85709bfc",
+      "full_bytes": 63750,
+      "thumbnail_bytes": 533,
+      "width": 853,
+      "height": 1280,
+      "metadata_stripped": true
+    },
+    {
+      "name": "detail-1280.jpg",
+      "input_bytes": 455343,
+      "input_sha256": "ee080e99d263b3a1a950b4f464606e68d07f389e515cc74d2a70b71343175907",
+      "expected_rejection": "Server output cap exceeded; normalized input is within the upload contract"
+    }
+  ]
+}

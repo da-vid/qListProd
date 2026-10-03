@@ -2,9 +2,12 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile, readdir } from "node:fs/promises";
 import { JSDOM } from "jsdom";
-import { MockPhotos, type PreparedPhoto } from "../src/photo/adapter.ts";
+import { type PreparedPhoto } from "../src/photo/adapter.ts";
+import { MockPhotoGateway } from "../src/photo/gateway.ts";
+import { inspectJpeg } from "../src/photo/jpeg.ts";
+import { type NormalizedPhoto } from "../src/photo/normalize.ts";
 import { installPhotoUI } from "../src/photo/ui.ts";
-const photo: PreparedPhoto = {
+const outputs: PreparedPhoto = {
   full: new Blob([
     await readFile(new URL("./fixtures/clean-full.jpg", import.meta.url)),
   ]),
@@ -12,9 +15,29 @@ const photo: PreparedPhoto = {
     await readFile(new URL("./fixtures/clean-thumbnail.jpg", import.meta.url)),
   ]),
 };
+const photo: NormalizedPhoto = {
+  jpeg: new Blob(
+    [
+      Uint8Array.from(
+        inspectJpeg(new Uint8Array(await outputs.full.arrayBuffer())).sanitized,
+      ),
+    ],
+    { type: "image/jpeg" },
+  ),
+  width: 1280,
+  height: 960,
+};
+class MockPhotos extends MockPhotoGateway {
+  constructor() {
+    super(async () => outputs);
+  }
+}
 const tick = () => new Promise((r) => setTimeout(r, 20));
 function setup(dom: JSDOM) {
   const { window: w } = dom;
+  Object.defineProperty(w.crypto, "randomUUID", {
+    value: () => crypto.randomUUID(),
+  });
   let created = 0;
   const live = new Set<string>();
   Object.assign(w.URL, {
@@ -123,7 +146,7 @@ test("late preparation cannot resurrect a cancelled dialog or leak preview URLs"
     '<div id="app"><li class="item" data-key="a"></li></div>',
   );
   const live = setup(dom);
-  let resolve!: (p: PreparedPhoto) => void;
+  let resolve!: (p: NormalizedPhoto) => void;
   const mock = new MockPhotos(),
     ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
       synthetic: () => new Promise((r) => (resolve = r)),
@@ -228,7 +251,12 @@ test("text deletion survives photo cleanup failure and retry removes the orphan"
   );
   setup(dom);
   const mock = new MockPhotos();
-  await mock.put("a", null, photo, new AbortController().signal);
+  await mock.put(
+    "a",
+    null,
+    { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+    new AbortController().signal,
+  );
   const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
     timeout: 30,
   });
@@ -253,8 +281,8 @@ test("deleting a text row during a photo save aborts it without resurrecting eit
     '<div id="app"><li class="item" data-key="a"></li></div>',
   );
   const live = setup(dom);
-  const bytes = await photo.full.arrayBuffer();
-  const delayed = new Blob([bytes]);
+  const bytes = await photo.jpeg.arrayBuffer();
+  const delayed = new Blob([bytes], { type: "image/jpeg" });
   let release!: (bytes: ArrayBuffer) => void;
   Object.defineProperty(delayed, "arrayBuffer", {
     value: () =>
@@ -264,7 +292,7 @@ test("deleting a text row during a photo save aborts it without resurrecting eit
   });
   const mock = new MockPhotos();
   const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
-    synthetic: async () => ({ ...photo, full: delayed }),
+    synthetic: async () => ({ ...photo, jpeg: delayed }),
     timeout: 100,
   });
   try {
@@ -322,6 +350,129 @@ test("a delayed stale refresh cannot remove a newly saved thumbnail", async () =
     release();
     await tick();
     assert.ok(dom.window.document.querySelector(".photo-thumbnail"));
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
+
+test("lost save response checks operation status and displays the current record without another upload", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+  );
+  setup(dom);
+  const mock = new MockPhotos(),
+    put = mock.put.bind(mock);
+  let saves = 0;
+  mock.put = async (...args) => {
+    saves++;
+    await put(...args);
+    throw Error("response lost");
+  };
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  try {
+    click(dom, "Add photo");
+    await tick();
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Save photo");
+    await tick();
+    assert.equal(saves, 1);
+    assert.equal(mock.records.size, 1);
+    assert(dom.window.document.querySelector(".photo-thumbnail"));
+    assert.equal(dom.window.document.querySelector("dialog"), null);
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
+
+test("an initial photo read cannot replace a newly chosen preview or unsupported-file error", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+  );
+  setup(dom);
+  const mock = new MockPhotos();
+  let resolve!: (record: undefined) => void,
+    reads = 0;
+  const get = mock.get.bind(mock);
+  mock.get = async (key, s) =>
+    ++reads === 2 ? new Promise((r) => (resolve = r)) : get(key, s);
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+    prepare: async () => {
+      throw Error("HEIC unsupported; choose JPEG");
+    },
+  });
+  try {
+    await tick();
+    click(dom, "Add photo");
+    await tick();
+    const input = dom.window.document.querySelector<HTMLInputElement>(
+      'dialog input[type="file"]',
+    )!;
+    Object.defineProperty(input, "files", {
+      value: [
+        new dom.window.File(["fake"], "photo.heic", { type: "image/heic" }),
+      ],
+    });
+    input.dispatchEvent(new dom.window.Event("change"));
+    await tick();
+    resolve(undefined);
+    await tick();
+    assert.match(
+      dom.window.document.querySelector('dialog [role="status"]')!.textContent!,
+      /HEIC unsupported/,
+    );
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
+
+test("preparation timeout aborts the normalizer and a new selection can recover", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+  );
+  const live = setup(dom),
+    mock = new MockPhotos();
+  let calls = 0,
+    aborted = false;
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    timeout: 30,
+    synthetic: async (signal) => {
+      if (++calls > 1) return photo;
+      return new Promise((_, reject) =>
+        signal.addEventListener(
+          "abort",
+          () => {
+            aborted = true;
+            reject(signal.reason);
+          },
+          { once: true },
+        ),
+      );
+    },
+  });
+  try {
+    await tick();
+    click(dom, "Add photo");
+    await tick();
+    click(dom, "Try synthetic image");
+    await new Promise((r) => setTimeout(r, 60));
+    assert(aborted);
+    assert.equal(live.size, 0);
+    assert.match(
+      dom.window.document.querySelector('dialog [role="status"]')!.textContent!,
+      /timed out/,
+    );
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Save photo");
+    await tick();
+    assert.equal(mock.records.size, 1);
   } finally {
     ui.close();
     dom.window.close();

@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-03",
+  "runtime": "Node v24.21.0",
+  "base_commit": "06e25d158043728dd39ed0b764e3dd08d00ffb1d",
+  "passed": true,
+  "checks": {
+    "typecheck": "passed",
+    "core_tests": 34,
+    "photo_tests": 52,
+    "local_storage_handler_and_phase_b_tests": 31,
+    "release_build_tests": 4,
+    "preview_build": "passed",
+    "photo_preview_build": "passed",
+    "release_builds": [
+      "modern",
+      "maintenance",
+      "rollback"
+    ],
+    "browser": "results.json",
+    "unchanged_server_codec_locally": "codec-contract.json"
+  },
+  "photo_exclusion_scanned_files": [
+    "dist/assets/index-Pbxy0MnN.js",
+    "dist/assets/index-DRPEDXlX.css",
+    "release-artifacts/modern/assets/index.esm-fGDxllVm.js",
+    "release-artifacts/modern/assets/index-mdo84YK0.js",
+    "release-artifacts/modern/assets/production-store-DJmz2iCE.js",
+    "release-artifacts/modern/assets/index-DRPEDXlX.css",
+    "release-artifacts/modern/assets/firebase-store-T6qRi_NB.js",
+    "release-artifacts/maintenance/assets/index-DRPEDXlX.css",
+    "release-artifacts/maintenance/assets/index-llmCTJ1A.js",
+    "release-artifacts/rollback/assets/index-DRPEDXlX.css",
+    "release-artifacts/rollback/assets/index-iAdDZMOa.js"
+  ],
+  "hosted_changes": false,
+  "real_device_tested": false
+}

@@ -8,7 +8,11 @@ The reviewed continuation at `977a803010ae8426aecc33b9ca0f2e36544d158b` passed a
 
 Measured one-run CPU 754 ms, wall 10,386 ms, boot 54 ms, shutdown `EarlyDrop`; reported memory 17,923,228 bytes is a snapshot, not proven peak. This is synthetic acceptance, not worst-case real-image, concurrency, public-auth or production acceptance. No new unauthenticated negative request was made in this hosted run.
 
-## First implementable batch: local only
+## Local batch progress
+
+The browser normalization and mock gateway subset is now complete; see [local acceptance and limitations](photo-local-normalization.md). The original scope below remains a plan for remaining real-device and authorization/durability work. No access model, fake-grant authorization system or hosted beta was implemented.
+
+## Original first-batch scope: local only
 
 1. Define the real upload contract separately from `PreparedPhoto`/the in-memory mock. Browser sends one normalized JPEG (maximum 512 KiB, baseline 8-bit, maximum edge 1280); server independently validates/reencodes and creates authoritative full/thumbnail outputs (384 KiB/32 KiB, thumbnail edge 192). Do not accept browser-supplied output hashes/thumbnail proofs as server validation. Keep an offline adapter so UI work requires no credentials or hosted access.
 2. Adapt `src/photo/prepare.ts` to return a validated normalized input plus local preview. Existing code accepts JPEG source up to 10 MiB/24 MP/8192 edge, orients with `createImageBitmap`, resizes, and produces two canvas blobs for the mock. It currently rejects HEIC/PNG before decoding. Verify encoded MIME, JPEG markers/baseline, dimensions and actual byte count; canvas quality is not a byte-size guarantee. Use bounded quality/downscale attempts and a clear rejection when the budget cannot be met. Preview the normalized image; server output may differ slightly after sanitization.
