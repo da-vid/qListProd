@@ -4,62 +4,62 @@
     {
       "name": "full bounded batch: codec, physical file bytes, readback, replacement, deletion, partial cleanup, noise and zero residuals",
       "passed": true,
-      "ms": 745
+      "ms": 779
     },
     {
       "name": "unsettled upload: timeout then late physical completion remains fully charged, never rewritten or cleaned",
       "passed": true,
-      "ms": 1293
+      "ms": 1444
     },
     {
       "name": "upload succeeds but acknowledgement is lost: retry cannot PUT again or refund",
       "passed": true,
-      "ms": 193
+      "ms": 198
     },
     {
       "name": "cleanup failure and false absence retain charges; safe retry refunds exactly once",
       "passed": true,
-      "ms": 201
+      "ms": 216
     },
     {
       "name": "corrupt or oversized readback cannot verify/commit; read attempts stay charged",
       "passed": true,
-      "ms": 197
+      "ms": 201
     },
     {
       "name": "concurrent write claims grant exactly one writer and never renew a lost claim",
       "passed": true,
-      "ms": 157
+      "ms": 165
     },
     {
       "name": "two simultaneous byte-budget admissions, two-pending cap, and no orphan metadata",
       "passed": true,
-      "ms": 133
+      "ms": 137
     },
     {
       "name": "5 MiB read cap charges worst-case bucket bytes and rejects before GET",
       "passed": true,
-      "ms": 311
+      "ms": 484
     },
     {
       "name": "service-only invoker/RLS, disabled simulated API, rejected caller proof fields and nonce checks",
       "passed": true,
-      "ms": 117
+      "ms": 150
     },
     {
       "name": "out-of-range thumbnail plan rolls back full-object metadata atomically",
       "passed": true,
-      "ms": 110
+      "ms": 115
     },
     {
       "name": "migration refuses active Phase A work and rolls back all schema changes",
       "passed": true,
-      "ms": 102
+      "ms": 103
     },
     {
       "name": "deletion while physical upload is still running blocks cleanup until acknowledged completion",
       "passed": true,
-      "ms": 186
+      "ms": 188
     },
     {
       "name": "lost commit response replays the durable physical commit without another upload",
@@ -69,46 +69,102 @@
     {
       "name": "100 lifetime admissions include preserved Phase A history",
       "passed": true,
-      "ms": 207
+      "ms": 223
     },
     {
       "name": "expired lease retains charges; rollback fences access without deleting physical bytes or records",
       "passed": true,
-      "ms": 189
+      "ms": 193
     },
     {
       "name": "existing storage policies require explicit review; migration never changes them",
       "passed": true,
-      "ms": 93
+      "ms": 92
     },
     {
       "name": "exact hosted-shape cleanup fences version 2, refunds only verified deletion, and repeats without Storage writes",
       "passed": true,
-      "ms": 411
+      "ms": 407
     },
     {
       "name": "cleanup failure on replacement leaves its exact charge and safely re-enters from cleanup phase",
       "passed": true,
-      "ms": 414
+      "ms": 418
     },
     {
       "name": "two cleanup callers racing the same current version yield one safe completion and a fenced loser",
       "passed": true,
-      "ms": 383
+      "ms": 397
     },
     {
       "name": "current-version drift after preflight is rejected by SQL before any new deletion",
       "passed": true,
-      "ms": 358
+      "ms": 344
     },
     {
       "name": "lost cleanup acknowledgement response does not double refund on re-entry",
       "passed": true,
-      "ms": 401
+      "ms": 393
+    },
+    {
+      "name": "continuation: four fixed cases consume original budgets, preserve history/deadline/blocked batch and end empty",
+      "passed": true,
+      "ms": 792
+    },
+    {
+      "name": "continuation migration rejects unclean or wrong source and atomically leaves schema untouched",
+      "passed": true,
+      "ms": 337
+    },
+    {
+      "name": "continuation claim is unique under concurrency; foreign owner and arbitrary cases cannot create objects",
+      "passed": true,
+      "ms": 416
+    },
+    {
+      "name": "continuation preflight rejects expiry, changed counters, missing receipt, active current, or additional history",
+      "passed": true,
+      "ms": 422
+    },
+    {
+      "name": "continuation refuses missing/nonempty bucket without setup, admission, PUT or automatic retry",
+      "passed": true,
+      "ms": 407
+    },
+    {
+      "name": "continuation partial-delete failure keeps full reservation; reconciliation settles only proven deletion",
+      "passed": true,
+      "ms": 528
+    },
+    {
+      "name": "continuation late physical PUT remains charged and uncleanable after timeout and completed deletion hook",
+      "passed": true,
+      "ms": 1576
+    },
+    {
+      "name": "continuation never-written refund rejects forged reason, planned bytes and uncertain writer",
+      "passed": true,
+      "ms": 423
+    },
+    {
+      "name": "continuation lost rejection response replays DB proof without refunding twice or making Storage calls",
+      "passed": true,
+      "ms": 425
+    },
+    {
+      "name": "actual safeupdate preload rejects an unqualified mutation in service sessions and permits scoped RPCs",
+      "passed": true,
+      "ms": 797
     }
   ],
   "storage": "actual local files via fault-injectable adapter; not Supabase Storage",
   "passed": true,
   "local_cluster_stopped": true,
-  "postgres": "postgres (PostgreSQL) 17.11"
+  "postgres": "postgres (PostgreSQL) 17.11",
+  "safeupdate": {
+    "service_sessions_preloaded": true,
+    "module_sha256": "7288e61ba2f56d2954e7e389a95b01c6a7c8d024f9dbef61f26075e09a8a2508",
+    "source_commit": "37dbc9c4acf5e2504adf2b218e9c6b41751022f3",
+    "hosted_binary_identical": false
+  }
 }

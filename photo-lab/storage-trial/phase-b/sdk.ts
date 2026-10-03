@@ -7,6 +7,18 @@ export function adapters(admin: any): { storage: Store; rpc: Rpc } {
     return response.data;
   };
   const bucket = admin.storage.from(BUCKET);
+  const checkEmpty = async () => {
+    const b = checked(await admin.storage.getBucket(BUCKET));
+    if (
+      b.public !== false ||
+      Number(b.file_size_limit) !== 393216 ||
+      JSON.stringify(b.allowed_mime_types) !== '["image/jpeg"]'
+    )
+      throw new Error("bucket_configuration_mismatch");
+    const listing = checked(await bucket.list("", { limit: 1 }));
+    if (!Array.isArray(listing) || listing.length !== 0)
+      throw new Error("bucket_not_empty");
+  };
   const key = (path: string) => {
     if (
       !/^phase-b\/PhotoDemo\/phaseb-[a-z0-9-]{1,64}\/(full|thumb)\.jpg$/.test(
@@ -24,6 +36,7 @@ export function adapters(admin: any): { storage: Store; rpc: Rpc } {
           .abortSignal(signal),
       ),
     storage: {
+      checkEmpty,
       setup: async () => {
         let got = await admin.storage.getBucket(BUCKET);
         if (got.error) {

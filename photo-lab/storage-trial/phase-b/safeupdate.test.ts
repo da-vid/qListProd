@@ -41,7 +41,7 @@ test("all canonical migration and rollback budget updates have the reviewed expl
       assert(scoped(statement), `${name}: unscoped budget update`);
     }
   }
-  assert.equal(count, 7); // reconcile + Phase A read + three Phase B actions + both stop scripts
+  assert.equal(count, 10); // historical 7 + continuation claim, close and read
 });
 test("removing the WHERE clause from any canonical budget update is caught", () => {
   for (const { sql } of sources)
@@ -65,6 +65,20 @@ test("comments, string literals, unrelated WHERE clauses and broadened scopes ca
     assert.equal(statements(sql).length, 1);
     assert(!scoped(statements(sql)[0]));
   }
+});
+test("continuation changes only its own markers and retains historical source guards and expiry", () => {
+  const sql = sources.find((s) => s.name.includes("_continuation.sql"))!.sql;
+  assert(sql.includes("is distinct from 'a062f7fd5e8b1535c282e5bad0068683'"));
+  assert(sql.includes("is distinct from 'd2ae306d98126389774c8cdc7e7ac128'"));
+  assert(sql.includes("expires_at<>'2026-10-04T00:00:00Z'::timestamptz"));
+  assert(sql.includes("raise exception 'original_batch_closed'"));
+  assert(
+    !/\bset\s+(batch_state|batch_owner|expires_at|cap_bytes|operation_count|stopped)\s*=/i.test(
+      sql,
+    ),
+  );
+  assert(!/\b(drop|truncate|security definer)\b/i.test(sql));
+  assert(!/\b(insert into|update|delete from)\s+storage\./i.test(sql));
 });
 test("canonical runtime bodies exactly match the reviewed hosted fix and supplied source hashes", async () => {
   const fix = await readFile(

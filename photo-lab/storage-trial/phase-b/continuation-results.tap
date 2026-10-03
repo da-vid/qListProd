@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: unauthorized, expired and malformed requests never connect to privileged services
+ok 1 - unauthorized, expired and malformed requests never connect to privileged services
+  ---
+  duration_ms: 28.136208
+  type: 'test'
+  ...
+# Subtest: wrong media type, encoding and dishonest body length fail before connecting
+ok 2 - wrong media type, encoding and dishonest body length fail before connecting
+  ---
+  duration_ms: 0.404583
+  type: 'test'
+  ...
+# Subtest: status/reconcile do not initialize codec or create bucket; errors are sanitized
+ok 3 - status/reconcile do not initialize codec or create bucket; errors are sanitized
+  ---
+  duration_ms: 1.721
+  type: 'test'
+  ...
+# Subtest: stalled body and uncooperative RPC have bounded lifetimes
+ok 4 - stalled body and uncooperative RPC have bounded lifetimes
+  ---
+  duration_ms: 53.995625
+  type: 'test'
+  ...
+# Subtest: official SDK creates exactly the restricted bucket and refuses drift or ambiguous absence
+ok 5 - official SDK creates exactly the restricted bucket and refuses drift or ambiguous absence
+  ---
+  duration_ms: 3.674917
+  type: 'test'
+  ...
+# Subtest: official SDK upload uses JPEG bytes, no overwrite, and only reviewed immutable keys
+ok 6 - official SDK upload uses JPEG bytes, no overwrite, and only reviewed immutable keys
+  ---
+  duration_ms: 0.446542
+  type: 'test'
+  ...
+# Subtest: official SDK stream download, physical remove, and strict NoSuchKey verification
+ok 7 - official SDK stream download, physical remove, and strict NoSuchKey verification
+  ---
+  duration_ms: 1.428875
+  type: 'test'
+  ...
+# Subtest: exact NoSuchKey permits semantic404 over legacy400 and modern404
+ok 8 - exact NoSuchKey permits semantic404 over legacy400 and modern404
+  ---
+  duration_ms: 27.4525
+  type: 'test'
+  ...
+# Subtest: ambiguous missing, auth, tenant, conflicting semantic status and server errors never prove absence
+ok 9 - ambiguous missing, auth, tenant, conflicting semantic status and server errors never prove absence
+  ---
+  duration_ms: 3.795042
+  type: 'test'
+  ...
+# Subtest: cleanup fences exact current version and only deletes the two fixed settled pairs
+ok 10 - cleanup fences exact current version and only deletes the two fixed settled pairs
+  ---
+  duration_ms: 5.584334
+  type: 'test'
+  ...
+# Subtest: wrong batch, extra operation, wrong version, nonfixed item and unsettled writer stop before fencing or storage
+ok 11 - wrong batch, extra operation, wrong version, nonfixed item and unsettled writer stop before fencing or storage
+  ---
+  duration_ms: 0.700833
+  type: 'test'
+  ...
+# Subtest: failed delete or uncertain absence retain every byte and never acknowledge cleanup
+ok 12 - failed delete or uncertain absence retain every byte and never acknowledge cleanup
+  ---
+  duration_ms: 0.32575
+  type: 'test'
+  ...
+# Subtest: cleanup HTTP command routes through the existing auth and strict input gate
+ok 13 - cleanup HTTP command routes through the existing auth and strict input gate
+  ---
+  duration_ms: 4.978459
+  type: 'test'
+  ...
+# Subtest: failure on the second pair refunds only the verified first pair and a later cleanup can finish
+ok 14 - failure on the second pair refunds only the verified first pair and a later cleanup can finish
+  ---
+  duration_ms: 0.4705
+  type: 'test'
+  ...
+# Subtest: continuation readiness uses only existing-bucket metadata and empty listing; never creates a bucket
+ok 15 - continuation readiness uses only existing-bucket metadata and empty listing; never creates a bucket
+  ---
+  duration_ms: 29.410625
+  type: 'test'
+  ...
+# Subtest: continuation readiness rejects configuration drift, occupied listing and malformed listing envelopes
+ok 16 - continuation readiness rejects configuration drift, occupied listing and malformed listing envelopes
+  ---
+  duration_ms: 3.468459
+  type: 'test'
+  ...
+# Subtest: PostgREST failure envelopes preserve SQL fence errors without treating them as success
+ok 17 - PostgREST failure envelopes preserve SQL fence errors without treating them as success
+  ---
+  duration_ms: 2.242375
+  type: 'test'
+  ...
+# Subtest: continuation HTTP command is auth/expiry gated, rejects arbitrary fields and never auto-retries a lost claim
+ok 18 - continuation HTTP command is auth/expiry gated, rejects arbitrary fields and never auto-retries a lost claim
+  ---
+  duration_ms: 3.79725
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 251.926417

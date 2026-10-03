@@ -15,6 +15,7 @@ export type Rpc = (
 ) => Promise<any>;
 export type Store = {
   setup: () => Promise<void>;
+  checkEmpty: () => Promise<void>;
   put: (key: string, bytes: Uint8Array) => Promise<void>;
   read: (key: string) => Promise<ReadableStream<Uint8Array>>;
   remove: (keys: string[]) => Promise<unknown>;
@@ -160,7 +161,12 @@ export class PhysicalTrial {
     );
     return obj;
   }
-  async write(id: string, kind: Kind, bytes: Uint8Array) {
+  async write(
+    id: string,
+    kind: Kind,
+    bytes: Uint8Array,
+    afterStart?: () => Promise<void>,
+  ) {
     const before = await this.status(id),
       obj = this.object(before, kind);
     demand(
@@ -176,11 +182,18 @@ export class PhysicalTrial {
     });
     demand(claim.claimed, "write_already_claimed");
     try {
-      await bounded(
+      // Attach handlers immediately: a hook may take longer than a failed PUT.
+      const upload = bounded(
         this.storage.put(obj.physical_key, bytes),
         this.signal,
         this.timeoutMs,
+      ).then(
+        () => ({ ok: true as const }),
+        (error) => ({ ok: false as const, error }),
       );
+      if (afterStart) await afterStart();
+      const result = await upload;
+      if (!result.ok) throw result.error;
     } catch (e) {
       try {
         await this.call("write_uncertain", { operation_id: id, kind, ticket });
@@ -358,6 +371,145 @@ export class PhysicalTrial {
       untested: ["partial_upload", "deletion_during_upload", "noise_rejection"],
       state: final,
     };
+  }
+  async runContinuation() {
+    // Claim is deliberately outside catch: a duplicate cannot block another owner.
+    await this.call("continuation_claim");
+    try {
+      await bounded(this.storage.checkEmpty(), this.signal, this.timeoutMs);
+      const partial = "phaseb-cont-partial",
+        deleted = "phaseb-cont-deleted";
+      const half = await this.prepare(
+        partial,
+        "trial-physical-cont-partial",
+        "gradient",
+      );
+      await this.write(partial, "full", half.full);
+      await this.verify(partial, "full");
+      // Deliberate failure before thumbnail claim; only full has been written.
+      await this.cancel(partial);
+      const held = await this.status(partial);
+      demand(
+        held.budgets.every((b: any) => b.reserved_bytes === 425984) &&
+          this.object(held, "thumb").writer_state === "unstarted",
+        "partial_charge_not_retained",
+      );
+      await this.cleanup(partial);
+      this.evidence.push({
+        scenario: "partial_upload",
+        reservation_retained_until_cleanup: true,
+      });
+
+      const late = await this.prepare(
+        deleted,
+        "trial-physical-cont-deleted",
+        "gradient",
+      );
+      await this.write(deleted, "full", late.full, async () => {
+        await this.call("delete_item", {
+          item_id: "trial-physical-cont-deleted",
+        });
+        let denied = false;
+        try {
+          await this.cleanup(deleted);
+        } catch (e) {
+          denied = String(e).includes("writer_unsettled");
+        }
+        demand(denied, "unsettled_cleanup_not_denied");
+        demand(
+          (await this.status(deleted)).budgets.every(
+            (b: any) => b.reserved_bytes === 425984,
+          ),
+          "unsettled_charge_not_retained",
+        );
+      });
+      await this.verify(deleted, "full");
+      let fenced = false;
+      try {
+        await this.write(deleted, "thumb", late.thumbnail);
+      } catch (e) {
+        fenced = String(e).includes("item_fenced");
+      }
+      demand(fenced, "late_write_not_denied");
+      await this.cleanup(deleted);
+      this.evidence.push({
+        scenario: "deletion_during_upload",
+        unacknowledged_writer_cleanup_denied: true,
+        late_thumbnail_denied: true,
+        physical_server_overlap_measured: false,
+      });
+
+      const noise = "phaseb-cont-noise";
+      let rejected = false;
+      try {
+        await this.prepare(noise, "trial-physical-cont-noise", "noise");
+      } catch (e) {
+        rejected = String(e).includes("too complex");
+      }
+      demand(rejected, "noise_not_rejected");
+      await this.call("reject_unstarted", {
+        operation_id: noise,
+        reason: "output_too_complex",
+      });
+      this.evidence.push({
+        scenario: "noise_rejection",
+        before_write_claim: true,
+      });
+
+      const oversize = "phaseb-cont-oversize";
+      await this.reserve(oversize, "trial-physical-cont-oversize", "gradient");
+      const bytes = new Uint8Array(512 * 1024 + 1);
+      bytes.set(this.fixtures.gradient);
+      let capped = false;
+      try {
+        // No Content-Length: exercise the actual streamed byte cap before decoding.
+        await readJpegUpload(
+          new Request("https://synthetic.invalid", {
+            method: "POST",
+            headers: { "content-type": "image/jpeg" },
+            body: bytes,
+            signal: this.signal,
+          }),
+        );
+      } catch (e) {
+        capped = String(e).includes("Upload exceeds the photo limit");
+      }
+      demand(capped, "oversize_not_rejected");
+      await this.call("reject_unstarted", {
+        operation_id: oversize,
+        reason: "input_too_large",
+      });
+      this.evidence.push({
+        scenario: "oversize_rejection",
+        before_decoder: true,
+        before_write_claim: true,
+      });
+      const state = await this.status();
+      demand(
+        state.budgets.every(
+          (b: any) =>
+            b.batch_state === "blocked" &&
+            b.used_bytes === 0 &&
+            b.reserved_bytes === 0 &&
+            b.photo_count === 0 &&
+            b.pending_count === 0,
+        ),
+        "residual_accounting",
+      );
+      await this.call("continuation_close", { result: "complete" });
+      return {
+        continuation_complete: true,
+        trial_complete: false,
+        requires_hosted_review: true,
+        state: await this.status(),
+        evidence: this.evidence,
+      };
+    } catch (e) {
+      try {
+        await this.call("continuation_close", { result: "blocked" });
+      } catch {}
+      throw e;
+    }
   }
   async run() {
     await this.call("batch_claim");

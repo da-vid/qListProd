@@ -1,0 +1,80 @@
+{
+  "review_scope": "Local preparation only; no hosted mutations or invocation",
+  "baseline_commit": "363f61de2aa565e06339cd8ad2e8949c476a62c4",
+  "runtime_sha256": {
+    "photo-lab/storage-trial/phase-b/engine.ts": "7c3a1f8d0ffa02e4c3a79b17937fe056f46497c411e58239a83007e610233aa8",
+    "photo-lab/storage-trial/phase-b/handler.ts": "624b04365a4c028ab4b35d88dca7d1fab55332936680163d09ce64ad628b584a",
+    "photo-lab/storage-trial/phase-b/sdk.ts": "ec945c07c33cabcecdd03fb614b185da25624db865f430d5a426c10819dc7f60",
+    "photo-lab/storage-trial/supabase/migrations/20261003022856_qlist_photo_trial_continuation.sql": "696a80caf389a453577d81ca021a44abfbcfd2179262675d5643840e6c88750e"
+  },
+  "runtime_patch_sha256": "d1b24906607da01220416f0598951d7f4cecb67eb2f4adf4920991175dfd3405",
+  "continuation_rpc_body_md5": "2eb833ea1dd34a573870a3fc00c54cb6",
+  "required_existing_body_md5": {
+    "reconcile": "d2ae306d98126389774c8cdc7e7ac128",
+    "phase_b_rpc": "a062f7fd5e8b1535c282e5bad0068683"
+  },
+  "parent_cleanup_evidence": {
+    "library_file_id": "libfile_aed7b29742788191b62cf3d03fc75c10",
+    "version": 0,
+    "bytes": 9245,
+    "sha256": "5bffce57288a64cb3eb2715082a2d0fddc570f322178e9db93d8fa57b933e35d",
+    "materialized_and_verified": true,
+    "independent_hosted_recheck": false
+  },
+  "security_review": {
+    "gateway_verify_jwt": true,
+    "auth": "SDK secret:default",
+    "security_invoker": true,
+    "public_anon_authenticated_denied": true,
+    "new_client_grants": false,
+    "new_storage_policies": false,
+    "new_keys": false,
+    "original_batch_reset": false,
+    "original_batch_remains": "blocked",
+    "expiry": "2026-10-04T00:00:00Z",
+    "old_history_receipts_unchanged": true,
+    "quota_changes": false,
+    "arbitrary_http_objects": false,
+    "unknown_writers_remain_charged": true,
+    "unstarted_rejection_uses_db_no_write_proof": true,
+    "new_bucket_creation": false
+  },
+  "tests": {
+    "integration": 31,
+    "http_sdk": 18,
+    "source_guards": 5,
+    "jpeg_input": 9,
+    "deno_frozen_check": true,
+    "safeupdate_runtime_preload": true,
+    "safeupdate_upstream_commit": "37dbc9c4acf5e2504adf2b218e9c6b41751022f3",
+    "hosted_module_binary_identity_verified": false
+  },
+  "expected_continuation": {
+    "admissions": 4,
+    "puts": 2,
+    "verification_gets": 2,
+    "pair_delete_calls": 2,
+    "new_commits": 0,
+    "total_operations": 9,
+    "total_items": 6,
+    "total_read_count": 6,
+    "total_read_bytes": 2359296,
+    "final_used_bytes": 0,
+    "final_reserved_bytes": 0,
+    "final_current_photos": 0,
+    "final_pending": 0,
+    "final_bucket_objects": 0
+  },
+  "remaining_acceptance": [
+    "parent source/security review",
+    "new migration applied and function deployed only after parent review",
+    "one manual POST continuation",
+    "hosted scenario/log/ledger/API-empty-bucket evidence",
+    "actual Edge CPU/memory behavior"
+  ],
+  "limits": [
+    "Deletion while writer unacknowledged is tested; physical-server overlap not measured",
+    "Storage API contract is not independent provider inventory or billing evidence",
+    "No production photos enabled"
+  ]
+}

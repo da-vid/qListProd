@@ -16,7 +16,7 @@ import { initialize } from "./codec.js";
 import { fixtures as encoded } from "./fixtures.js";
 const root = new URL("./", import.meta.url),
   run = promisify(execFile),
-  [psql, socket] = process.argv.slice(2);
+  [psql, socket, safeupdate] = process.argv.slice(2);
 assert(socket.includes("/qlist-physical-") && socket.endsWith("/socket"));
 const env = Object.fromEntries(
   Object.entries(process.env).filter(([k]) => !k.startsWith("PG")),
@@ -38,8 +38,17 @@ async function sql(query, db = "postgres", role) {
       "-c",
       (role ? "set role " + role + ";" : "") + query,
     ],
-    { env, timeout: 10000, maxBuffer: 1024 * 1024 },
-  );
+    {
+      env:
+        role && safeupdate
+          ? { ...env, PGOPTIONS: "-c session_preload_libraries=" + safeupdate }
+          : env,
+      timeout: 10000,
+      maxBuffer: 1024 * 1024,
+    },
+  ).catch((e) => {
+    throw new Error(e.stderr || e.message);
+  });
   return stdout.trim();
 }
 await sql(
@@ -55,6 +64,13 @@ const a = await readFile(
 const b = await readFile(
   new URL(
     "../supabase/migrations/20261003002735_qlist_photo_trial_phase_b.sql",
+    root,
+  ),
+  "utf8",
+);
+const c = await readFile(
+  new URL(
+    "../supabase/migrations/20261003022856_qlist_photo_trial_continuation.sql",
     root,
   ),
   "utf8",
@@ -88,6 +104,9 @@ class FileStore {
   }
   setup = async () => {
     this.setupCalls++;
+  };
+  checkEmpty = async () => {
+    assert.equal(this.files.size, 0);
   };
   target = (key) => {
     assert.match(
@@ -781,6 +800,376 @@ try {
     assert.equal((await budget()).used_bytes, 0);
     assert.equal(store.files.size, 0);
   });
+  async function readyContinuation(ctx, apply = true) {
+    const { trial, store, db, rpc } = ctx;
+    const put = store.put,
+      read = store.read;
+    await blockedHostedShape(ctx);
+    await trial.finishCleanup();
+    store.put = put;
+    store.read = read;
+    // Mirrors the already fixed hosted deadline; only this local fixture sets it.
+    await sql(
+      "update qlist_photo_trial.budgets set expires_at='2026-10-04T00:00:00Z' where scope in ('global','PhotoDemo');",
+      db,
+    );
+    const history = await sql(
+      "select jsonb_build_object('operations',(select jsonb_agg(to_jsonb(t) order by operation_id) from qlist_photo_trial.operations t),'objects',(select jsonb_agg(to_jsonb(t) order by operation_id,kind) from qlist_photo_trial.objects t));",
+      db,
+    );
+    const baseline = await ctx.budget();
+    if (apply) await sql(c, db);
+    const next = new PhysicalTrial(
+      rpc,
+      store,
+      processor,
+      fixtures,
+      AbortSignal.timeout(30000),
+      1000,
+    );
+    return { next, baseline, history };
+  }
+  await test("continuation: four fixed cases consume original budgets, preserve history/deadline/blocked batch and end empty", async (ctx) => {
+    const { next, baseline, history } = await readyContinuation(ctx);
+    const puts = ctx.store.puts,
+      reads = ctx.store.reads,
+      deletes = ctx.store.deletes;
+    const result = await next.runContinuation();
+    assert.equal(result.continuation_complete, true);
+    assert.equal(result.trial_complete, false);
+    assert.deepEqual(
+      result.evidence.filter((e) => e.scenario).map((e) => e.scenario),
+      [
+        "partial_upload",
+        "deletion_during_upload",
+        "noise_rejection",
+        "oversize_rejection",
+      ],
+    );
+    assert.equal(ctx.store.puts - puts, 2);
+    assert.equal(ctx.store.reads - reads, 2);
+    assert.equal(ctx.store.deletes - deletes, 2);
+    assert.equal(ctx.store.files.size, 0);
+    assert.equal(ctx.store.setupCalls, 1);
+    const q = await ctx.budget();
+    for (const name of [
+      "batch_state",
+      "batch_owner",
+      "expires_at",
+      "cap_bytes",
+      "stopped",
+    ])
+      assert.deepEqual(q[name], baseline[name], name);
+    assert.equal(q.continuation_state, "complete");
+    assert.equal(q.operation_count, 9);
+    assert.equal(q.read_bytes, 2359296);
+    assert.equal(q.read_count, 6);
+    for (const name of [
+      "used_bytes",
+      "reserved_bytes",
+      "photo_count",
+      "pending_count",
+    ])
+      assert.equal(q[name], 0, name);
+    const prior = JSON.parse(history);
+    for (const table of ["operations", "objects"]) {
+      const actual = JSON.parse(
+        await sql(
+          `select jsonb_agg(to_jsonb(t) order by operation_id${table === "objects" ? ",kind" : ""}) from qlist_photo_trial.${table} t where operation_id not like 'phaseb-cont-%';`,
+          ctx.db,
+        ),
+      );
+      assert.deepEqual(actual, prior[table]);
+    }
+    const rejects = JSON.parse(
+      await sql(
+        "select jsonb_agg(to_jsonb(t)) from qlist_photo_trial.objects t where operation_id in ('phaseb-cont-noise','phaseb-cont-oversize');",
+        ctx.db,
+      ),
+    );
+    assert.equal(rejects.length, 4);
+    assert(
+      rejects.every(
+        (o) =>
+          o.writer_state === "absent" &&
+          o.write_nonce === null &&
+          o.size_bytes === 0 &&
+          o.physical_deleted_at === null &&
+          /^[0-9a-f]{64}$/.test(o.delete_receipt),
+      ),
+    );
+    await assert.rejects(
+      () => next.runContinuation(),
+      /continuation_already_claimed/,
+    );
+    await assert.rejects(() => ctx.trial.run(), /original_batch_closed/);
+    await assert.rejects(
+      () => ctx.trial.call("batch_close", { result: "complete" }),
+      /original_batch_closed/,
+    );
+    assert.equal(ctx.store.puts - puts, 2);
+  });
+  await test("continuation migration rejects unclean or wrong source and atomically leaves schema untouched", async (ctx) => {
+    await blockedHostedShape(ctx);
+    await assert.rejects(() => sql(c, ctx.db), /cleaned_hosted_state_required/);
+    assert.equal(
+      await sql(
+        "select count(*) from information_schema.columns where table_schema='qlist_photo_trial' and column_name='continuation_state';",
+        ctx.db,
+      ),
+      "0",
+    );
+    await sql(
+      "create or replace function qlist_photo_trial.reconcile() returns void language plpgsql as $$begin null;end$$;",
+      ctx.db,
+    );
+    await assert.rejects(() => sql(c, ctx.db), /reviewed_source_mismatch/);
+  });
+  await test("continuation claim is unique under concurrency; foreign owner and arbitrary cases cannot create objects", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    const owners = [next.owner, crypto.randomUUID()];
+    const claims = await Promise.allSettled(
+      owners.map((owner) => ctx.rpc("continuation_claim", { owner })),
+    );
+    assert.equal(claims.filter((r) => r.status === "fulfilled").length, 1);
+    const winner = owners[claims.findIndex((r) => r.status === "fulfilled")];
+    next.owner = winner;
+    await assert.rejects(
+      () =>
+        next.reserve(
+          "phaseb-arbitrary",
+          "trial-physical-arbitrary",
+          "gradient",
+        ),
+      /continuation_case_mismatch/,
+    );
+    await assert.rejects(
+      () =>
+        next.reserve(
+          "phaseb-cont-partial",
+          "trial-physical-cont-partial",
+          "portrait",
+        ),
+      /continuation_case_mismatch/,
+    );
+    await assert.rejects(
+      () =>
+        ctx.rpc("reserve", {
+          owner: crypto.randomUUID(),
+          operation_id: "phaseb-cont-partial",
+          item_id: "trial-physical-cont-partial",
+          fixture: "gradient",
+          expected_version: 0,
+        }),
+      /continuation_not_owned/,
+    );
+    await assert.rejects(
+      () => next.call("continuation_close", { result: "complete" }),
+      /residual_operations/,
+    );
+    assert.equal((await ctx.budget()).operation_count, 5);
+    for (const role of ["anon", "authenticated"])
+      await assert.rejects(
+        () =>
+          sql(
+            "select public.qlist_photo_trial_b_rpc('continuation_claim');",
+            ctx.db,
+            role,
+          ),
+        /permission denied/,
+      );
+    assert.equal(
+      await sql(
+        "select prosecdef from pg_proc where oid='public.qlist_photo_trial_b_rpc(text,jsonb)'::regprocedure;",
+        ctx.db,
+      ),
+      "f",
+    );
+  });
+  await test("continuation preflight rejects expiry, changed counters, missing receipt, active current, or additional history", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    const mutations = [
+      [
+        "update qlist_photo_trial.budgets set expires_at=clock_timestamp()-interval '1 second' where scope in ('global','PhotoDemo');",
+        /trial_closed/,
+      ],
+      [
+        "update qlist_photo_trial.budgets set read_count=5 where scope in ('global','PhotoDemo');",
+        /continuation_preflight_failed/,
+      ],
+      [
+        "update qlist_photo_trial.objects set delete_receipt=null where operation_id='phaseb-batch-base';",
+        /continuation_preflight_failed/,
+      ],
+      [
+        "update qlist_photo_trial.items set current_operation='phaseb-batch-replacement' where item_id='trial-physical-replace';",
+        /continuation_preflight_failed/,
+      ],
+      [
+        "update qlist_photo_trial.operations set phase='cleanup' where operation_id='phaseb-batch-base';",
+        /continuation_preflight_failed/,
+      ],
+    ];
+    for (const [query, error] of mutations) {
+      // Transaction rollback after failed claim preserves the independently created local fixture.
+      await assert.rejects(
+        () =>
+          sql(
+            query +
+              `set role service_role;select public.qlist_photo_trial_b_rpc('continuation_claim','{"owner":"${next.owner}"}');`,
+            ctx.db,
+          ),
+        error,
+      );
+      assert.equal((await ctx.budget()).continuation_state, "idle");
+    }
+    assert.equal((await ctx.budget()).read_count, 4);
+  });
+  await test("continuation refuses missing/nonempty bucket without setup, admission, PUT or automatic retry", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    const puts = ctx.store.puts;
+    ctx.store.checkEmpty = async () => {
+      throw Error("bucket_not_empty");
+    };
+    await assert.rejects(() => next.runContinuation(), /bucket_not_empty/);
+    const q = await ctx.budget();
+    assert.equal(q.operation_count, 5);
+    assert.equal(q.continuation_state, "blocked");
+    assert.equal(q.batch_state, "blocked");
+    assert.equal(ctx.store.puts, puts);
+    await assert.rejects(
+      () => next.runContinuation(),
+      /continuation_already_claimed/,
+    );
+  });
+  await test("continuation partial-delete failure keeps full reservation; reconciliation settles only proven deletion", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    ctx.store.beforeRemove = async () => {
+      throw Error("delete_failed");
+    };
+    await assert.rejects(() => next.runContinuation(), /delete_failed/);
+    assert.equal((await ctx.budget()).reserved_bytes, 425984);
+    assert.equal((await ctx.budget()).continuation_state, "blocked");
+    assert.equal(ctx.store.files.size, 1);
+    ctx.store.beforeRemove = undefined;
+    assert.deepEqual((await next.reconcile()).retained, []);
+    assert.equal((await ctx.budget()).reserved_bytes, 0);
+    assert.equal(ctx.store.files.size, 0);
+    assert.equal((await ctx.budget()).operation_count, 6);
+  });
+  await test("continuation late physical PUT remains charged and uncleanable after timeout and completed deletion hook", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    let release, finished;
+    const completed = new Promise((r) => (finished = r));
+    ctx.store.beforePut = async (key) => {
+      if (key.includes("cont-deleted")) await new Promise((r) => (release = r));
+    };
+    ctx.store.afterPut = async (key) => {
+      if (key.includes("cont-deleted")) finished();
+    };
+    await assert.rejects(() => next.runContinuation(), /operation_timeout/);
+    const q = await ctx.budget();
+    assert.equal(q.continuation_state, "blocked");
+    assert.equal(q.reserved_bytes, 425984);
+    release();
+    await completed;
+    assert.equal(ctx.store.files.size, 1);
+    const result = await next.reconcile();
+    assert.deepEqual(result.retained, ["phaseb-cont-deleted"]);
+    assert.equal((await ctx.budget()).reserved_bytes, 425984);
+    const op = await next.status("phaseb-cont-deleted");
+    assert.equal(op.operation.phase, "cleanup");
+    assert.equal(
+      op.objects.find((o) => o.kind === "full").writer_state,
+      "uncertain",
+    );
+    await assert.rejects(
+      () => next.runContinuation(),
+      /continuation_already_claimed/,
+    );
+  });
+  await test("continuation never-written refund rejects forged reason, planned bytes and uncertain writer", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    await next.call("continuation_claim");
+    const id = "phaseb-cont-noise";
+    await next.reserve(id, "trial-physical-cont-noise", "noise");
+    await assert.rejects(
+      () =>
+        next.call("reject_unstarted", {
+          operation_id: id,
+          reason: "input_too_large",
+        }),
+      /rejection_case_mismatch/,
+    );
+    await assert.rejects(
+      () => next.call("plan", { operation_id: id, objects: {} }),
+      /continuation_case_mismatch/,
+    );
+    await assert.rejects(
+      () =>
+        sql(
+          "update qlist_photo_trial.objects set size_bytes=1 where operation_id='phaseb-cont-noise' and kind='full';" +
+            `set role service_role;select public.qlist_photo_trial_b_rpc('reject_unstarted','{"owner":"${next.owner}","operation_id":"${id}","reason":"output_too_complex"}');`,
+          ctx.db,
+        ),
+      /never_written_proof_failed/,
+    );
+    await sql(
+      "update qlist_photo_trial.objects set writer_state='uncertain',write_nonce='00000000-0000-4000-8000-000000000001' where operation_id='phaseb-cont-noise' and kind='full';",
+      ctx.db,
+    );
+    await assert.rejects(
+      () =>
+        next.call("reject_unstarted", {
+          operation_id: id,
+          reason: "output_too_complex",
+        }),
+      /never_written_proof_failed/,
+    );
+    await next.cancel(id);
+    await assert.rejects(() => next.cleanup(id), /writer_unsettled/);
+    assert.equal((await ctx.budget()).reserved_bytes, 425984);
+  });
+  await test("continuation lost rejection response replays DB proof without refunding twice or making Storage calls", async (ctx) => {
+    const { next } = await readyContinuation(ctx);
+    await next.call("continuation_claim");
+    const id = "phaseb-cont-oversize";
+    await next.reserve(id, "trial-physical-cont-oversize", "gradient");
+    const counts = [ctx.store.puts, ctx.store.reads, ctx.store.deletes];
+    await next.call("reject_unstarted", {
+      operation_id: id,
+      reason: "input_too_large",
+    });
+    await next.call("reject_unstarted", {
+      operation_id: id,
+      reason: "input_too_large",
+    });
+    assert.equal((await ctx.budget()).reserved_bytes, 0);
+    assert.deepEqual(
+      [ctx.store.puts, ctx.store.reads, ctx.store.deletes],
+      counts,
+    );
+  });
+  if (safeupdate)
+    await test("actual safeupdate preload rejects an unqualified mutation in service sessions and permits scoped RPCs", async (ctx) => {
+      assert.equal(
+        await sql("show safeupdate.enabled;", ctx.db, "service_role"),
+        "on",
+      );
+      await assert.rejects(
+        () =>
+          sql(
+            "update qlist_photo_trial.budgets set stopped=true;",
+            ctx.db,
+            "service_role",
+          ),
+        /UPDATE requires a WHERE clause/,
+      );
+      assert.equal((await ctx.budget()).stopped, false);
+      const { next } = await readyContinuation(ctx);
+      await next.runContinuation();
+      assert.equal((await ctx.budget()).continuation_state, "complete");
+    });
   results.passed = true;
 } finally {
   await writeFile(
