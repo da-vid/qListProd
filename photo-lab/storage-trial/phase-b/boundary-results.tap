@@ -1,0 +1,52 @@
+TAP version 13
+# Subtest: unauthorized, expired and malformed requests never connect to privileged services
+ok 1 - unauthorized, expired and malformed requests never connect to privileged services
+  ---
+  duration_ms: 12.161916
+  type: 'test'
+  ...
+# Subtest: wrong media type, encoding and dishonest body length fail before connecting
+ok 2 - wrong media type, encoding and dishonest body length fail before connecting
+  ---
+  duration_ms: 0.328167
+  type: 'test'
+  ...
+# Subtest: status/reconcile do not initialize codec or create bucket; errors are sanitized
+ok 3 - status/reconcile do not initialize codec or create bucket; errors are sanitized
+  ---
+  duration_ms: 0.8105
+  type: 'test'
+  ...
+# Subtest: stalled body and uncooperative RPC have bounded lifetimes
+ok 4 - stalled body and uncooperative RPC have bounded lifetimes
+  ---
+  duration_ms: 55.098834
+  type: 'test'
+  ...
+# Subtest: official SDK creates exactly the restricted bucket and refuses drift or ambiguous absence
+ok 5 - official SDK creates exactly the restricted bucket and refuses drift or ambiguous absence
+  ---
+  duration_ms: 4.207666
+  type: 'test'
+  ...
+# Subtest: official SDK upload uses JPEG bytes, no overwrite, and only reviewed immutable keys
+ok 6 - official SDK upload uses JPEG bytes, no overwrite, and only reviewed immutable keys
+  ---
+  duration_ms: 0.576875
+  type: 'test'
+  ...
+# Subtest: official SDK stream download, physical remove, and strict NoSuchKey verification
+ok 7 - official SDK stream download, physical remove, and strict NoSuchKey verification
+  ---
+  duration_ms: 1.466
+  type: 'test'
+  ...
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 163.502958

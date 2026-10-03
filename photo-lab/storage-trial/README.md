@@ -1,5 +1,7 @@
 # qList photo trial — Phase A review bundle
 
+Update: the parent subsequently applied and verified Phase A SQL, without deploying its Edge harness or creating storage. See [Phase B](phase-b/README.md) for that evidence and the next review-only work. The original preparation report follows.
+
 **Prepared for parent review; nothing in this bundle has been applied remotely.** Target only the dedicated Supabase Free project `qmpdinzendwpkqhtqskz` (`qlist-photos`, us-west-2). Keep live qList photos off. No Netlify/Firebase changes, production lists/photos, new keys, paid services, public URLs, bucket, cron or real object writes.
 
 The direct user request in this task was “remove the associated spaces in the UI too.” Accessible Spaces and qList Pages were checked; none were returned and nothing was deleted. That request did not cancel qList work. The parent subsequently requested this trial preparation explicitly.

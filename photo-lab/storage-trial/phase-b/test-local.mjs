@@ -1,0 +1,638 @@
+import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  mkdtemp,
+  unlink,
+  stat,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { PhysicalTrial, BUCKET } from "./engine.ts";
+import { initialize } from "./codec.js";
+import { fixtures as encoded } from "./fixtures.js";
+const root = new URL("./", import.meta.url),
+  run = promisify(execFile),
+  [psql, socket] = process.argv.slice(2);
+assert(socket.includes("/qlist-physical-") && socket.endsWith("/socket"));
+const env = Object.fromEntries(
+  Object.entries(process.env).filter(([k]) => !k.startsWith("PG")),
+);
+async function sql(query, db = "postgres", role) {
+  const { stdout } = await run(
+    psql,
+    [
+      "-X",
+      "-qAt",
+      "-h",
+      socket,
+      "-U",
+      "postgres",
+      "-d",
+      db,
+      "-v",
+      "ON_ERROR_STOP=1",
+      "-c",
+      (role ? "set role " + role + ";" : "") + query,
+    ],
+    { env, timeout: 10000, maxBuffer: 1024 * 1024 },
+  );
+  return stdout.trim();
+}
+await sql(
+  "create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;",
+);
+const a = await readFile(
+  new URL(
+    "../supabase/migrations/20261002235210_qlist_photo_trial_phase_a.sql",
+    root,
+  ),
+  "utf8",
+);
+const b = await readFile(
+  new URL(
+    "../supabase/migrations/20261003002735_qlist_photo_trial_phase_b.sql",
+    root,
+  ),
+  "utf8",
+);
+const fixtures = Object.fromEntries(
+  Object.entries(encoded).map(([k, v]) => [
+    k,
+    Uint8Array.from(Buffer.from(v, "base64")),
+  ]),
+);
+const processor = await initialize();
+const results = {
+  runtime: process.version,
+  tests: [],
+  storage:
+    "actual local files via fault-injectable adapter; not Supabase Storage",
+};
+class FileStore {
+  files = new Set();
+  puts = 0;
+  reads = 0;
+  deletes = 0;
+  setupCalls = 0;
+  afterPut;
+  beforePut;
+  beforeRemove;
+  afterRead;
+  holdAbsence = false;
+  constructor(dir) {
+    this.dir = dir;
+  }
+  setup = async () => {
+    this.setupCalls++;
+  };
+  target = (key) => {
+    assert.match(
+      key,
+      /^phase-b\/PhotoDemo\/phaseb-[a-z0-9-]{1,64}\/(full|thumb)\.jpg$/,
+    );
+    return path.join(this.dir, key);
+  };
+  put = async (key, bytes) => {
+    this.puts++;
+    if (this.beforePut) await this.beforePut(key, bytes);
+    const file = this.target(key);
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, bytes, { flag: "wx" });
+    this.files.add(key);
+    if (this.afterPut) await this.afterPut(key, bytes);
+  };
+  read = async (key) => {
+    this.reads++;
+    let bytes = Uint8Array.from(await readFile(this.target(key)));
+    if (this.afterRead) bytes = this.afterRead(bytes);
+    return new ReadableStream({
+      start(c) {
+        c.enqueue(bytes);
+        c.close();
+      },
+    });
+  };
+  remove = async (keys) => {
+    this.deletes++;
+    if (this.beforeRemove) await this.beforeRemove(keys);
+    for (const key of keys) {
+      try {
+        await unlink(this.target(key));
+      } catch (e) {
+        if (e.code !== "ENOENT") throw e;
+      }
+      this.files.delete(key);
+    }
+    return keys.map((name) => ({ name }));
+  };
+  exists = async (key) => {
+    if (this.holdAbsence) return true;
+    try {
+      await stat(this.target(key));
+      return true;
+    } catch (e) {
+      if (e.code === "ENOENT") return false;
+      throw e;
+    }
+  };
+}
+async function fresh(index, apply = true) {
+  const db = "physical_" + index;
+  await sql("create database " + db + ";");
+  await sql(a, db);
+  // Retain a representative Phase A history of 3 released operations, one item, six objects.
+  await sql(
+    "do $$ declare n int;p jsonb;begin for n in 1..3 loop p=jsonb_build_object('operation_id','phasea-retained-'||n,'item_id','trial-retained','fixture','gradient','expected_version',0);perform public.qlist_photo_trial_rpc('reserve',p);perform public.qlist_photo_trial_rpc('cancel',p-'item_id'-'fixture'-'expected_version');perform public.qlist_photo_trial_rpc('cleanup',p-'item_id'-'fixture'-'expected_version');end loop;end $$;",
+    db,
+    "service_role",
+  );
+  if (apply) await sql(b, db);
+  const store = new FileStore(
+    await mkdtemp(path.join(tmpdir(), "qlist-objects-")),
+  );
+  const rpc = async (action, payload) =>
+    JSON.parse(
+      await sql(
+        "select public.qlist_photo_trial_b_rpc('" +
+          action +
+          "','" +
+          JSON.stringify(payload).replaceAll("'", "''") +
+          "'::jsonb);",
+        db,
+        "service_role",
+      ),
+    );
+  const trial = new PhysicalTrial(
+    rpc,
+    store,
+    processor,
+    fixtures,
+    AbortSignal.timeout(30000),
+    1000,
+  );
+  const budget = async () =>
+    JSON.parse(
+      await sql(
+        "select to_jsonb(t) from qlist_photo_trial.budgets t where scope='global';",
+        db,
+      ),
+    );
+  return { db, store, rpc, trial, budget };
+}
+async function test(name, fn, apply = true) {
+  const start = Date.now();
+  try {
+    const ctx = await fresh(results.tests.length, apply);
+    await fn(ctx);
+    results.tests.push({ name, passed: true, ms: Date.now() - start });
+    console.log("PASS", name);
+  } catch (e) {
+    results.tests.push({ name, passed: false, error: String(e) });
+    throw e;
+  }
+}
+try {
+  await test("full bounded batch: codec, physical file bytes, readback, replacement, deletion, partial cleanup, noise and zero residuals", async ({
+    db,
+    store,
+    trial,
+    budget,
+  }) => {
+    const r = await trial.run();
+    assert.equal(r.complete, true);
+    assert.equal(store.setupCalls, 1);
+    assert.equal(store.puts, 6);
+    assert.equal(store.reads, 5);
+    assert.equal(store.files.size, 0);
+    const q = await budget();
+    assert.equal(q.operation_count, 8);
+    assert.equal(q.batch_state, "complete");
+    assert.equal(q.read_bytes, 5 * 393216);
+    assert.equal(q.used_bytes + q.reserved_bytes, 0);
+    assert.equal(
+      await sql(
+        "select count(*) from qlist_photo_trial.operations where mode='simulated' and phase='released';",
+        db,
+      ),
+      "3",
+    );
+    assert.equal(
+      await sql(
+        "select count(*) from qlist_photo_trial.objects where writer_state='absent';",
+        db,
+      ),
+      "10",
+    );
+    await assert.rejects(() => trial.run(), /batch_already_claimed/);
+    assert.equal(store.puts, 6);
+  });
+  await test("unsettled upload: timeout then late physical completion remains fully charged, never rewritten or cleaned", async ({
+    store,
+    trial,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-late",
+      "trial-physical-late",
+      "gradient",
+    );
+    let release;
+    store.beforePut = () => new Promise((r) => (release = r));
+    const pending = trial.write("phaseb-late", "full", pair.full);
+    await assert.rejects(() => pending, /operation_timeout/);
+    await trial.cancel("phaseb-late");
+    assert.equal((await budget()).reserved_bytes, 425984);
+    await assert.rejects(
+      () => trial.cleanup("phaseb-late"),
+      /writer_unsettled/,
+    );
+    release();
+    await new Promise((r) => setTimeout(r, 35));
+    assert.equal(store.files.size, 1);
+    await assert.rejects(
+      () => trial.cleanup("phaseb-late"),
+      /writer_unsettled/,
+    );
+    await assert.rejects(
+      () => trial.write("phaseb-late", "full", pair.full),
+      /operation_fenced/,
+    );
+    assert.equal(store.puts, 1);
+    assert.equal(store.deletes, 0);
+    const recovered = await trial.reconcile();
+    assert.deepEqual(recovered.retained, ["phaseb-late"]);
+    assert.equal((await budget()).reserved_bytes, 425984);
+  });
+  await test("upload succeeds but acknowledgement is lost: retry cannot PUT again or refund", async ({
+    trial,
+    store,
+    budget,
+    rpc,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-ack",
+      "trial-physical-ack",
+      "gradient",
+    );
+    const original = trial.rpc;
+    trial.rpc = async (a, p, s) => {
+      if (a === "write_ack") throw Error("lost_ack");
+      return original(a, p, s);
+    };
+    await assert.rejects(
+      () => trial.write("phaseb-ack", "full", pair.full),
+      /lost_ack/,
+    );
+    trial.rpc = rpc;
+    await assert.rejects(
+      () => trial.write("phaseb-ack", "full", pair.full),
+      /write_already_claimed/,
+    );
+    await trial.cancel("phaseb-ack");
+    await assert.rejects(() => trial.cleanup("phaseb-ack"), /writer_unsettled/);
+    assert.equal(store.puts, 1);
+    assert.equal((await budget()).reserved_bytes, 425984);
+  });
+  await test("cleanup failure and false absence retain charges; safe retry refunds exactly once", async ({
+    trial,
+    store,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-clean",
+      "trial-physical-clean",
+      "gradient",
+    );
+    await trial.write("phaseb-clean", "full", pair.full);
+    await trial.cancel("phaseb-clean");
+    store.beforeRemove = () => {
+      throw Error("delete_failure");
+    };
+    await assert.rejects(() => trial.cleanup("phaseb-clean"), /delete_failure/);
+    assert.equal((await budget()).reserved_bytes, 425984);
+    store.beforeRemove = undefined;
+    store.holdAbsence = true;
+    await assert.rejects(
+      () => trial.cleanup("phaseb-clean"),
+      /object_still_present/,
+    );
+    assert.equal((await budget()).reserved_bytes, 425984);
+    store.holdAbsence = false;
+    await trial.cleanup("phaseb-clean");
+    const count = store.deletes;
+    await trial.cleanup("phaseb-clean");
+    assert.equal(store.deletes, count);
+    assert.equal((await budget()).reserved_bytes, 0);
+  });
+  await test("corrupt or oversized readback cannot verify/commit; read attempts stay charged", async ({
+    trial,
+    store,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-corrupt",
+      "trial-physical-corrupt",
+      "gradient",
+    );
+    await trial.write("phaseb-corrupt", "full", pair.full);
+    store.afterRead = (b) => {
+      b[100] ^= 1;
+      return b;
+    };
+    await assert.rejects(
+      () => trial.verify("phaseb-corrupt", "full"),
+      /stored_bytes_mismatch/,
+    );
+    await assert.rejects(() => trial.commit("phaseb-corrupt"), /not_verified/);
+    store.afterRead = () => new Uint8Array(393217);
+    await assert.rejects(
+      () => trial.verify("phaseb-corrupt", "full"),
+      /download_limit/,
+    );
+    assert.equal((await budget()).read_bytes, 2 * 393216);
+    await trial.cancel("phaseb-corrupt");
+    await trial.cleanup("phaseb-corrupt");
+    assert.equal((await budget()).reserved_bytes, 0);
+  });
+  await test("concurrent write claims grant exactly one writer and never renew a lost claim", async ({
+    trial,
+    rpc,
+  }) => {
+    await trial.call("batch_claim");
+    await trial.prepare("phaseb-claim", "trial-physical-claim", "gradient");
+    const claims = await Promise.all(
+      [1, 2].map(() =>
+        rpc("write_claim", {
+          owner: trial.owner,
+          operation_id: "phaseb-claim",
+          kind: "full",
+          ticket: crypto.randomUUID(),
+        }),
+      ),
+    );
+    assert.equal(claims.filter((x) => x.claimed).length, 1);
+    await trial.cancel("phaseb-claim");
+    await assert.rejects(
+      () => trial.cleanup("phaseb-claim"),
+      /writer_unsettled/,
+    );
+  });
+  await test("two simultaneous byte-budget admissions, two-pending cap, and no orphan metadata", async ({
+    trial,
+    db,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    await sql("update qlist_photo_trial.budgets set cap_bytes=425984;", db);
+    const got = await Promise.allSettled([
+      trial.reserve("phaseb-a", "trial-physical-a", "gradient"),
+      trial.reserve("phaseb-b", "trial-physical-b", "gradient"),
+    ]);
+    assert.equal(got.filter((x) => x.status === "fulfilled").length, 1);
+    assert.equal((await budget()).operation_count, 4);
+    await sql("update qlist_photo_trial.budgets set cap_bytes=10485760;", db);
+    await trial.reserve("phaseb-c", "trial-physical-c", "gradient");
+    await assert.rejects(() =>
+      trial.reserve("phaseb-d", "trial-physical-d", "gradient"),
+    );
+    assert.equal((await budget()).pending_count, 2);
+  });
+  await test("5 MiB read cap charges worst-case bucket bytes and rejects before GET", async ({
+    trial,
+    store,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-read",
+      "trial-physical-read",
+      "gradient",
+    );
+    await trial.write("phaseb-read", "full", pair.full);
+    for (let n = 0; n < 13; n++) await trial.verify("phaseb-read", "full");
+    await assert.rejects(() => trial.verify("phaseb-read", "full"));
+    assert.equal(store.reads, 13);
+    assert.equal((await budget()).read_bytes, 13 * 393216);
+  });
+  await test("service-only invoker/RLS, disabled simulated API, rejected caller proof fields and nonce checks", async ({
+    trial,
+    db,
+    rpc,
+  }) => {
+    for (const role of ["anon", "authenticated"])
+      await assert.rejects(
+        () => sql("select public.qlist_photo_trial_b_rpc('status');", db, role),
+        /permission denied/,
+      );
+    await assert.rejects(
+      () =>
+        sql(
+          "select public.qlist_photo_trial_rpc('status');",
+          db,
+          "service_role",
+        ),
+      /permission denied/,
+    );
+    assert.equal(
+      await sql(
+        "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='qlist_photo_trial' and c.relkind='r' and c.relrowsecurity;",
+        db,
+      ),
+      "4",
+    );
+    await assert.rejects(
+      () => rpc("cleanup_ack", { objectsAbsent: true }),
+      /unknown_field/,
+    );
+    await trial.call("batch_claim");
+    await trial.reserve("phaseb-proof", "trial-physical-proof", "gradient");
+    await trial.cancel("phaseb-proof");
+    await assert.rejects(
+      () =>
+        trial.call("cleanup_ack", {
+          operation_id: "phaseb-proof",
+          ticket: crypto.randomUUID(),
+          receipt: "0".repeat(64),
+        }),
+      /cleanup_receipt_mismatch/,
+    );
+  });
+  await test("out-of-range thumbnail plan rolls back full-object metadata atomically", async ({
+    trial,
+  }) => {
+    await trial.call("batch_claim");
+    await trial.reserve("phaseb-plan", "trial-physical-plan", "gradient");
+    await assert.rejects(() =>
+      trial.call("plan", {
+        operation_id: "phaseb-plan",
+        objects: {
+          full: { bytes: 100, digest: "0".repeat(64) },
+          thumb: { bytes: 32769, digest: "0".repeat(64) },
+        },
+      }),
+    );
+    const r = await trial.status("phaseb-plan");
+    assert(r.objects.every((o) => o.size_bytes === 0));
+  });
+  await test(
+    "migration refuses active Phase A work and rolls back all schema changes",
+    async ({ db }) => {
+      await sql(
+        'select public.qlist_photo_trial_rpc(\'reserve\',\'{"operation_id":"phasea-active","item_id":"trial-active","fixture":"gradient","expected_version":0}\');',
+        db,
+        "service_role",
+      );
+      await assert.rejects(() => sql(b, db), /phase_a_not_quiescent/);
+      assert.equal(
+        await sql(
+          "select count(*) from information_schema.columns where table_schema='qlist_photo_trial' and table_name='budgets' and column_name='batch_state';",
+          db,
+        ),
+        "0",
+      );
+    },
+    false,
+  );
+  await test("deletion while physical upload is still running blocks cleanup until acknowledged completion", async ({
+    trial,
+    store,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-during",
+      "trial-physical-during",
+      "gradient",
+    );
+    let checked = false;
+    store.afterPut = async () => {
+      await trial.call("delete_item", { item_id: "trial-physical-during" });
+      await assert.rejects(
+        () => trial.cleanup("phaseb-during"),
+        /writer_unsettled/,
+      );
+      checked = true;
+    };
+    await trial.write("phaseb-during", "full", pair.full);
+    assert(checked);
+    await trial.cleanup("phaseb-during");
+    assert.equal(store.files.size, 0);
+    assert.equal((await budget()).reserved_bytes, 0);
+  });
+  await test("lost commit response replays the durable physical commit without another upload", async ({
+    trial,
+    store,
+    rpc,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-commit",
+      "trial-physical-commit",
+      "portrait",
+    );
+    await trial.upload("phaseb-commit", pair);
+    trial.rpc = async (a, p, s) => {
+      const r = await rpc(a, p, s);
+      if (a === "commit") throw Error("lost_commit_response");
+      return r;
+    };
+    await assert.rejects(
+      () => trial.commit("phaseb-commit"),
+      /lost_commit_response/,
+    );
+    trial.rpc = rpc;
+    const replay = await trial.commit("phaseb-commit");
+    assert.equal(replay.operation.committed_version, 1);
+    assert.equal(store.puts, 2);
+    assert.equal(
+      (await budget()).used_bytes,
+      pair.full.length + pair.thumbnail.length,
+    );
+    await assert.rejects(
+      () => trial.cleanup("phaseb-commit"),
+      /cannot_clean_current/,
+    );
+  });
+  await test("100 lifetime admissions include preserved Phase A history", async ({
+    trial,
+    db,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const owner = trial.owner,
+      ticket = crypto.randomUUID();
+    await sql(
+      `do $$ declare n int;p jsonb;begin for n in 1..97 loop p=jsonb_build_object('owner','${owner}','operation_id','phaseb-limit-'||n,'item_id','trial-physical-limit','fixture','gradient','expected_version',0);perform public.qlist_photo_trial_b_rpc('reserve',p);p=p-'item_id'-'fixture'-'expected_version';perform public.qlist_photo_trial_b_rpc('cancel',p);p=p||jsonb_build_object('ticket','${ticket}');perform public.qlist_photo_trial_b_rpc('cleanup_begin',p);perform public.qlist_photo_trial_b_rpc('cleanup_ack',p||jsonb_build_object('receipt',repeat('0',64)));end loop;end $$;`,
+      db,
+      "service_role",
+    );
+    await assert.rejects(() =>
+      trial.reserve("phaseb-over", "trial-physical-limit", "gradient"),
+    );
+    assert.equal((await budget()).operation_count, 100);
+  });
+  await test("expired lease retains charges; rollback fences access without deleting physical bytes or records", async ({
+    trial,
+    db,
+    store,
+    budget,
+  }) => {
+    await trial.call("batch_claim");
+    const pair = await trial.prepare(
+      "phaseb-stop",
+      "trial-physical-stop",
+      "gradient",
+    );
+    await trial.write("phaseb-stop", "full", pair.full);
+    await sql(
+      "update qlist_photo_trial.operations set lease_until=clock_timestamp()-interval '1 second' where mode='physical';",
+      db,
+    );
+    await assert.rejects(
+      () => trial.write("phaseb-stop", "thumb", pair.thumbnail),
+      /lease_closed/,
+    );
+    await trial.call("expire");
+    assert.equal((await budget()).reserved_bytes, 425984);
+    await sql(await readFile(new URL("rollback.sql", root), "utf8"), db);
+    await assert.rejects(() => trial.status(), /permission denied/);
+    assert.equal((await budget()).reserved_bytes, 425984);
+    assert.equal(store.files.size, 1);
+  });
+  await test(
+    "existing storage policies require explicit review; migration never changes them",
+    async ({ db }) => {
+      await sql(
+        "create schema storage;create table storage.objects(id int);alter table storage.objects enable row level security;create policy broad_access on storage.objects for select using(true);",
+        db,
+      );
+      await assert.rejects(
+        () => sql(b, db),
+        /existing_storage_policies_require_review/,
+      );
+      assert.equal(
+        await sql(
+          "select count(*) from pg_policies where schemaname='storage';",
+          db,
+        ),
+        "1",
+      );
+    },
+    false,
+  );
+  results.passed = true;
+} finally {
+  await writeFile(
+    new URL("local-results.json", root),
+    JSON.stringify(results, null, 2) + "\n",
+  );
+}

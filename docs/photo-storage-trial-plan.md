@@ -1,6 +1,6 @@
 # Next photo stage: local safeguards and minimal hosted trial
 
-Phase A is now implemented and locally tested for review in [the trial bundle](../photo-lab/storage-trial/README.md). Its exact migration, harness, rollback and new test evidence supersede the proposed Phase A details below. Nothing has been applied remotely.
+Phase A is now implemented and locally tested for review in [the trial bundle](../photo-lab/storage-trial/README.md). Its exact migration, harness, rollback and new test evidence supersede the proposed Phase A details below. The parent has since applied and verified Phase A SQL. [Phase B](../photo-lab/storage-trial/phase-b/README.md) is prepared locally for review; no Phase B changes have been applied remotely.
 
 Target only: Supabase Free project `qmpdinzendwpkqhtqskz` (`qlist-photos`). This plan does not apply schema changes, create a bucket or deploy a function. Live qList photos remain off. No new credentials, paid services, Firebase/Netlify photo work or relaxed authentication are proposed.
 

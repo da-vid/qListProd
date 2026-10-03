@@ -8,7 +8,7 @@ for key,value in d['npm'].items():
  name,version=key.split('_')[0].rsplit('@',1)
  dep=n['packages']['node_modules/'+name]
  assert dep['version']==version and dep['integrity']==value['integrity'],key
-sql=list((p/'supabase'/'migrations').glob('*.sql'));assert len(sql)==1
+sql=[p/'supabase'/'migrations'/'20261002235210_qlist_photo_trial_phase_a.sql'];assert sql[0].is_file()
 postgres=json.loads((p/'postgres-results.json').read_text())
 assert postgres['passed'] and len(postgres['tests'])==15 and postgres['local_cluster_stopped']
 assert '# pass 8' in (p/'handler-results.tap').read_text() and '# fail 0' in (p/'handler-results.tap').read_text()
