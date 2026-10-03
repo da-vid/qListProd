@@ -1,5 +1,14 @@
 // Authoritative server reducer; never import into the ordinary qList client.
 export const RESERVATION = 393216;
+// Conservative decimal interpretation of Supabase's organization-wide Free 1 GB.
+// Production SQL supplies both caps and unaccounted project storage. Legacy beta
+// snapshots retain their smaller defaults; no historical trial budget is raised.
+export const FREE_STORAGE_BYTES = 1_000_000_000;
+export type StorageBudget = {
+  bytes: number;
+  aggregateBytes: number;
+  externalBytes: number;
+};
 // Proposal only. One stored JPEG per item; replacement/unknown bytes stay counted.
 export const PROPOSED = Object.freeze({
   bytes: 32 * 1048576,
@@ -65,6 +74,7 @@ export type State = {
   reconciliationCursor: string;
 };
 export type Snapshot = {
+  storageBudget?: StorageBudget;
   revision: number;
   control: Control;
   legacy: Legacy;
@@ -113,6 +123,19 @@ export function maintain(s: Snapshot, list: string) {
   );
 }
 export function assertCaps(s: Snapshot, state: State, before: State) {
+  const budget = s.storageBudget ?? {
+    bytes: PROPOSED.bytes,
+    aggregateBytes: PROJECT.bytes,
+    externalBytes: 0,
+  };
+  demand(
+    Object.values(budget).every((n) => Number.isSafeInteger(n) && n >= 0) &&
+      budget.bytes <= FREE_STORAGE_BYTES &&
+      budget.aggregateBytes <= FREE_STORAGE_BYTES &&
+      budget.externalBytes <= FREE_STORAGE_BYTES,
+    "Photo storage budget is unavailable.",
+    503,
+  );
   const used = (v: State) =>
     Object.values(v.ops).filter((o) => o.state !== "released").length *
     RESERVATION;
@@ -124,13 +147,13 @@ export function assertCaps(s: Snapshot, state: State, before: State) {
   cap(
     next,
     old,
-    PROPOSED.bytes,
+    budget.bytes,
     "Photo storage is full. Remove a photo before adding another.",
   );
   cap(
-    s.legacy.bytes + next,
-    s.legacy.bytes + old,
-    PROJECT.bytes,
+    s.legacy.bytes + budget.externalBytes + next,
+    s.legacy.bytes + budget.externalBytes + old,
+    budget.aggregateBytes,
     "Photo storage is full. Remove a photo before adding another.",
   );
   const busy = (v: State) =>

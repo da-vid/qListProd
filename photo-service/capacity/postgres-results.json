@@ -1,0 +1,25 @@
+{
+  "tests": [
+    "guarded migration preserves live-style objects, reservations, unknown writers, controls and all history",
+    "migration refuses unexpected function bodies and cannot be replayed",
+    "new helper and existing ledger RPC remain inaccessible to anonymous roles",
+    "all project buckets and trial excess count; mapped reservations are not double-counted",
+    "released-operation objects and malformed bucket metadata remain charged as unaccounted storage",
+    "invalid or unknown object sizes consume allowance but do not prevent maintenance",
+    "HTTP gateway and real local codec honor the new SQL budget above the old aggregate cap",
+    "production crosses both old caps and fits 2543 charged photos within unchanged history bounds",
+    "full-capacity object accounting remains bounded and does not double-charge 2543 mapped JPEGs",
+    "aggregate byte boundary admits limit-1 and limit, rejects limit+1 including retained trial",
+    "changed external storage invalidates stale CAS token",
+    "concurrent last-slot requests serialize at shared capacity",
+    "rate, concurrency, history reset and metadata bounds remain unchanged",
+    "rollback preserves above-old-cap charges and permits reads, receipts and gradual cleanup",
+    "rollback never refunds an unknown writer and checks its own source before replay"
+  ],
+  "scope": "temporary Unix-socket PostgreSQL; no hosted writes",
+  "passed": true,
+  "full_capacity_load_ms": 16.09145799999999,
+  "production_slots": 2543,
+  "forward_sha256": "55a27eb9fa261a82bbaf96bc2e9a4f77621cc999ecfbab15708b7bcbfbd2c0d6",
+  "rollback_sha256": "c623fb6b65a5e0482aad1b30012dddb35cb3cac9e457c65dfb66cb5027acda28"
+}

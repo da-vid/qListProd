@@ -1,0 +1,115 @@
+{
+  "observed_on": "2026-10-03",
+  "organization_id": "fcqzrsaycccyhdjnzzbx",
+  "plan": "free",
+  "tier": "tier_free",
+  "visible_project_ids": [
+    "qmpdinzendwpkqhtqskz"
+  ],
+  "deployed_function": "qlist-photos",
+  "version": 2,
+  "verify_jwt": false,
+  "deployed_bundle_sha256": "649f185b3e53e8a593d2e7cc2f20cbb615a687dc556a0e4845464621ccf5eb79",
+  "deployed_source_checks": [
+    {
+      "name": "photo-service/index.ts",
+      "matches": true,
+      "sha256": "415485341af02e7daac6f26bc7adc49950d46c5d8b772bf705cf3da57aa2e62c"
+    },
+    {
+      "name": "photo-lab/beta/handler.ts",
+      "matches": true,
+      "sha256": "33a05ecc619007823626945ab4c2f93410443be9f9bfff02709e6c74283e898d"
+    },
+    {
+      "name": "src/photo/adapter.ts",
+      "matches": true,
+      "sha256": "5ad491e5b79fce886733a551ff6049ce4b7b729e8760f529be40f4834a0259f3"
+    },
+    {
+      "name": "src/photo/jpeg.ts",
+      "matches": true,
+      "sha256": "b5126f67d3dfa31905c3ce80c69b1fd19efa06f81c502d77c8c29308f78021b6"
+    },
+    {
+      "name": "photo-lab/beta/engine.ts",
+      "matches": true,
+      "sha256": "6446a51d9c40d2f2c83ca944587a4df7aa96359570677ec29609415a57284856"
+    },
+    {
+      "name": "photo-lab/upload-boundary.ts",
+      "matches": true,
+      "sha256": "79c00427a36ee978e947703c9df420b5e4b6b7461eab5b981a31bb2a0c7fe124"
+    },
+    {
+      "name": "photo-lab/beta/ledger.ts",
+      "matches": true,
+      "sha256": "8a950b13d7ac02d1dc6d2d0e52e48eaf1b1a958e4a498c678907c2db285c2483"
+    },
+    {
+      "name": "photo-lab/beta/namespace.ts",
+      "matches": true,
+      "sha256": "822f10c7b1311fe17d686320b73bf5865dc1248e3e57650e9d6fb767a0df1a65"
+    },
+    {
+      "name": "src/model.ts",
+      "matches": true,
+      "sha256": "6168598e44c2cbe64211fc9935aa8eb676e7665d09ef86d41d45f49f0372f0f2"
+    },
+    {
+      "name": "photo-lab/beta/sdk.ts",
+      "matches": true,
+      "sha256": "fc85817babfcc1cb1b3691635e8035e894041df13a1718013d87c20577a1d68d"
+    },
+    {
+      "name": "photo-lab/storage-trial/deno.json",
+      "matches": true,
+      "sha256": "694ef4e84bcf73a45cb2db779526afe4f985e0f6d04a50af13fa490b8cbd9bae"
+    },
+    {
+      "name": "photo-lab/storage-trial/phase-b/codec.js",
+      "matches": true,
+      "sha256": "75a280f9a74ad26420d10cb68d8bbea9689e31b2e6bf6d2cd58c45aacdc27ab2"
+    }
+  ],
+  "observed_buckets": [
+    {
+      "id": "qlist-photos-v1",
+      "public": false,
+      "file_size_limit": 393216,
+      "objects": 0,
+      "bytes": 0
+    },
+    {
+      "id": "qlist-photo-trial-v1",
+      "public": false,
+      "file_size_limit": 393216,
+      "objects": 0,
+      "bytes": 0
+    }
+  ],
+  "observed_ledger": {
+    "revision": 311,
+    "charged_operations": 0,
+    "pending_operations": 0,
+    "unknown_writers": 0,
+    "state_bytes": 2095,
+    "enabled": true,
+    "maintenance": true,
+    "allLists": true
+  },
+  "observed_trial": {
+    "used_bytes": 0,
+    "reserved_bytes": 0,
+    "operations": 9,
+    "items": 6,
+    "reads": 6,
+    "read_bytes": 2359296,
+    "expiry": "2026-10-04T00:00:00Z",
+    "batch": "blocked",
+    "continuation": "complete"
+  },
+  "service_role_already_has_storage_metadata_select": true,
+  "storage_policies": [],
+  "hosted_mutations_performed": false
+}

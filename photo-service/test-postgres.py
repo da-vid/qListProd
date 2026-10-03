@@ -15,7 +15,7 @@ try:
  run('initdb','-D',root/'data','--auth-local=trust','--auth-host=reject','--no-locale','-E','UTF8','-U','postgres')
  with (root/'data'/'postgresql.conf').open('a') as f:f.write("\nlisten_addresses=''\nunix_socket_permissions=0700\nshared_buffers='16MB'\nmax_connections=12\n")
  run('pg_ctl','-D',root/'data','-l',root/'server.log','-o','-k '+str(root/'socket'),'-w','start');started=True
- result=subprocess.run([str(node),str(p/'test-postgres.mjs'),str(bins/'psql'),str(root/'socket'),str(safe) if safe.exists() else ''],env=env,text=True)
+ result=subprocess.run([str(node),str(pathlib.Path(sys.argv[3]).resolve() if len(sys.argv)>3 else p/'test-postgres.mjs'),str(bins/'psql'),str(root/'socket'),str(safe) if safe.exists() else ''],env=env,text=True)
  if result.returncode:raise RuntimeError('Beta PostgreSQL tests failed')
 finally:
  if started:run('pg_ctl','-D',root/'data','-m','fast','-w','stop')
