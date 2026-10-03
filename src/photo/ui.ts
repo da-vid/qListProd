@@ -75,7 +75,7 @@ export function installPhotoUI(
   root.append(summary);
   function cleanupStatus() {
     summary.textContent = cleanupQueue.size
-      ? `${cleanupQueue.size} removed item's photo cleanup is waiting. Text deletion is saved. Retry photos when available.`
+      ? `${cleanupQueue.size} item's photo cleanup is waiting. Text editing still works. Retry photos when available.`
       : "";
     if (journalError)
       summary.textContent +=

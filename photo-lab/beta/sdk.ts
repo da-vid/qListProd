@@ -12,7 +12,7 @@ export function sdkPorts(admin: any): {
   };
   const bucket = admin.storage.from(BETA_BUCKET);
   const key = (value: string) => {
-    if (!/^beta-v1\/[0-9a-f-]{36}\/(full|thumb)\.jpg$/.test(value))
+    if (!/^beta-v1\/[0-9a-f-]{36}\/full\.jpg$/.test(value))
       throw new Error("Invalid storage key");
     return value;
   };

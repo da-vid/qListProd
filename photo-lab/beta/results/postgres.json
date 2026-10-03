@@ -11,7 +11,8 @@
     "global last-capacity race serializes across PostgreSQL sessions",
     "global last-rate-token race serializes and independent SQL cap guard rejects forged counter",
     "actual pg-safeupdate rejects unqualified UPDATE in service sessions",
-    "review verification and stop artifacts execute without deleting state or objects"
+    "review verification and stop artifacts execute without deleting state or objects",
+    "upload stop and historical read totals cannot block read-only status or explicit cleanup"
   ],
   "safeupdate": true,
   "passed": true

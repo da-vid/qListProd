@@ -1,16 +1,14 @@
 // Authoritative server reducer; never import into the ordinary qList client.
-export const RESERVATION = 425984;
+export const RESERVATION = 393216;
+// Proposal only. One stored JPEG per item; replacement/unknown bytes stay counted.
 export const PROPOSED = Object.freeze({
-  bytes: 10485760,
-  photos: 20,
-  operations: 100,
-  items: 100,
-  reads: 100,
-  readBytes: 5242880,
-  pending: 2,
-  requests: 500,
-  perMinute: 30,
+  bytes: 32 * 1048576,
+  pending: 4,
+  perMinute: 60,
+  maintenancePerMinute: 60,
 });
+// Historical trial usage is retained and included, never reset or transferred into beta counters.
+export const PROJECT = Object.freeze({ bytes: 64 * 1048576 });
 export class BetaError extends Error {
   readonly status: number;
   constructor(message: string, status = 409) {
@@ -20,8 +18,8 @@ export class BetaError extends Error {
 }
 export type Control = {
   enabled: boolean;
+  maintenance: boolean;
   lists: string[];
-  until: number | null;
 };
 export type Legacy = {
   bytes: number;
@@ -62,6 +60,9 @@ export type State = {
   readBytes: number;
   minute: number;
   minuteRequests: number;
+  maintenanceMinute: number;
+  maintenanceRequests: number;
+  reconciliationCursor: string;
 };
 export type Snapshot = {
   revision: number;
@@ -82,6 +83,9 @@ export const emptyState = (): State => ({
   readBytes: 0,
   minute: 0,
   minuteRequests: 0,
+  maintenanceMinute: 0,
+  maintenanceRequests: 0,
+  reconciliationCursor: "",
 });
 export const scope = (list: string, item: string) =>
   JSON.stringify([list, item]);
@@ -90,11 +94,8 @@ export const demand = (ok: unknown, message: string, status = 409): void => {
 };
 export function open(s: Snapshot, list: string, now: number) {
   demand(
-    s.control.enabled &&
-      s.control.until !== null &&
-      Number.isSafeInteger(s.control.until) &&
-      now < s.control.until,
-    "Photos are paused.",
+    s.control.enabled,
+    "Photo uploads are paused. Existing photos can still be viewed or removed.",
     503,
   );
   demand(
@@ -103,39 +104,48 @@ export function open(s: Snapshot, list: string, now: number) {
     403,
   );
 }
-export function assertCaps(s: Snapshot, state: State) {
-  const ops = Object.values(state.ops),
-    active = ops.filter((o) => o.state !== "released");
+export function maintain(s: Snapshot, list: string) {
+  demand(s.control.maintenance, "Photo maintenance is paused.", 503);
   demand(
-    s.legacy.bytes + active.length * RESERVATION <= PROPOSED.bytes &&
-      s.legacy.photos + active.length <= PROPOSED.photos,
-    "Photo storage limit reached.",
+    s.control.lists.includes(list),
+    "Photos are unavailable for this list.",
+    403,
+  );
+}
+export function assertCaps(s: Snapshot, state: State, before: State) {
+  const used = (v: State) =>
+    Object.values(v.ops).filter((o) => o.state !== "released").length *
+    RESERVATION;
+  const next = used(state),
+    old = used(before);
+  // Recovery remains possible even if independently observed historical usage increases.
+  const cap = (n: number, previous: number, limit: number, message: string) =>
+    demand(n <= limit || n <= previous, message, 429);
+  cap(
+    next,
+    old,
+    PROPOSED.bytes,
+    "Photo storage is full. Remove a photo before adding another.",
+  );
+  cap(
+    s.legacy.bytes + next,
+    s.legacy.bytes + old,
+    PROJECT.bytes,
+    "Photo storage is full. Remove a photo before adding another.",
+  );
+  const busy = (v: State) =>
+    Object.values(v.ops).filter(
+      (o) => o.state === "pending" && o.lease > Date.now(),
+    ).length;
+  cap(busy(state), busy(before), PROPOSED.pending, "Photo processing is busy.");
+  demand(
+    state.minuteRequests <= PROPOSED.perMinute,
+    "Too many photo requests. Retry shortly.",
     429,
   );
   demand(
-    s.legacy.operations + ops.length <= PROPOSED.operations &&
-      s.legacy.items + Object.keys(state.items).length <= PROPOSED.items,
-    "Photo history limit reached.",
-    429,
-  );
-  demand(
-    s.legacy.pending +
-      ops.filter((o) => o.state === "pending" || o.writes.includes("writing"))
-        .length <=
-      PROPOSED.pending,
-    "Photo processing is busy.",
-    429,
-  );
-  demand(
-    s.legacy.reads + state.reads <= PROPOSED.reads &&
-      s.legacy.readBytes + state.readBytes <= PROPOSED.readBytes,
-    "Photo delivery limit reached.",
-    429,
-  );
-  demand(
-    state.requests <= PROPOSED.requests &&
-      state.minuteRequests <= PROPOSED.perMinute,
-    "Too many photo requests.",
+    state.maintenanceRequests <= PROPOSED.maintenancePerMinute,
+    "Too many photo requests. Retry shortly.",
     429,
   );
 }
@@ -149,7 +159,7 @@ export async function transact<T>(
     const s = await ledger.load(signal),
       before = structuredClone(s);
     const result = change(s);
-    assertCaps(s, s.state);
+    assertCaps(s, s.state, before.state);
     if (await ledger.swap(before, s.state, signal)) return result;
   }
   throw new BetaError("Photos are busy. Retry later.", 503);
@@ -160,7 +170,7 @@ export class MemoryLedger implements Ledger {
   constructor(value?: Snapshot) {
     this.value = value ?? {
       revision: 0,
-      control: { enabled: false, lists: [], until: null },
+      control: { enabled: false, maintenance: false, lists: [] },
       legacy: {
         bytes: 0,
         photos: 0,

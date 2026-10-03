@@ -4,7 +4,7 @@ export type TextAuthority = (
   list: string,
   item: string,
   signal: AbortSignal,
-) => Promise<{ listExists: boolean; itemExists: boolean }>;
+) => Promise<{ listExists: boolean; itemExists: boolean; itemAbsent: boolean }>;
 export function validScope(list: string, item: string) {
   demand(
     typeof list === "string" &&
@@ -69,7 +69,8 @@ export function firebaseTextAuthority(
           }),
         );
       const claim = await read("/v2/listClaims/" + encodeURIComponent(list));
-      if (claim !== true) return { listExists: false, itemExists: false };
+      if (claim !== true)
+        return { listExists: false, itemExists: false, itemAbsent: false };
       const value = await read(
         "/v2/lists/" +
           encodeURIComponent(list) +
@@ -87,7 +88,11 @@ export function firebaseTextAuthority(
         (typeof value.ID === "string" ||
           (typeof value.ID === "number" && Number.isFinite(value.ID))) &&
         Object.keys(value).every((k) => ["ID", "name", "checked"].includes(k));
-      return { listExists: true, itemExists: Boolean(valid) };
+      return {
+        listExists: true,
+        itemExists: Boolean(valid),
+        itemAbsent: value === null,
+      };
     } catch {
       throw new BetaError("Text validation is unavailable.", 503);
     }

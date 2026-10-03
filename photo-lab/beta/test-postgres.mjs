@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { fixture, signal, upload } from "./test-support.ts";
-import { RESERVATION, transact } from "./ledger.ts";
+import { RESERVATION, PROJECT, transact } from "./ledger.ts";
 const [psql, socket, safe] = process.argv.slice(2),
   run = promisify(execFile);
 assert(socket.includes("/qlist-beta-pg-") && socket.endsWith("/socket"));
@@ -80,7 +80,11 @@ await check(
   "migration starts disabled, empty allowlist, no activation deadline",
   async () => {
     const s = await ledger.load();
-    assert.deepEqual(s.control, { enabled: false, lists: [], until: null });
+    assert.deepEqual(s.control, {
+      enabled: false,
+      maintenance: false,
+      lists: [],
+    });
     assert.equal(s.legacy.operations, 9);
     assert.equal(s.legacy.readBytes, 2359296);
   },
@@ -111,7 +115,7 @@ await check(
   },
 );
 await sql(
-  `update qlist_photo_beta.ledger set control=${quote(JSON.stringify({ enabled: true, lists: ["PhotoDemo"], until: Date.now() + 86400000 }))}::jsonb where singleton;`,
+  `update qlist_photo_beta.ledger set control=${quote(JSON.stringify({ enabled: true, maintenance: true, lists: ["PhotoDemo"] }))}::jsonb where singleton;`,
 );
 const originalLegacy = await sql(
   "select to_jsonb(b)::text from qlist_photo_trial.budgets b where scope='global';",
@@ -122,8 +126,8 @@ await check(
   async () => {
     const p = await f.client.put("item", null, upload(f.jpeg), signal());
     assert(p.full.size > 0);
-    assert.equal(f.paths.size, 2);
-    assert.equal((await ledger.load()).state.reads, 2);
+    assert.equal(f.paths.size, 1);
+    assert.equal((await ledger.load()).state.reads, 1);
   },
 );
 await check(
@@ -137,8 +141,8 @@ await check(
       "update qlist_photo_beta.ledger set control=jsonb_set(control,'{enabled}','false') where singleton;",
     );
     assert.equal(await ledger.swap(s, s.state), false);
-    await assert.rejects(() => f.client.get("item", signal()), /paused/);
-    assert.equal(f.paths.size, 2);
+    assert(await f.client.get("item", signal()));
+    assert.equal(f.paths.size, 1);
     await sql(
       "update qlist_photo_beta.ledger set control=jsonb_set(control,'{enabled}','true') where singleton;",
     );
@@ -185,7 +189,7 @@ await check(
   async () => {
     // Synthetic fixture changes ONLY in temporary database, to create a one-reservation boundary.
     await sql(
-      `update qlist_photo_trial.budgets set used_bytes=${10485760 - RESERVATION} where scope='global';`,
+      `update qlist_photo_trial.budgets set used_bytes=${PROJECT.bytes - RESERVATION} where scope='global';`,
     );
     const r = await Promise.allSettled(
       ["item", "other"].map((key) =>
@@ -199,7 +203,7 @@ await check(
   "global last-rate-token race serializes and independent SQL cap guard rejects forged counter",
   async () => {
     await sql(
-      `update qlist_photo_beta.ledger set state=jsonb_set(jsonb_set(state,'{minute}',to_jsonb(${Math.floor(Date.now() / 60000)}::bigint)),'{minuteRequests}','29') where singleton;`,
+      `update qlist_photo_beta.ledger set state=jsonb_set(jsonb_set(state,'{minute}',to_jsonb(${Math.floor(Date.now() / 60000)}::bigint)),'{minuteRequests}','59') where singleton;`,
     );
     const r = await Promise.allSettled([
       f.engine.admit("PhotoDemo", "item", signal()),
@@ -208,7 +212,7 @@ await check(
     assert.equal(r.filter((x) => x.status === "fulfilled").length, 1);
     const s = await ledger.load();
     const state = structuredClone(s.state);
-    state.readBytes = 5242881;
+    state.minuteRequests = 61;
     await assert.rejects(() => ledger.swap(s, state), /beta_cap_exceeded/);
   },
 );
@@ -239,6 +243,27 @@ await check(
     assert.equal(after.control.enabled, false);
     assert.deepEqual(after.state, before.state);
     assert.equal(f.paths.size, files);
+  },
+);
+await check(
+  "upload stop and historical read totals cannot block read-only status or explicit cleanup",
+  async () => {
+    const snapshot = await ledger.load();
+    const it = Object.values(snapshot.state.items).find((i) => i.current);
+    assert(it);
+    const id = it.current;
+    await sql(
+      "update qlist_photo_beta.ledger set state=jsonb_set(state,'{readBytes}','1073741824') where singleton;",
+    );
+    const before = await ledger.load();
+    assert(await f.client.get(it.item, signal()));
+    const status = await f.engine.status("PhotoDemo", it.item, id, signal());
+    assert.equal(status.state, "committed");
+    assert.deepEqual((await ledger.load()).state.ops, before.state.ops);
+    f.textAvailable = false; // Photo-only removal does not depend on Firebase availability.
+    await f.client.remove(it.item, it.version, signal());
+    assert.equal(f.paths.size, 0);
+    assert.equal((await ledger.load()).state.ops[id].state, "released");
   },
 );
 results.passed = true;

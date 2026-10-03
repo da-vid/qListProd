@@ -6,10 +6,12 @@ import { sdkPorts } from "./sdk.ts";
 import { firebaseTextAuthority } from "./text-authority.ts";
 import { initialize } from "../storage-trial/phase-b/codec.js";
 const RUNTIME_ENABLED = false;
+const MAINTENANCE_ENABLED = false;
 let processor: ReturnType<typeof initialize> | undefined;
 export default {
   fetch: createBetaHandler({
     enabled: RUNTIME_ENABLED,
+    maintenanceEnabled: MAINTENANCE_ENABLED,
     origins: [
       "https://qlist.cc",
       "https://www.qlist.cc",

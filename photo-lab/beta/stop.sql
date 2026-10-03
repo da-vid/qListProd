@@ -1,4 +1,4 @@
--- REVIEW ONLY. Emergency stop preserves history, objects, charges and unknown writers.
+-- REVIEW ONLY. Upload stop preserves reads, deletion, history, objects and unknown charges.
 -- Run only with separately approved admin access to the dedicated photo project.
 begin;
 update qlist_photo_beta.ledger

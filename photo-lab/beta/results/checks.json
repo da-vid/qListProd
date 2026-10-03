@@ -1,6 +1,6 @@
 {
   "date": "2026-10-03",
-  "base_commit": "3ad74998ad2df8669b05d21eb4b9c77273e16a3d",
+  "base_commit": "2047d2492403b9edea87abe8c6f29a5c702cfc39",
   "runtime": "Node 24.21.0; PostgreSQL 17.11; Deno 2.9.7",
   "scope": "local synthetic only",
   "passed": true,
@@ -9,10 +9,10 @@
     "photos": 52,
     "trial_handler_and_phase_b": 31,
     "release_build": 4,
-    "beta": 15,
-    "total": 136
+    "beta": 20,
+    "total": 141
   },
-  "postgres_checks": 10,
+  "postgres_checks": 11,
   "temporary_cluster_stopped": true,
   "browser": "browser.json",
   "postgres": "postgres.json",
@@ -25,9 +25,13 @@
     "modern maintenance rollback builds",
     "exact payload/source hashes",
     "normal and release bundle photo exclusion",
-    "git diff --check"
+    "git diff --check",
+    "confirmed deletion and malformed/outage regression",
+    "lost browser state and durable recovery",
+    "late unknown writer retained without permanent encoding slot",
+    "immutable codec and fixtures match prior pins"
   ],
-  "deployment_payload_sha256": "339fd625f7270c957a0e368c6b4563a76bfd42322720c6bbe30b5156ced4ab63",
+  "deployment_payload_sha256": "cdd9a43e13d901c3f366ac43509351427c340380b9e4844de7b1eac01a7a2133",
   "normal_release_assets": [
     {
       "path": "dist/assets/index-Pbxy0MnN.js",
@@ -75,5 +79,6 @@
     }
   ],
   "hosted_changes": false,
-  "real_device_tested": false
+  "real_device_tested": false,
+  "design": "single stored JPEG; no product expiry/lifetime allowances; uploads separate from reads/removal; authoritative-null deletion and durable reconciliation"
 }

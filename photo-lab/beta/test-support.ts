@@ -10,8 +10,8 @@ export async function fixture(ledger: Ledger = new MemoryLedger()) {
   if (ledger instanceof MemoryLedger)
     ledger.value.control = {
       enabled: true,
+      maintenance: true,
       lists: ["PhotoDemo"],
-      until: Date.now() + 86400000,
     };
   const directory = await mkdtemp(join(tmpdir(), "qlist-beta-files-"));
   const paths = new Set<string>();
@@ -70,11 +70,13 @@ export async function fixture(ledger: Ledger = new MemoryLedger()) {
       return {
         listExists: list === "PhotoDemo",
         itemExists: textItems.has(item),
+        itemAbsent: list === "PhotoDemo" && !textItems.has(item),
       };
     },
   });
   const handler = createBetaHandler({
     enabled: true,
+    maintenanceEnabled: true,
     origins: ["http://127.0.0.1:4174"],
     connect: async () => engine,
   });

@@ -7,7 +7,7 @@
   "reload_restores_photo": true,
   "text_survives_kill_switch": true,
   "cleanup_intent_survives_reload": true,
-  "cleanup_retry_after_restoration": true,
+  "cleanup_retry_with_uploads_still_paused": true,
   "loopback_photo_requests": 11,
   "external_requests": 0,
   "hosted_uploads": 0,

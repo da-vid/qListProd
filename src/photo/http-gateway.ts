@@ -86,18 +86,15 @@ export class HttpPhotoGateway implements PhotoGateway {
     if (value === null) return undefined;
     if (!Number.isSafeInteger(value.version) || value.version < 1)
       throw new PhotoError("Invalid photo version.");
-    const blobs = ["full", "thumbnail"].map((kind, n) => {
-      const bytes = Uint8Array.from(atob(value[kind]), (c) => c.charCodeAt(0));
-      const p = inspectJpeg(bytes, {
-        maxBytes: n ? 32768 : 393216,
-        maxEdge: n ? 192 : 1280,
-      });
-      if (p.sanitized.length !== bytes.length)
-        throw new PhotoError("Photo metadata validation failed.");
-      return new Blob([bytes], { type: "image/jpeg" });
-    });
-    return { version: value.version, full: blobs[0], thumbnail: blobs[1] };
+    const bytes = Uint8Array.from(atob(value.full), (c) => c.charCodeAt(0));
+    const p = inspectJpeg(bytes, { maxBytes: 393216, maxEdge: 1280 });
+    if (p.sanitized.length !== bytes.length)
+      throw new PhotoError("Photo metadata validation failed.");
+    const full = new Blob([bytes], { type: "image/jpeg" });
+    // One stored/delivered JPEG is reused by the existing preview and expanded view.
+    return { version: value.version, full, thumbnail: full };
   }
+
   async put(
     key: string,
     expected: number | null,

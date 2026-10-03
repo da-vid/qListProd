@@ -8,6 +8,7 @@ const encode = (b: Uint8Array) => {
 };
 export function createBetaHandler(options: {
   enabled: boolean;
+  maintenanceEnabled?: boolean;
   origins: string[];
   connect: (signal: AbortSignal) => Promise<BetaEngine>;
 }) {
@@ -26,7 +27,7 @@ export function createBetaHandler(options: {
     }
     const json = (body: unknown, status = 200) =>
       Response.json(body, { status, headers });
-    if (!options.enabled)
+    if (!options.enabled && !options.maintenanceEnabled)
       return json({ error: "Photos are paused. Text edits still work." }, 503);
     if (origin && !options.origins.includes(origin))
       return json({ error: "Photo origin is unavailable." }, 403);
@@ -61,8 +62,16 @@ export function createBetaHandler(options: {
         "Client credentials are not used here.",
         400,
       );
+      const maintenance = ["get", "status", "remove", "delete"].includes(
+        action,
+      );
+      demand(
+        maintenance ? options.maintenanceEnabled : options.enabled,
+        "Photos are paused.",
+        503,
+      );
       const engine = await options.connect(signal);
-      await engine.admit(list, item, signal);
+      await engine.admit(list, item, signal, maintenance);
       if (action === "put") {
         const parts = id.split(":");
         demand(
@@ -85,12 +94,14 @@ export function createBetaHandler(options: {
       if (action === "get") {
         demand(id === "", "Invalid photo read.", 400);
         const p = await engine.get(list, item, signal);
+        // Best-effort bounded recovery over one server-known item in this same allowed list.
+        // No public scan route, upload capability, TTL or browser cleanup journal dependency.
+        await engine.reconcile(list, signal).catch(() => {});
         return json(
           p
             ? {
                 version: p.version,
                 full: encode(p.full),
-                thumbnail: encode(p.thumbnail),
               }
             : null,
         );

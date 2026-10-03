@@ -129,7 +129,7 @@ try {
     path: new URL("http-beta-saved.png", out).pathname,
     fullPage: true,
   });
-  assert.equal(f.puts, 2);
+  assert.equal(f.puts, 1);
   const second = await context.newPage();
   await attach(second);
   await second.locator(".photo-thumbnail").waitFor();
@@ -153,7 +153,10 @@ try {
   results.reload_restores_photo = true;
   f.ledger.value.control.enabled = false;
   await page.getByRole("button", { name: "Change photo", exact: true }).click();
-  await page.getByText(/Photos are paused/).waitFor();
+  // Viewing/removal remain available with uploads paused.
+  await page
+    .getByRole("button", { name: "Remove photo", exact: true })
+    .waitFor();
   await page.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.locator(".item .name").fill("Text still saves with beta paused");
   await page.locator(".item .name").press("Tab");
@@ -166,22 +169,23 @@ try {
     path: new URL("http-beta-paused-text.png", out).pathname,
     fullPage: true,
   });
+  f.cleanupFails = true;
   f.textItems.delete(key);
   await page.locator('.item input[type="checkbox"]').check();
   await page.locator(".delete-item").click();
   await page.getByText(/cleanup is waiting/).waitFor();
-  assert.equal(f.paths.size, 2);
+  assert.equal(f.paths.size, 1);
   // Restore the UI after text deletion while the backend remains paused.
   await attach(page);
   await page.getByText(/cleanup is waiting/).waitFor();
   results.cleanup_intent_survives_reload = true;
-  f.ledger.value.control.enabled = true;
+  f.cleanupFails = false;
   await page.evaluate(() => window.betaUI.retry());
   await page.waitForFunction(
     () => !document.querySelector(".photo-cleanup").textContent,
   );
   assert.equal(f.paths.size, 0);
-  results.cleanup_retry_after_restoration = true;
+  results.cleanup_retry_with_uploads_still_paused = true;
   assert.equal(await page.locator(".item").count(), 0);
   assert.deepEqual(errors, []);
   assert(requests.every((r) => new URL(r.url).hostname === "127.0.0.1"));

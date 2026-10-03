@@ -5,6 +5,7 @@ import {
   RESERVATION,
   demand,
   open,
+  maintain,
   scope,
   transact,
   type Ledger,
@@ -18,8 +19,7 @@ export type StoragePort = {
   remove(keys: string[], signal: AbortSignal): Promise<void>;
   exists(key: string, signal: AbortSignal): Promise<boolean>;
 };
-export const objectKey = (id: string, n: number) =>
-  `beta-v1/${id}/${n === 0 ? "full" : "thumb"}.jpg`;
+export const objectKey = (id: string) => `beta-v1/${id}/full.jpg`;
 const hash = async (bytes: Uint8Array) =>
   Array.from(
     new Uint8Array(
@@ -47,11 +47,25 @@ export class BetaEngine {
     this.process = deps.process;
     this.now = deps.now ?? Date.now;
   }
-  async admit(list: string, item: string, signal: AbortSignal) {
+  async admit(
+    list: string,
+    item: string,
+    signal: AbortSignal,
+    maintenance = false,
+  ) {
     validScope(list, item);
     await transact(this.ledger, signal, (s) => {
-      open(s, list, this.now());
+      if (maintenance) maintain(s, list);
+      else open(s, list, this.now());
       const minute = Math.floor(this.now() / 60000);
+      if (maintenance) {
+        if (s.state.maintenanceMinute !== minute) {
+          s.state.maintenanceMinute = minute;
+          s.state.maintenanceRequests = 0;
+        }
+        s.state.maintenanceRequests++;
+        return;
+      }
       if (s.state.minute !== minute) {
         s.state.minute = minute;
         s.state.minuteRequests = 0;
@@ -128,7 +142,7 @@ export class BetaEngine {
         expected,
         epoch: it.epoch,
         state: "pending",
-        writes: ["planned", "planned"],
+        writes: ["planned"],
         sizes: [],
         hashes: [],
         lease: this.now() + 30000,
@@ -158,8 +172,8 @@ export class BetaEngine {
         op.hash = fingerprint;
       });
       const pair = await this.process(input),
-        outputs = [pair.full, pair.thumbnail];
-      for (let n = 0; n < 2; n++) {
+        outputs = [pair.full];
+      for (let n = 0; n < 1; n++) {
         const p = inspectJpeg(outputs[n], {
           maxBytes: n ? 32768 : 393216,
           maxEdge: n ? 192 : 1280,
@@ -177,7 +191,7 @@ export class BetaEngine {
         op.sizes = outputs.map((b) => b.length);
         op.hashes = hashes;
       });
-      for (let n = 0; n < 2; n++) {
+      for (let n = 0; n < 1; n++) {
         await transact(this.ledger, signal, (s) => {
           open(s, list, this.now());
           const op = s.state.ops[id],
@@ -194,7 +208,7 @@ export class BetaEngine {
           op.writes[n] = "writing";
         });
         // A grant is consumed before PUT. Rejection/timeout is an unknown writer: never retry or refund it.
-        await this.storage.put(objectKey(id, n), outputs[n], signal);
+        await this.storage.put(objectKey(id), outputs[n], signal);
         await transact(this.ledger, signal, (s) => {
           s.state.ops[id].writes[n] = "stored";
         });
@@ -237,59 +251,55 @@ export class BetaEngine {
     }
   }
   async get(list: string, item: string, signal: AbortSignal) {
-    await this.verify(list, item, signal);
+    const check = await this.text(list, item, signal);
+    if (check.itemAbsent) {
+      await this.fenceDeleted(list, item, signal);
+      await this.cleanup(list, item, signal);
+    }
+    demand(
+      check.listExists && check.itemExists,
+      "The text list or item is unavailable.",
+      404,
+    );
     const op = await transact(this.ledger, signal, (s) => {
-      open(s, list, this.now());
+      maintain(s, list);
       const it = s.state.items[scope(list, item)];
       if (!it?.current) return undefined;
-      s.state.reads += 2; // Full and thumbnail: charge both Storage reads before either begins.
+      // Observability only, never a lifetime read allowance.
+      s.state.reads++;
       s.state.readBytes += RESERVATION;
       return structuredClone(s.state.ops[it.current]);
     });
     if (!op) return undefined;
-    const output = await Promise.all(
-      [0, 1].map((n) => this.storage.read(objectKey(op.id, n), signal)),
+    const bytes = await this.storage.read(objectKey(op.id), signal);
+    demand(
+      bytes.length === op.sizes[0] && (await hash(bytes)) === op.hashes[0],
+      "Photo verification failed.",
+      503,
     );
-    for (let n = 0; n < 2; n++) {
-      demand(
-        output[n].length === op.sizes[n] &&
-          (await hash(output[n])) === op.hashes[n],
-        "Photo verification failed.",
-        503,
-      );
-      inspectJpeg(output[n], {
-        maxBytes: n ? 32768 : 393216,
-        maxEdge: n ? 192 : 1280,
-      });
+    inspectJpeg(bytes, { maxBytes: RESERVATION, maxEdge: 1280 });
+    const after = await this.text(list, item, signal);
+    if (after.itemAbsent) {
+      await this.fenceDeleted(list, item, signal);
+      await this.cleanup(list, item, signal);
     }
-    await this.verify(list, item, signal);
+    demand(
+      after.listExists && after.itemExists,
+      "The text list or item is unavailable.",
+      404,
+    );
     const latest = await this.ledger.load(signal);
-    open(latest, list, this.now());
+    maintain(latest, list);
     demand(
       latest.state.items[scope(list, item)]?.current === op.id,
       "Photo changed. Retry.",
     );
-    return { version: op.version!, full: output[0], thumbnail: output[1] };
+    return { version: op.version!, full: bytes };
   }
+  // Read-only lifecycle status: admission counters are the only write.
   async status(list: string, item: string, id: string, signal: AbortSignal) {
-    await this.verify(list, item, signal, true);
-    await transact(this.ledger, signal, (s) => {
-      open(s, list, this.now());
-      const op = s.state.ops[id];
-      if (
-        op &&
-        op.list === list &&
-        op.item === item &&
-        op.state === "pending" &&
-        op.lease <= this.now()
-      )
-        op.state = op.writes.every((w) => w === "planned")
-          ? "released"
-          : "cleanup";
-    });
-    await this.cleanup(list, item, signal);
     const s = await this.ledger.load(signal);
-    open(s, list, this.now());
+    maintain(s, list);
     const op = s.state.ops[id];
     if (!op || op.list !== list || op.item !== item) return undefined;
     return {
@@ -299,7 +309,81 @@ export class BetaEngine {
           : op.state === "pending"
             ? "pending"
             : "failed",
+      version: s.state.items[scope(list, item)]?.version,
+      cleanup: op.state === "cleanup",
+      unknownWriter: op.writes.includes("writing"),
     };
+  }
+  // No public scan route. The server invokes this on reads (or an existing trusted operator).
+  // Durable cursor works after restart/lost browser state; one tracked item per invocation.
+  // Only definite authoritative absence fences a deleted text item. No TTL.
+  async reconcile(list: string, signal: AbortSignal) {
+    await this.admit(list, "maintenance", signal, true);
+    const selected = await transact(this.ledger, signal, (s) => {
+      maintain(s, list);
+      const keys = Object.keys(s.state.items)
+        .filter((k) => s.state.items[k].list === list)
+        .sort();
+      const key = keys.find((k) => k > s.state.reconciliationCursor) ?? keys[0];
+      if (!key) return undefined;
+      s.state.reconciliationCursor = key;
+      const it = s.state.items[key];
+      for (const op of Object.values(s.state.ops)) {
+        if (
+          op.list === list &&
+          op.item === it.item &&
+          op.state === "pending" &&
+          op.lease <= this.now()
+        )
+          op.state = op.writes.every((w) => w === "planned")
+            ? "released"
+            : "cleanup";
+      }
+      return { item: it.item, epoch: it.epoch };
+    });
+    if (!selected) return { scanned: 0 };
+    // An outage must not block already-authorized cleanup or become a deletion signal.
+    const check = await this.text(list, selected.item, signal).catch(
+      () => undefined,
+    );
+    if (check?.itemAbsent) await this.fenceDeleted(list, selected.item, signal);
+    await this.cleanup(list, selected.item, signal);
+    const s = await this.ledger.load(signal);
+    return {
+      scanned: 1,
+      item: selected.item,
+      textUnavailable: !check,
+      unknownWriters: Object.values(s.state.ops).filter(
+        (o) =>
+          o.list === list &&
+          o.item === selected.item &&
+          o.writes.includes("writing"),
+      ).length,
+    };
+  }
+  private async fenceDeleted(list: string, item: string, signal: AbortSignal) {
+    await transact(this.ledger, signal, (s) => {
+      maintain(s, list);
+      const it = s.state.items[scope(list, item)];
+      if (!it || it.deleted) return;
+      it.deleted = true;
+      this.fence(s.state, list, item);
+    });
+  }
+  private fence(
+    state: import("./ledger.ts").State,
+    list: string,
+    item: string,
+  ) {
+    const it = state.items[scope(list, item)];
+    it.epoch++;
+    it.version++;
+    delete it.current;
+    for (const op of Object.values(state.ops))
+      if (op.list === list && op.item === item && op.state !== "released")
+        op.state = op.writes.every((w) => w === "planned")
+          ? "released"
+          : "cleanup";
   }
   async remove(
     list: string,
@@ -308,38 +392,35 @@ export class BetaEngine {
     deleted: boolean,
     signal: AbortSignal,
   ) {
-    await this.verify(list, item, signal, deleted);
-    await transact(this.ledger, signal, (s) => {
-      open(s, list, this.now());
-      const it = s.state.items[scope(list, item)];
-      if (!it) return;
-      if (!deleted) {
+    if (deleted) {
+      // DOM disappearance is merely a hint. Present, malformed or unreachable text cannot delete photos.
+      const check = await this.text(list, item, signal);
+      demand(
+        check.itemAbsent,
+        "Text deletion is not confirmed. Photo retained.",
+        409,
+      );
+      await this.fenceDeleted(list, item, signal);
+    } else
+      await transact(this.ledger, signal, (s) => {
+        maintain(s, list);
+        const it = s.state.items[scope(list, item)];
+        if (!it) return;
         demand(
           Number.isSafeInteger(expected) && expected! > 0,
           "Invalid version.",
           400,
         );
         if (!it.current) return;
-        demand(
-          (it.current ? it.version : 0) === expected,
-          "Photo changed. Reopen it.",
-        );
-      }
-      it.epoch++;
-      it.version++;
-      if (deleted) it.deleted = true;
-      delete it.current;
-      for (const op of Object.values(s.state.ops))
-        if (op.list === list && op.item === item && op.state !== "released")
-          op.state = op.writes.every((w) => w === "planned")
-            ? "released"
-            : "cleanup";
-    });
+        demand(it.version === expected, "Photo changed. Reopen it.");
+        this.fence(s.state, list, item);
+      });
     await this.cleanup(list, item, signal);
   }
   // Cleanup consumes only explicitly fenced, settled objects. No retained-photo TTL.
   async cleanup(list: string, item: string, signal: AbortSignal) {
     const snapshot = await this.ledger.load(signal);
+    maintain(snapshot, list);
     for (const op of Object.values(snapshot.state.ops)) {
       if (
         op.list !== list ||
@@ -349,7 +430,7 @@ export class BetaEngine {
       )
         continue;
       const keys = op.writes.flatMap((w, n) =>
-        w === "stored" ? [objectKey(op.id, n)] : [],
+        w === "stored" ? [objectKey(op.id)] : [],
       );
       await this.storage.remove(keys, signal);
       for (const key of keys)
@@ -359,6 +440,7 @@ export class BetaEngine {
           503,
         );
       await transact(this.ledger, signal, (s) => {
+        maintain(s, list);
         const current = s.state.ops[op.id];
         if (current.state === "released") return;
         demand(
@@ -369,6 +451,7 @@ export class BetaEngine {
         );
         current.state = "released";
       });
+      break; // At most one object per request; remaining markers persist in the ledger.
     }
   }
 }
