@@ -635,3 +635,303 @@ test("lightbox preserves a selected draft and stale cached writes cannot overwri
     dom.window.close();
   }
 });
+
+test("late stale-cache revalidation cannot rebase a selected or reselected draft or removal", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+    { url: "http://localhost/RevalidationRace" },
+  );
+  const live = setup(dom),
+    mock = new MockPhotos(),
+    signal = new AbortController().signal;
+  const put = mock.put.bind(mock),
+    get = mock.get.bind(mock),
+    remove = mock.remove.bind(mock);
+  const upload = () => ({ operationId: crypto.randomUUID(), jpeg: photo.jpeg });
+  const first = await put("a", null, upload(), signal);
+  const expectedSaves: (number | null)[] = [],
+    expectedRemovals: number[] = [];
+  mock.put = (...args) => {
+    expectedSaves.push(args[1]);
+    return put(...args);
+  };
+  mock.remove = (...args) => {
+    expectedRemovals.push(args[1]);
+    return remove(...args);
+  };
+  let reads = 0,
+    release!: (p: typeof first) => void;
+  mock.get = (...args) =>
+    ++reads === 2
+      ? new Promise((r) => {
+          release = r;
+        })
+      : get(...args);
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  const clock = Date.now;
+  try {
+    await tick();
+    Date.now = () => clock() + 61000;
+    click(dom, "Change photo");
+    Date.now = clock;
+    assert.equal(reads, 2, "stale open has an outstanding automatic read");
+    const remote = await put("a", first.version, upload(), signal);
+    click(dom, "Try synthetic image");
+    await tick();
+    const src =
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src;
+    release(remote);
+    await tick();
+    assert.equal(
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src,
+      src,
+    );
+    click(dom, "Save photo");
+    await tick();
+    assert.deepEqual(
+      expectedSaves,
+      [first.version],
+      "draft must retain v1, not silently adopt v2",
+    );
+    assert.equal(
+      mock.records.get("a")!.version,
+      remote.version,
+      "unseen remote edit survives",
+    );
+    assert.match(
+      dom.window.document.querySelector('dialog [role="status"]')!.textContent!,
+      /changed/,
+    );
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Save photo");
+    await tick();
+    assert.deepEqual(
+      expectedSaves,
+      [first.version, first.version],
+      "reselecting does not rebase the open dialog",
+    );
+    click(dom, "Remove photo");
+    await tick();
+    assert.deepEqual(expectedRemovals, [first.version]);
+    assert.equal(mock.records.get("a")!.version, remote.version);
+    click(dom, "Close");
+    assert.equal(live.size, 1);
+    click(dom, "Change photo");
+    await tick();
+    assert.equal(reads, 3, "a conflict expires the row cache before reopening");
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Save photo");
+    await tick();
+    assert.deepEqual(expectedSaves, [
+      first.version,
+      first.version,
+      remote.version,
+    ]);
+    assert(
+      mock.records.get("a")!.version > remote.version,
+      "explicit reopening permits a new draft based on the displayed remote revision",
+    );
+  } finally {
+    Date.now = clock;
+    ui.close();
+    assert.equal(live.size, 0);
+    dom.window.close();
+  }
+});
+
+test("closing a stale cached dialog discards its draft and late read before reopening", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+    { url: "http://localhost/CancelledRevalidation" },
+  );
+  const live = setup(dom),
+    mock = new MockPhotos(),
+    signal = new AbortController().signal;
+  const put = mock.put.bind(mock),
+    get = mock.get.bind(mock);
+  const upload = () => ({ operationId: crypto.randomUUID(), jpeg: photo.jpeg });
+  const first = await put("a", null, upload(), signal);
+  let reads = 0,
+    release!: (p: typeof first) => void;
+  mock.get = (...args) =>
+    ++reads === 2
+      ? new Promise((r) => {
+          release = r;
+        })
+      : get(...args);
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  const clock = Date.now;
+  try {
+    await tick();
+    Date.now = () => clock() + 61000;
+    click(dom, "Change photo");
+    const remote = await put("a", first.version, upload(), signal);
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Close");
+    assert.equal(live.size, 1);
+    click(dom, "Change photo");
+    await tick();
+    assert.equal(reads, 3);
+    const src =
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src;
+    release(first);
+    await tick();
+    assert.equal(
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src,
+      src,
+      "aborted old response cannot replace the reopened preview",
+    );
+    click(dom, "Remove photo");
+    await tick();
+    assert.equal(
+      mock.records.size,
+      0,
+      `reopening displayed and removed v${remote.version}`,
+    );
+  } finally {
+    Date.now = clock;
+    ui.close();
+    assert.equal(live.size, 0);
+    dom.window.close();
+  }
+});
+
+test("background revalidation does not change removal's displayed revision while a mutation is pending", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+    { url: "http://localhost/RemoveRevalidation" },
+  );
+  const live = setup(dom),
+    mock = new MockPhotos(),
+    signal = new AbortController().signal;
+  const put = mock.put.bind(mock),
+    get = mock.get.bind(mock),
+    remove = mock.remove.bind(mock);
+  const upload = () => ({ operationId: crypto.randomUUID(), jpeg: photo.jpeg });
+  const first = await put("a", null, upload(), signal);
+  let reads = 0,
+    release!: (p: typeof first) => void,
+    rejectRemoval!: (e: Error) => void;
+  const expected: number[] = [];
+  mock.get = (...args) =>
+    ++reads === 2
+      ? new Promise((r) => {
+          release = r;
+        })
+      : get(...args);
+  mock.remove = (...args) => {
+    expected.push(args[1]);
+    return expected.length === 1
+      ? new Promise((_r, reject) => {
+          rejectRemoval = reject;
+        })
+      : remove(...args);
+  };
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock);
+  const clock = Date.now;
+  try {
+    await tick();
+    Date.now = () => clock() + 61000;
+    click(dom, "Change photo");
+    Date.now = clock;
+    const src =
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src;
+    const remote = await put("a", first.version, upload(), signal);
+    click(dom, "Remove photo");
+    release(remote);
+    await tick();
+    assert.equal(
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src,
+      src,
+    );
+    rejectRemoval(Error("This photo changed. Reopen it before removing."));
+    await tick();
+    click(dom, "Remove photo");
+    await tick();
+    assert.deepEqual(expected, [first.version, first.version]);
+    assert.equal(mock.records.get("a")!.version, remote.version);
+    click(dom, "Close");
+    click(dom, "Change photo");
+    await tick();
+    click(dom, "Remove photo");
+    await tick();
+    assert.deepEqual(expected, [first.version, first.version, remote.version]);
+    assert.equal(mock.records.size, 0);
+  } finally {
+    Date.now = clock;
+    ui.close();
+    assert.equal(live.size, 0);
+    dom.window.close();
+  }
+});
+
+test("a failed draft write invalidates an older pending read instead of marking stale bytes fresh", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+    { url: "http://localhost/InvalidatedRevalidation" },
+  );
+  const live = setup(dom),
+    mock = new MockPhotos(),
+    signal = new AbortController().signal;
+  const put = mock.put.bind(mock),
+    get = mock.get.bind(mock);
+  const upload = () => ({ operationId: crypto.randomUUID(), jpeg: photo.jpeg });
+  const first = await put("a", null, upload(), signal);
+  let reads = 0,
+    release!: (p: typeof first) => void;
+  mock.get = (...args) =>
+    ++reads === 2
+      ? new Promise((r) => {
+          release = r;
+        })
+      : get(...args);
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  const clock = Date.now;
+  try {
+    await tick();
+    Date.now = () => clock() + 61000;
+    click(dom, "Change photo");
+    Date.now = clock;
+    const remote = await put("a", first.version, upload(), signal);
+    click(dom, "Try synthetic image");
+    await tick();
+    click(dom, "Save photo");
+    await tick();
+    assert.equal(mock.records.get("a")!.version, remote.version);
+    assert.match(
+      dom.window.document.querySelector('dialog [role="status"]')!.textContent!,
+      /changed/,
+    );
+    release(first);
+    await tick();
+    click(dom, "Close");
+    click(dom, "Change photo");
+    await tick();
+    assert.equal(
+      reads,
+      3,
+      "late pre-conflict read must not make the expired cache fresh",
+    );
+    click(dom, "Remove photo");
+    await tick();
+    assert.equal(
+      mock.records.size,
+      0,
+      "reopening fetched the actual remote revision",
+    );
+  } finally {
+    Date.now = clock;
+    ui.close();
+    assert.equal(live.size, 0);
+    dom.window.close();
+  }
+});

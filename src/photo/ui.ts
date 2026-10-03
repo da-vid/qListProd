@@ -342,6 +342,7 @@ export function installPhotoUI(
         );
         close();
       } catch (e) {
+        entry.revision++; // Invalidate reads started before this failed/uncertain write.
         entry.loadedAt = 0; // Revalidate after any uncertain write; never retry against an assumed revision.
         if (!deleting && selected && !controller.signal.aborted) {
           try {
@@ -432,14 +433,16 @@ export function installPhotoUI(
     dialog.showModal();
     cancel.focus();
     function showRecord(record?: PhotoRecord) {
-      if (controller.signal.aborted) return;
+      // A chosen draft owns both its preview and its original base revision.
+      // Background reads may update the row cache, but must never silently rebase
+      // a draft or change the displayed revision during a pending mutation.
+      if (controller.signal.aborted || generation !== 0 || busy) return;
       existing = record;
       observedVersion = record?.version ?? adapter.observedVersion?.(key);
       entry.photoVersion = observedVersion;
       heading.hidden = !!record;
       cancel.setAttribute("aria-label", record ? "Close" : "Cancel");
       remove.hidden = !record;
-      if (generation !== 0) return; // A selected draft owns the preview.
       controls.forEach((b) => (b.disabled = false));
       if (record) display(record.full);
       else {
@@ -454,9 +457,9 @@ export function installPhotoUI(
           : "Choose a photo.";
     }
     async function load() {
-      if (busy || selected) {
+      if (busy || generation !== 0) {
         status.textContent =
-          "Save or close your selected photo before refreshing.";
+          "Close this window to refresh before choosing another photo.";
         return;
       }
       reload.disabled = true;
@@ -467,7 +470,7 @@ export function installPhotoUI(
         thumbnail(key, record);
         showRecord(record);
       } catch (e) {
-        if (!controller.signal.aborted)
+        if (!controller.signal.aborted && generation === 0 && !busy)
           status.textContent =
             error(e) + " Close this window to continue editing text.";
       } finally {

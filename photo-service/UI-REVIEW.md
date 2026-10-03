@@ -12,11 +12,19 @@ This batch changes frontend interaction only, based on clean commit `f5098bb6faa
 
 ## Exercised locally
 
-- 153 Node tests passed, including cache reuse/expiry, remote replacement, stale write rejection, selected-draft preservation and URL cleanup. Full existing text/photo/backend synthetic regressions remain included.
+- 157 Node tests passed, including cache reuse/expiry, remote replacement, stale write rejection, selected-draft preservation and URL cleanup. Full existing text/photo/backend synthetic regressions remain included.
 - Root and beta TypeScript checks; standard and photo-preview builds passed. The packaged release is rebuilt from the clean source commit, and its modern/maintenance/rollback manifests are checked separately.
 - Two existing Firebase demo-emulator tests passed: production privacy rules and release UI maintenance/recovery. No production database traffic or writes.
 - Chrome 154.0.8037.97, loopback only, at widths 320/390/1024: JPEG attach/change/remove, paused-upload removal, confirmed text-delete cleanup, keyboard and pointer reordering, compact row geometry, actual wrapping textarea with unbroken text, caret/save/cancel, aligned thumbnail/handle, management, tap lightbox toggle, browser Back, Escape, Close, zero additional cached-open downloads, and short/long/380px-height footer layouts. Evidence: `results/browser.json` and PNGs. The keyboard case is a resized viewport, not an actual mobile keyboard.
 - Normalization browser checks passed again: eight EXIF orientations, progressive-to-baseline JPEG, metadata removal, 12MP and 24MP synthetic images, high-detail size fallback, cancellation, codec/input failures, HEIC rejection/reselection and continued text editing. Outputs stay within 512 KiB and 1280px. Evidence: `../photo-lab/results/browser/results.json` and PNGs.
+
+## Review correction: stale revalidation race
+
+Independent review reproduced a release-blocking race in `b791fa74371f523c686912324edfee8eee96c8be`: a pending automatic read returned v2 after a replacement draft was chosen against cached v1, and the dialog silently adopted v2 as its write base. That review build must not be published.
+
+The correction checks draft ownership and pending mutations before changing either the displayed record or its expected version. A draft and subsequent reselections keep the original base until the dialog closes. A write failure also invalidates older pending reads, so their late results cannot make an expired cache fresh again. Refresh after a selection directs the user to close/reopen; it never rebases the draft silently.
+
+Four synthetic regression cases cover the exact late-read/save sequence, reselect and remove conflicts, cancel/close/reopen with an aborted old response, pending removal, and invalidation of a read completing after a write conflict. The pre-fix test used expected v2 and failed; corrected Save/Delete use v1 and preserve remote v2. Reopening fetches/displays v2 before a new mutation can use it. All 15 photo UI tests and the 157-test full suite pass. Local Chrome interaction checks at 320/390/1024 were rerun against the corrected source, with zero external requests. Fresh correction evidence is included separately in the review package; earlier normalization/device-limit evidence remains applicable.
 
 ## Remaining review
 
