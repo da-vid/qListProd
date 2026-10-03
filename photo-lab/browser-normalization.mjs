@@ -346,11 +346,11 @@ try {
     );
   await page.waitForFunction(() =>
     [...document.querySelectorAll("dialog button")].some(
-      (b) => b.textContent === "Save photo" && !b.disabled,
+      (b) => b.getAttribute("aria-label") === "Save photo" && !b.disabled,
     ),
   );
   results.reselection_after_heic = true;
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
   await page
     .locator(".item .name")
     .fill("Text still works after unsupported photo");

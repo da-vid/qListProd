@@ -39,7 +39,8 @@ body {
   line-height: 1.2;
 }
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 button,
@@ -653,4 +654,19 @@ dialog .primary {
   font-weight: 400;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Native wrapping editors retain selection and the existing save boundaries. */
+.item .name {
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+  box-sizing: border-box;
+}
+.bottom {
+  padding-bottom: max(20px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }

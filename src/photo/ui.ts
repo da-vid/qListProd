@@ -28,6 +28,8 @@ export function installPhotoUI(
       lifetime: AbortController;
       revision: number;
       photoVersion?: number;
+      record?: PhotoRecord;
+      loadedAt?: number;
     }
   >();
   const cleanupQueue = new Map<string, CleanupIntent>();
@@ -105,26 +107,31 @@ export function installPhotoUI(
     entry.revision++;
     entry.photoVersion = record?.version ?? adapter.observedVersion?.(key);
     if (entry.thumb) win.URL.revokeObjectURL(entry.thumb);
-    entry.bar.querySelector(".photo-thumbnail")?.remove();
+    entry.record = record;
+    entry.loadedAt = Date.now();
     entry.thumb = undefined;
     const edit = entry.bar.querySelector<HTMLButtonElement>(".photo-manage")!;
+    edit.replaceChildren();
+    edit.classList.toggle("photo-thumbnail", !!record);
     const label = record ? "Change photo" : "Add photo";
     edit.setAttribute("aria-label", label);
     edit.title = label;
-    if (!record) return;
-    const url = win.URL.createObjectURL(record.thumbnail);
-    entry.thumb = url;
-    const b = button("", () => open(key, true));
-    b.classList.add("photo-thumbnail");
-    b.setAttribute("aria-label", "Expand item photo");
+    if (!record) {
+      const glyph = make("span", "\uf030");
+      glyph.className = "photo-camera-glyph";
+      glyph.setAttribute("aria-hidden", "true");
+      edit.append(glyph);
+      return;
+    }
+    entry.thumb = win.URL.createObjectURL(record.thumbnail);
     const img = make("img");
-    img.src = url;
-    img.alt = "Item photo";
-    img.width = 48;
-    img.height = 48;
-    b.append(img);
-    entry.bar.insertBefore(b, edit);
+    img.src = entry.thumb;
+    img.alt = "";
+    img.width = 34;
+    img.height = 34;
+    edit.append(img);
   }
+
   async function refresh(key: string) {
     const entry = rows.get(key);
     if (!entry) return;
@@ -143,17 +150,18 @@ export function installPhotoUI(
         report(key, error(e));
     }
   }
-  function open(key: string, expanded = false) {
-    const entry = rows.get(key);
-    if (!entry) return;
+  function open(key: string) {
+    const found = rows.get(key);
+    if (!found) return;
+    const entry = found;
     currentDialog?.close();
     const origin = doc.activeElement as HTMLElement | null;
     const controller = new AbortController();
     const dialog = make("dialog");
     dialog.className = "photo-dialog";
-    const heading = make("h2", expanded ? "Item photo" : "Attach a photo");
+    const heading = make("h2", "Add a photo");
     heading.id = "photo-dialog-title";
-    dialog.setAttribute("aria-labelledby", heading.id);
+    dialog.setAttribute("aria-label", "Manage photo");
     const status = make("p", "Loading photo…");
     status.setAttribute("role", "status");
     const preview = make("img");
@@ -165,7 +173,49 @@ export function installPhotoUI(
       observedVersion: number | undefined,
       busy = false,
       generation = 0;
+    let expanded = false;
+    const historyKey = win.crypto.randomUUID();
+    const previewButton = button("", () => setExpanded(!expanded));
+    previewButton.className = "photo-preview";
+    previewButton.hidden = true;
+    previewButton.setAttribute("aria-label", "Expand photo");
+    previewButton.append(preview);
+    const lightboxClose = button("×", close);
+    lightboxClose.classList.add("photo-lightbox-close");
+    lightboxClose.setAttribute("aria-label", "Close photo");
+    lightboxClose.hidden = true;
+    const back = button("Back", () => setExpanded(false));
+    back.classList.add("photo-lightbox-back");
+    back.setAttribute("aria-label", "Return to photo controls");
+    back.hidden = true;
+    function setExpanded(value: boolean, fromHistory = false) {
+      if (value === expanded) return;
+      expanded = value;
+      dialog.classList.toggle("photo-lightbox", value);
+      back.hidden = lightboxClose.hidden = !value;
+      previewButton.setAttribute(
+        "aria-label",
+        value ? "Return to photo controls" : "Expand photo",
+      );
+      if (value) {
+        win.history.pushState(
+          { ...win.history.state, qListPhotoView: historyKey },
+          "",
+        );
+        back.focus();
+      } else {
+        if (!fromHistory && win.history.state?.qListPhotoView === historyKey)
+          win.history.back();
+        previewButton.focus();
+      }
+    }
+    const onBack = () => {
+      if (expanded) setExpanded(false, true);
+    };
+    win.addEventListener("popstate", onBack);
     function close() {
+      if (expanded) setExpanded(false);
+      win.removeEventListener("popstate", onBack);
       controller.abort();
       generation++;
       if (url) win.URL.revokeObjectURL(url);
@@ -177,7 +227,8 @@ export function installPhotoUI(
     currentDialog = { key, close };
     dialog.addEventListener("cancel", (e) => {
       e.preventDefault();
-      close();
+      if (expanded) setExpanded(false);
+      else close();
     });
     const cancel = button("Cancel", close),
       save = button("Save photo", () => {
@@ -218,13 +269,13 @@ export function installPhotoUI(
     ];
     controls.forEach((b) => {
       b.disabled = true;
-      b.hidden = expanded;
     });
     function display(blob: Blob) {
       if (url) win.URL.revokeObjectURL(url);
       url = win.URL.createObjectURL(blob);
       preview.src = url;
       preview.hidden = false;
+      previewButton.hidden = false;
     }
     async function select(
       prepare: (signal: AbortSignal) => Promise<NormalizedPhoto>,
@@ -235,6 +286,7 @@ export function installPhotoUI(
       if (url) win.URL.revokeObjectURL(url);
       url = undefined;
       preview.hidden = true;
+      previewButton.hidden = true;
       controls.forEach((b) => (b.disabled = true));
       status.textContent = "Preparing JPEG…";
       try {
@@ -290,6 +342,7 @@ export function installPhotoUI(
         );
         close();
       } catch (e) {
+        entry.loadedAt = 0; // Revalidate after any uncertain write; never retry against an assumed revision.
         if (!deleting && selected && !controller.signal.aborted) {
           try {
             const operation = await run(
@@ -342,7 +395,9 @@ export function installPhotoUI(
             ),
           ]),
       status,
-      preview,
+      previewButton,
+      back,
+      lightboxClose,
       camera,
       library,
       ...controls,
@@ -350,36 +405,82 @@ export function installPhotoUI(
       remove,
       cancel,
     );
-    save.hidden = expanded;
+    const reload = button("Refresh", () => {
+      void load();
+    });
+    reload.setAttribute("aria-label", "Refresh photo");
+    reload.title = "Check for changes from other people";
+    dialog.append(reload);
+    for (const [control, label, glyph] of [
+      [cameraButton, "Camera", "\uf030"],
+      [libraryButton, "Choose", "\uf03e"],
+      [save, "Save", "\uf00c"],
+      [remove, "Delete", "\uf014"],
+      [cancel, "Close", "\uf00d"],
+      [reload, "Refresh", "\uf021"],
+    ] as const) {
+      control.setAttribute(
+        "aria-label",
+        control.getAttribute("aria-label") ?? control.textContent!,
+      );
+      const icon = make("span", glyph);
+      icon.className = "photo-camera-glyph";
+      icon.setAttribute("aria-hidden", "true");
+      control.replaceChildren(icon, doc.createTextNode(label));
+    }
     root.append(dialog);
     dialog.showModal();
     cancel.focus();
-    void run((s) => adapter.get(key, s), controller.signal)
-      .then((record) => {
-        if (controller.signal.aborted) return;
-        existing = record;
-        observedVersion = record?.version ?? adapter.observedVersion?.(key);
-        entry.photoVersion = observedVersion;
-        // A file chosen before the initial read completed owns the preview/status.
-        if (generation !== 0) return;
-        controls.forEach((b) => (b.disabled = false));
-        remove.hidden = expanded || !record;
-        if (record) display(record.full);
-        status.textContent = expanded
-          ? record
-            ? ""
-            : "This photo is no longer available."
-          : options.synthetic
-            ? "Choose a JPEG or try the synthetic image."
-            : "Choose a photo.";
-        if (expanded) cancel.textContent = "Close";
-      })
-      .catch((e) => {
+    function showRecord(record?: PhotoRecord) {
+      if (controller.signal.aborted) return;
+      existing = record;
+      observedVersion = record?.version ?? adapter.observedVersion?.(key);
+      entry.photoVersion = observedVersion;
+      heading.hidden = !!record;
+      cancel.setAttribute("aria-label", record ? "Close" : "Cancel");
+      remove.hidden = !record;
+      if (generation !== 0) return; // A selected draft owns the preview.
+      controls.forEach((b) => (b.disabled = false));
+      if (record) display(record.full);
+      else {
+        if (url) win.URL.revokeObjectURL(url);
+        url = undefined;
+        preview.hidden = previewButton.hidden = true;
+      }
+      status.textContent = record
+        ? "Refresh to check for changes from others."
+        : options.synthetic
+          ? "Choose a JPEG or try the synthetic image."
+          : "Choose a photo.";
+    }
+    async function load() {
+      if (busy || selected) {
+        status.textContent =
+          "Save or close your selected photo before refreshing.";
+        return;
+      }
+      reload.disabled = true;
+      const revision = ++entry.revision;
+      try {
+        const record = await run((s) => adapter.get(key, s), controller.signal);
+        if (controller.signal.aborted || entry.revision !== revision) return;
+        thumbnail(key, record);
+        showRecord(record);
+      } catch (e) {
         if (!controller.signal.aborted)
           status.textContent =
             error(e) + " Close this window to continue editing text.";
-      });
+      } finally {
+        reload.disabled = false;
+      }
+    }
+    // Keep a versioned Blob in memory. Reopening a fresh photo needs no download.
+    // Reload/manual refresh fetch remote changes; older cached entries revalidate on open.
+    if (entry.record) showRecord(entry.record);
+    if (!entry.record || !entry.loadedAt || Date.now() - entry.loadedAt > 60000)
+      void load();
   }
+
   function reconcile() {
     const present = new Set<string>();
     root.querySelectorAll<HTMLElement>(".item[data-key]").forEach((row) => {

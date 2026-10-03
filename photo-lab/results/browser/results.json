@@ -295,7 +295,7 @@
     "width": 1280,
     "height": 960,
     "metadata_stripped": true,
-    "elapsed_ms": 77.29999999701977
+    "elapsed_ms": 96.40000000596046
   },
   "normalized_cases": [
     {
@@ -388,7 +388,7 @@
       "Choose a JPEG smaller than 10 MiB. Your text list is unchanged.",
       "Choose a JPEG smaller than 10 MiB. Your text list is unchanged.",
       "This JPEG is damaged or too large. Choose a copy under 10 MiB and 24 megapixels (maximum edge 8192). Your text list is unchanged.",
-      "Choose a JPEG photo. Other image formats aren’t supported in this local preview."
+      "Choose a JPEG photo. Other image formats aren’t supported here."
     ],
     "retry_bytes": 1084
   },

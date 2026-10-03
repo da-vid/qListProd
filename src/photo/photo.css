@@ -23,10 +23,10 @@
   outline-offset: -2px;
 }
 .photo-thumbnail {
-  width: 36px;
-  min-width: 36px;
+  width: 44px;
+  min-width: 44px;
   height: 44px;
-  padding: 5px 1px;
+  padding: 5px;
   border: 0;
   background: transparent;
 }
@@ -46,19 +46,76 @@
 .photo-dialog {
   max-width: min(32rem, calc(100vw - 2rem));
 }
-.photo-dialog > img {
+/* The same preview button toggles a viewport lightbox without losing the draft. */
+.photo-dialog .photo-preview {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.photo-preview img {
   display: block;
   max-width: 100%;
-  max-height: 45vh;
-  margin: 0.5rem auto;
+  max-height: 45dvh;
+  margin: auto;
   object-fit: contain;
 }
-.photo-dialog > img[hidden] {
-  display: none;
-}
 .photo-dialog button {
-  margin: 0.3rem;
+  margin: 3px;
   min-height: 44px;
+  min-width: 44px;
+}
+.photo-dialog .photo-button {
+  font-size: 13px;
+  padding: 7px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.photo-dialog .photo-button .photo-camera-glyph {
+  font-size: 13px;
+}
+.photo-dialog [hidden] {
+  display: none !important;
+}
+.photo-dialog.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  padding: max(12px, env(safe-area-inset-top, 0px))
+    max(12px, env(safe-area-inset-right, 0px))
+    max(20px, env(safe-area-inset-bottom, 0px))
+    max(12px, env(safe-area-inset-left, 0px));
+  background: #171714;
+  color: white;
+}
+.photo-lightbox
+  > :not(.photo-preview):not(.photo-lightbox-back):not(.photo-lightbox-close) {
+  display: none !important;
+}
+.photo-lightbox .photo-preview {
+  height: 100%;
+  margin: 0;
+}
+.photo-lightbox .photo-preview img {
+  max-height: 100%;
+}
+.photo-lightbox .photo-lightbox-back {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  left: max(12px, env(safe-area-inset-left, 0px));
+  background: #fff;
+  color: #444;
 }
 .photo-lab-controls {
   padding: 0.75rem;
@@ -69,4 +126,17 @@
 .photo-lab-controls select {
   margin: 0.5rem;
   min-height: 44px;
+}
+
+.photo-dialog [role="status"] {
+  font-size: 13px;
+  margin: 8px 0;
+}
+.photo-lightbox .photo-lightbox-close {
+  position: absolute;
+  top: max(12px, env(safe-area-inset-top, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  background: #fff;
+  color: #444;
+  font-size: 22px;
 }

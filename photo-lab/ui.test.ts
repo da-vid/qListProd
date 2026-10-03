@@ -114,8 +114,8 @@ test("preview/cancel/save/replace/remove/expand and URL cleanup use separate pho
       .click();
     await tick();
     assert.equal(
-      dom.window.document.querySelector("dialog h2")!.textContent,
-      "Item photo",
+      dom.window.document.querySelector<HTMLElement>("dialog h2")!.hidden,
+      true,
     );
     click(dom, "Close");
     click(dom, "Change photo");
@@ -485,6 +485,153 @@ test("preparation timeout aborts the normalizer and a new selection can recover"
     assert.equal(mock.records.size, 1);
   } finally {
     ui.close();
+    dom.window.close();
+  }
+});
+
+test("photo cache reuses loaded bytes, refreshes remote revisions, and releases all URLs", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+    { url: "http://localhost/CacheList" },
+  );
+  const live = setup(dom),
+    mock = new MockPhotos();
+  const first = await mock.put(
+    "a",
+    null,
+    {
+      operationId: crypto.randomUUID(),
+      jpeg: photo.jpeg,
+    },
+    new AbortController().signal,
+  );
+  let reads = 0;
+  const get = mock.get.bind(mock);
+  mock.get = (...args) => {
+    reads++;
+    return get(...args);
+  };
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  try {
+    await tick();
+    assert.equal(reads, 1);
+    for (let i = 0; i < 3; i++) {
+      click(dom, "Change photo");
+      await tick();
+      assert.equal(reads, 1);
+      assert.equal(
+        dom.window.document.querySelectorAll(".photo-controls button").length,
+        1,
+      );
+      click(dom, "Expand photo");
+      assert(dom.window.document.querySelector(".photo-lightbox"));
+      const dialog = dom.window.document.querySelector("dialog")!;
+      dialog.dispatchEvent(
+        new dom.window.Event("cancel", { cancelable: true }),
+      );
+      await tick();
+      assert.equal(dom.window.document.querySelector(".photo-lightbox"), null);
+      assert(dialog.isConnected);
+      click(dom, "Close");
+      assert.equal(live.size, 1);
+    }
+    const clock = Date.now;
+    try {
+      Date.now = () => clock() + 61000;
+      click(dom, "Change photo");
+      await tick();
+      assert.equal(reads, 2, "expired cache revalidates on open");
+      click(dom, "Close");
+    } finally {
+      Date.now = clock;
+    }
+    const previousReads = reads;
+    const replacement = await mock.put(
+      "a",
+      first.version,
+      {
+        operationId: crypto.randomUUID(),
+        jpeg: photo.jpeg,
+      },
+      new AbortController().signal,
+    );
+    click(dom, "Change photo");
+    click(dom, "Refresh photo");
+    await tick();
+    assert.equal(reads, previousReads + 1);
+    click(dom, "Remove photo");
+    await tick();
+    assert.equal(
+      mock.records.size,
+      0,
+      `refresh uses revision ${replacement.version}`,
+    );
+    assert.equal(live.size, 0);
+    assert(dom.window.document.querySelector('[aria-label="Add photo"]'));
+  } finally {
+    ui.close();
+    assert.equal(live.size, 0);
+    dom.window.close();
+  }
+});
+
+test("lightbox preserves a selected draft and stale cached writes cannot overwrite remote changes", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+    { url: "http://localhost/DraftList" },
+  );
+  const live = setup(dom),
+    mock = new MockPhotos();
+  const first = await mock.put(
+    "a",
+    null,
+    {
+      operationId: crypto.randomUUID(),
+      jpeg: photo.jpeg,
+    },
+    new AbortController().signal,
+  );
+  const ui = installPhotoUI(dom.window.document.querySelector("#app")!, mock, {
+    synthetic: async () => photo,
+  });
+  try {
+    await tick();
+    click(dom, "Change photo");
+    click(dom, "Try synthetic image");
+    await tick();
+    const src =
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src;
+    click(dom, "Expand photo");
+    click(dom, "Return to photo controls");
+    await tick();
+    assert.equal(
+      dom.window.document.querySelector<HTMLImageElement>("dialog img")!.src,
+      src,
+    );
+    const remote = await mock.put(
+      "a",
+      first.version,
+      {
+        operationId: crypto.randomUUID(),
+        jpeg: photo.jpeg,
+      },
+      new AbortController().signal,
+    );
+    click(dom, "Save photo");
+    await tick();
+    assert.equal(mock.records.get("a")!.version, remote.version);
+    assert(dom.window.document.querySelector("dialog"));
+    click(dom, "Close");
+    click(dom, "Change photo");
+    await tick();
+    click(dom, "Remove photo");
+    await tick();
+    assert.equal(mock.records.size, 0);
+  } finally {
+    ui.close();
+    assert.equal(live.size, 0);
     dom.window.close();
   }
 });

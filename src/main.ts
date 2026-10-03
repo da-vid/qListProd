@@ -29,7 +29,7 @@ let store: Store,
 const local = mode === "preview" || mode === "photo-preview";
 const production = mode === "release";
 let writesAllowed = !production;
-const drafts = new Set<HTMLInputElement>();
+const drafts = new Set<HTMLInputElement | HTMLTextAreaElement>();
 function element<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   cls = "",
@@ -358,7 +358,7 @@ async function save(change: Change) {
 // Clipboard/autofill changes do not reliably produce `change` in every browser.
 // Input marks unsaved work; blur is a final persistence boundary, including paste.
 function bindEditable(
-  input: HTMLInputElement,
+  input: HTMLInputElement | HTMLTextAreaElement,
   current: () => string,
   change: (value: string) => Change,
 ) {
@@ -396,6 +396,27 @@ function bindEditable(
     schedule();
   });
 }
+function sizeName(name: HTMLTextAreaElement) {
+  if (!name.isConnected) return;
+  name.style.height = "0px";
+  name.style.height = `${name.scrollHeight + 2}px`;
+}
+const nameWidths = new WeakMap<HTMLTextAreaElement, number>();
+const nameObserver =
+  typeof ResizeObserver === "undefined"
+    ? undefined
+    : new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const name = entry.target as HTMLTextAreaElement;
+          if (nameWidths.get(name) !== name.clientWidth) {
+            nameWidths.set(name, name.clientWidth);
+            sizeName(name);
+          }
+        }
+      });
+document.fonts?.ready.then(() =>
+  list.querySelectorAll<HTMLTextAreaElement>(".name").forEach(sizeName),
+);
 function render(next: ListState, discardEdits = false) {
   state = next;
   title.disabled = !ready || !writesAllowed;
@@ -439,7 +460,10 @@ function render(next: ListState, discardEdits = false) {
         () =>
           void save({ type: "check", key: item.key, checked: check.checked }),
       );
-      const name = element("input", "name");
+      const name = element("textarea", "name");
+      name.rows = 1;
+      nameObserver?.observe(name);
+      name.addEventListener("input", () => sizeName(name));
       name.maxLength = 1000;
       bindEditable(
         name,
@@ -447,10 +471,16 @@ function render(next: ListState, discardEdits = false) {
         (value) => ({ type: "edit", key: item.key, name: value }),
       );
       name.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") name.blur();
+        if (e.isComposing) return;
+        if (e.key === "Enter") {
+          e.preventDefault();
+          name.blur();
+        }
         if (e.key === "Escape") {
+          e.preventDefault();
           name.value = state.items.find((x) => x.key === item.key)?.name || "";
           name.blur();
+          sizeName(name);
         }
       });
       const actions = element("div", "actions");
@@ -494,14 +524,15 @@ function render(next: ListState, discardEdits = false) {
       row.append(check, name, actions);
     }
     row.className = "item" + (item.checked ? " done" : "");
-    const inputs = row.querySelectorAll("input");
-    inputs[0].disabled = !writesAllowed;
-    inputs[1].disabled = !writesAllowed;
-    inputs[0].checked = item.checked;
-    inputs[0].setAttribute("aria-label", `Complete ${item.name}`);
-    if (discardEdits || document.activeElement !== inputs[1])
-      inputs[1].value = item.name;
-    inputs[1].setAttribute("aria-label", `Edit ${item.name}`);
+    const check = row.querySelector<HTMLInputElement>(
+      'input[type="checkbox"]',
+    )!;
+    const name = row.querySelector<HTMLTextAreaElement>(".name")!;
+    check.disabled = name.disabled = !writesAllowed;
+    check.checked = item.checked;
+    check.setAttribute("aria-label", `Complete ${item.name}`);
+    if (discardEdits || document.activeElement !== name) name.value = item.name;
+    name.setAttribute("aria-label", `Edit ${item.name}`);
     const removeButton = row.querySelector<HTMLButtonElement>(".delete-item")!;
     const reorderButton = row.querySelector<HTMLButtonElement>(".drag-handle")!;
     removeButton.disabled = !item.checked || !writesAllowed;
@@ -511,9 +542,14 @@ function render(next: ListState, discardEdits = false) {
     reorderButton.setAttribute("aria-label", `Reorder ${item.name}`);
     const at = list.children[i];
     if (at !== row) list.insertBefore(row, at || null);
+    sizeName(name);
     existing.delete(item.key);
   });
-  for (const row of existing.values()) row.remove();
+  for (const row of existing.values()) {
+    const name = row.querySelector(".name");
+    if (name) nameObserver?.unobserve(name);
+    row.remove();
+  }
   updateStatus();
 }
 bindEditable(

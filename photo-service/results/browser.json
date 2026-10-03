@@ -6,7 +6,7 @@
       "width": 320,
       "before": [
         {
-          "key": "232a0d4c84a8474f8127e5507d4c656e",
+          "key": "0a5a1a2cd981493abdbda657530feda3",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -35,30 +35,30 @@
           "padding": "0px 5px 0px 10px"
         },
         {
-          "key": "b85c0052d01d496183e0968b2bef2a32",
+          "key": "9ed509cd1b9844b89b04b1f5733ed2bb",
           "row": {
             "x": 0,
             "y": 211.140625,
             "w": 320,
-            "h": 45,
+            "h": 81,
             "right": 320,
-            "bottom": 256.140625
+            "bottom": 292.140625
           },
           "handle": {
             "x": 271,
-            "y": 211.140625,
+            "y": 229.140625,
             "w": 44,
             "h": 44,
             "right": 315,
-            "bottom": 255.140625
+            "bottom": 273.140625
           },
           "check": {
             "x": 13,
-            "y": 223.640625,
+            "y": 241.640625,
             "w": 19,
             "h": 19,
             "right": 32,
-            "bottom": 242.640625
+            "bottom": 260.640625
           },
           "camera": null,
           "padding": "0px 5px 0px 10px"
@@ -66,7 +66,7 @@
       ],
       "after": [
         {
-          "key": "232a0d4c84a8474f8127e5507d4c656e",
+          "key": "0a5a1a2cd981493abdbda657530feda3",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -102,45 +102,45 @@
           "padding": "0px 5px 0px 10px"
         },
         {
-          "key": "b85c0052d01d496183e0968b2bef2a32",
+          "key": "9ed509cd1b9844b89b04b1f5733ed2bb",
           "row": {
             "x": 0,
             "y": 211.140625,
             "w": 320,
-            "h": 45,
+            "h": 100,
             "right": 320,
-            "bottom": 256.140625
+            "bottom": 311.140625
           },
           "handle": {
             "x": 271,
-            "y": 211.140625,
+            "y": 238.640625,
             "w": 44,
             "h": 44,
             "right": 315,
-            "bottom": 255.140625
+            "bottom": 282.640625
           },
           "check": {
             "x": 13,
-            "y": 223.640625,
+            "y": 251.140625,
             "w": 19,
             "h": 19,
             "right": 32,
-            "bottom": 242.640625
+            "bottom": 270.140625
           },
           "camera": {
             "x": 227,
-            "y": 211.140625,
+            "y": 238.640625,
             "w": 44,
             "h": 44,
             "right": 271,
-            "bottom": 255.140625
+            "bottom": 282.640625
           },
           "padding": "0px 5px 0px 10px"
         }
       ],
       "saved": [
         {
-          "key": "232a0d4c84a8474f8127e5507d4c656e",
+          "key": "0a5a1a2cd981493abdbda657530feda3",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -176,49 +176,68 @@
           "padding": "0px 5px 0px 10px"
         },
         {
-          "key": "b85c0052d01d496183e0968b2bef2a32",
+          "key": "9ed509cd1b9844b89b04b1f5733ed2bb",
           "row": {
             "x": 0,
             "y": 211.140625,
             "w": 320,
-            "h": 45,
+            "h": 100,
             "right": 320,
-            "bottom": 256.140625
+            "bottom": 311.140625
           },
           "handle": {
             "x": 271,
-            "y": 211.140625,
+            "y": 238.640625,
             "w": 44,
             "h": 44,
             "right": 315,
-            "bottom": 255.140625
+            "bottom": 282.640625
           },
           "check": {
             "x": 13,
-            "y": 223.640625,
+            "y": 251.140625,
             "w": 19,
             "h": 19,
             "right": 32,
-            "bottom": 242.640625
+            "bottom": 270.140625
           },
           "camera": {
             "x": 227,
-            "y": 211.140625,
+            "y": 238.640625,
             "w": 44,
             "h": 44,
             "right": 271,
-            "bottom": 255.140625
+            "bottom": 282.640625
           },
           "padding": "0px 5px 0px 10px"
         }
       ],
       "wrapped": {
-        "height": 138.125,
+        "height": 292,
+        "editorHeight": 289,
+        "contentHeight": 289,
+        "horizontalOverflow": false,
         "cameraWithin": true,
+        "centersAligned": true,
         "padding": "0px 5px 0px 10px"
       },
+      "footer": {
+        "bottomPadding": 20,
+        "documentWidth": 320,
+        "viewport": 320
+      },
+      "longFooter": {
+        "top": 721.328125,
+        "bottom": 782.515625,
+        "viewport": 844,
+        "padding": 20
+      },
+      "cachedOpenAdditionalDownloads": 0,
+      "lightboxTapBackEscape": true,
+      "wrappedTextCaretSaveCancel": true,
       "cameraKeyboardNoReorder": true,
       "handleKeyboardReorder": true,
+      "handlePointerReorder": true,
       "removeWhileUploadsPaused": true,
       "reattachAfterRemoval": true,
       "confirmedTextDeleteCleanup": true
@@ -227,7 +246,7 @@
       "width": 390,
       "before": [
         {
-          "key": "2505fffbe7194f3a9cc4949d41a5bdcd",
+          "key": "daa3658bb89d414d9347fdec9bfe70d3",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -256,30 +275,30 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "ff82fd4395dc4ecc91146f119cf1ede2",
+          "key": "cc817f1acd6c4a1d949bec14d86e085a",
           "row": {
             "x": 0,
             "y": 211.140625,
             "w": 390,
-            "h": 45,
+            "h": 81,
             "right": 390,
-            "bottom": 256.140625
+            "bottom": 292.140625
           },
           "handle": {
             "x": 341,
-            "y": 211.140625,
+            "y": 229.140625,
             "w": 44,
             "h": 44,
             "right": 385,
-            "bottom": 255.140625
+            "bottom": 273.140625
           },
           "check": {
             "x": 19,
-            "y": 223.640625,
+            "y": 241.640625,
             "w": 19,
             "h": 19,
             "right": 38,
-            "bottom": 242.640625
+            "bottom": 260.640625
           },
           "camera": null,
           "padding": "0px 5px 0px 16px"
@@ -287,7 +306,7 @@
       ],
       "after": [
         {
-          "key": "2505fffbe7194f3a9cc4949d41a5bdcd",
+          "key": "daa3658bb89d414d9347fdec9bfe70d3",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -323,45 +342,45 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "ff82fd4395dc4ecc91146f119cf1ede2",
+          "key": "cc817f1acd6c4a1d949bec14d86e085a",
           "row": {
             "x": 0,
             "y": 211.140625,
             "w": 390,
-            "h": 45,
+            "h": 81,
             "right": 390,
-            "bottom": 256.140625
+            "bottom": 292.140625
           },
           "handle": {
             "x": 341,
-            "y": 211.140625,
+            "y": 229.140625,
             "w": 44,
             "h": 44,
             "right": 385,
-            "bottom": 255.140625
+            "bottom": 273.140625
           },
           "check": {
             "x": 19,
-            "y": 223.640625,
+            "y": 241.640625,
             "w": 19,
             "h": 19,
             "right": 38,
-            "bottom": 242.640625
+            "bottom": 260.640625
           },
           "camera": {
             "x": 297,
-            "y": 211.140625,
+            "y": 229.140625,
             "w": 44,
             "h": 44,
             "right": 341,
-            "bottom": 255.140625
+            "bottom": 273.140625
           },
           "padding": "0px 5px 0px 16px"
         }
       ],
       "saved": [
         {
-          "key": "2505fffbe7194f3a9cc4949d41a5bdcd",
+          "key": "daa3658bb89d414d9347fdec9bfe70d3",
           "row": {
             "x": 0,
             "y": 166.140625,
@@ -397,49 +416,68 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "ff82fd4395dc4ecc91146f119cf1ede2",
+          "key": "cc817f1acd6c4a1d949bec14d86e085a",
           "row": {
             "x": 0,
             "y": 211.140625,
             "w": 390,
-            "h": 45,
+            "h": 81,
             "right": 390,
-            "bottom": 256.140625
+            "bottom": 292.140625
           },
           "handle": {
             "x": 341,
-            "y": 211.140625,
+            "y": 229.140625,
             "w": 44,
             "h": 44,
             "right": 385,
-            "bottom": 255.140625
+            "bottom": 273.140625
           },
           "check": {
             "x": 19,
-            "y": 223.640625,
+            "y": 241.640625,
             "w": 19,
             "h": 19,
             "right": 38,
-            "bottom": 242.640625
+            "bottom": 260.640625
           },
           "camera": {
             "x": 297,
-            "y": 211.140625,
+            "y": 229.140625,
             "w": 44,
             "h": 44,
             "right": 341,
-            "bottom": 255.140625
+            "bottom": 273.140625
           },
           "padding": "0px 5px 0px 16px"
         }
       ],
       "wrapped": {
-        "height": 99.75,
+        "height": 196,
+        "editorHeight": 193,
+        "contentHeight": 193,
+        "horizontalOverflow": false,
         "cameraWithin": true,
+        "centersAligned": true,
         "padding": "0px 5px 0px 16px"
       },
+      "footer": {
+        "bottomPadding": 20,
+        "documentWidth": 390,
+        "viewport": 390
+      },
+      "longFooter": {
+        "top": 721.328125,
+        "bottom": 782.515625,
+        "viewport": 844,
+        "padding": 20
+      },
+      "cachedOpenAdditionalDownloads": 0,
+      "lightboxTapBackEscape": true,
+      "wrappedTextCaretSaveCancel": true,
       "cameraKeyboardNoReorder": true,
       "handleKeyboardReorder": true,
+      "handlePointerReorder": true,
       "removeWhileUploadsPaused": true,
       "reattachAfterRemoval": true,
       "confirmedTextDeleteCleanup": true
@@ -448,7 +486,7 @@
       "width": 1024,
       "before": [
         {
-          "key": "5fc9a899e7e34a44a460ec233412f920",
+          "key": "92f5322663f145ca8cb2adf512bdb990",
           "row": {
             "x": 262,
             "y": 168.125,
@@ -477,30 +515,30 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "bc6d06e63a304fef9c8381a528f1313d",
+          "key": "faaca9827799483f93f640be0bc7d50a",
           "row": {
             "x": 262,
             "y": 213.125,
             "w": 500,
-            "h": 45,
+            "h": 67,
             "right": 762,
-            "bottom": 258.125
+            "bottom": 280.125
           },
           "handle": {
             "x": 713,
-            "y": 213.125,
+            "y": 224.125,
             "w": 44,
             "h": 44,
             "right": 757,
-            "bottom": 257.125
+            "bottom": 268.125
           },
           "check": {
             "x": 281,
-            "y": 225.625,
+            "y": 236.625,
             "w": 19,
             "h": 19,
             "right": 300,
-            "bottom": 244.625
+            "bottom": 255.625
           },
           "camera": null,
           "padding": "0px 5px 0px 16px"
@@ -508,7 +546,7 @@
       ],
       "after": [
         {
-          "key": "5fc9a899e7e34a44a460ec233412f920",
+          "key": "92f5322663f145ca8cb2adf512bdb990",
           "row": {
             "x": 262,
             "y": 168.125,
@@ -544,45 +582,45 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "bc6d06e63a304fef9c8381a528f1313d",
+          "key": "faaca9827799483f93f640be0bc7d50a",
           "row": {
             "x": 262,
             "y": 213.125,
             "w": 500,
-            "h": 45,
+            "h": 67,
             "right": 762,
-            "bottom": 258.125
+            "bottom": 280.125
           },
           "handle": {
             "x": 713,
-            "y": 213.125,
+            "y": 224.125,
             "w": 44,
             "h": 44,
             "right": 757,
-            "bottom": 257.125
+            "bottom": 268.125
           },
           "check": {
             "x": 281,
-            "y": 225.625,
+            "y": 236.625,
             "w": 19,
             "h": 19,
             "right": 300,
-            "bottom": 244.625
+            "bottom": 255.625
           },
           "camera": {
             "x": 669,
-            "y": 213.125,
+            "y": 224.125,
             "w": 44,
             "h": 44,
             "right": 713,
-            "bottom": 257.125
+            "bottom": 268.125
           },
           "padding": "0px 5px 0px 16px"
         }
       ],
       "saved": [
         {
-          "key": "5fc9a899e7e34a44a460ec233412f920",
+          "key": "92f5322663f145ca8cb2adf512bdb990",
           "row": {
             "x": 262,
             "y": 168.125,
@@ -618,49 +656,68 @@
           "padding": "0px 5px 0px 16px"
         },
         {
-          "key": "bc6d06e63a304fef9c8381a528f1313d",
+          "key": "faaca9827799483f93f640be0bc7d50a",
           "row": {
             "x": 262,
             "y": 213.125,
             "w": 500,
-            "h": 45,
+            "h": 89,
             "right": 762,
-            "bottom": 258.125
+            "bottom": 302.125
           },
           "handle": {
             "x": 713,
-            "y": 213.125,
+            "y": 235.125,
             "w": 44,
             "h": 44,
             "right": 757,
-            "bottom": 257.125
+            "bottom": 279.125
           },
           "check": {
             "x": 281,
-            "y": 225.625,
+            "y": 247.625,
             "w": 19,
             "h": 19,
             "right": 300,
-            "bottom": 244.625
+            "bottom": 266.625
           },
           "camera": {
             "x": 669,
-            "y": 213.125,
+            "y": 235.125,
             "w": 44,
             "h": 44,
             "right": 713,
-            "bottom": 257.125
+            "bottom": 279.125
           },
           "padding": "0px 5px 0px 16px"
         }
       ],
       "wrapped": {
-        "height": 88.53125,
+        "height": 176,
+        "editorHeight": 173,
+        "contentHeight": 173,
+        "horizontalOverflow": false,
         "cameraWithin": true,
+        "centersAligned": true,
         "padding": "0px 5px 0px 16px"
       },
+      "footer": {
+        "bottomPadding": 20,
+        "documentWidth": 1024,
+        "viewport": 1024
+      },
+      "longFooter": {
+        "top": 737.3125,
+        "bottom": 798.5,
+        "viewport": 844,
+        "padding": 20
+      },
+      "cachedOpenAdditionalDownloads": 0,
+      "lightboxTapBackEscape": true,
+      "wrappedTextCaretSaveCancel": true,
       "cameraKeyboardNoReorder": true,
       "handleKeyboardReorder": true,
+      "handlePointerReorder": true,
       "removeWhileUploadsPaused": true,
       "reattachAfterRemoval": true,
       "confirmedTextDeleteCleanup": true

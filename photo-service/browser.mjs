@@ -6,7 +6,8 @@ import { pathToFileURL } from "node:url";
 import { fixture } from "../photo-lab/beta/test-support.ts";
 const { chromium } = await import(pathToFileURL(process.argv[2]));
 const f = await fixture();
-let now = Date.now();
+let now = Date.now(),
+  photoReads = 0;
 Object.defineProperty(f.engine, "now", { value: () => now });
 f.ledger.value.control = {
   enabled: true,
@@ -16,6 +17,10 @@ f.ledger.value.control = {
 };
 const server = createServer(async (req, res) => {
   try {
+    if (
+      new URL(req.url, "http://127.0.0.1").searchParams.get("action") === "get"
+    )
+      photoReads++;
     const response = await f.handler(
       new Request("http://127.0.0.1" + req.url, {
         method: req.method,
@@ -143,7 +148,8 @@ try {
       .waitFor();
     const after = await geometry();
     for (let i = 0; i < before.length; i++) {
-      assert.equal(after[i].row.h, before[i].row.h);
+      if (i === 0) assert.equal(after[i].row.h, before[i].row.h);
+      else assert(after[i].row.h >= before[i].row.h);
       assert.equal(after[i].padding, before[i].padding);
       assert.equal(after[i].check.x, before[i].check.x);
       assert.equal(after[i].handle.right, before[i].handle.right);
@@ -208,11 +214,73 @@ try {
       (first) => document.querySelector(".item").dataset.key !== first,
       keys[0],
     );
+    // Pointer dragging still starts only from the dedicated grab handle.
+    const dragHandle = page.locator(
+      `.item[data-key="${keys[0]}"] .drag-handle`,
+    );
+    const from = await dragHandle.boundingBox();
+    const target = await page
+      .locator(`.item[data-key="${keys[1]}"]`)
+      .boundingBox();
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(from.x + from.width / 2, target.y + 8, { steps: 12 });
+    await page.waitForTimeout(180);
+    await page.mouse.up();
+    await page.waitForFunction(
+      (first) => document.querySelector(".item").dataset.key === first,
+      keys[0],
+    );
+    const cachedReads = photoReads;
     await page
-      .getByRole("button", { name: "Expand item photo", exact: true })
+      .getByRole("button", { name: "Change photo", exact: true })
       .click();
     await page.getByRole("dialog").waitFor();
+    assert.equal(await page.locator(".photo-dialog h2").isVisible(), false);
+    await page
+      .getByRole("button", { name: "Expand photo", exact: true })
+      .click();
+    await page.locator(".photo-lightbox").waitFor();
+    await page.screenshot({
+      path: new URL(`lightbox-${width}.png`, out).pathname,
+    });
+    await page.locator(".photo-preview").click();
+    await page.waitForFunction(
+      () => !document.querySelector(".photo-lightbox"),
+    );
+    await page
+      .getByRole("button", { name: "Expand photo", exact: true })
+      .click();
+    await page.goBack();
+    await page.waitForFunction(
+      () => !document.querySelector(".photo-lightbox"),
+    );
+    await page
+      .getByRole("button", { name: "Expand photo", exact: true })
+      .click();
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(
+      () => !document.querySelector(".photo-lightbox"),
+    );
+    await page.screenshot({
+      path: new URL(`management-${width}.png`, out).pathname,
+    });
     await page.getByRole("button", { name: "Close", exact: true }).click();
+    assert.equal(
+      photoReads,
+      cachedReads,
+      "opening cached management/lightbox does not download again",
+    );
+    await page
+      .getByRole("button", { name: "Change photo", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Expand photo", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Close photo", exact: true })
+      .click();
+    await page.locator(".photo-dialog").waitFor({ state: "detached" });
     const item = page.locator(`.item[data-key="${keys[0]}"]`);
     f.ledger.value.control.enabled = false;
     await item
@@ -256,28 +324,97 @@ try {
       () => !document.querySelector(".photo-cleanup")?.textContent,
     );
     assert.equal(f.paths.size, beforeDelete - 1);
-    // Layout robustness for a tall/wrapped editor: does not force row height or overlap controls.
+    const longText = "Wrapped synthetic item " + "longword".repeat(24);
+    const field = item.locator("textarea.name");
+    await field.fill(longText);
+    await field.press("End");
+    const caret = await field.evaluate((e) => ({
+      start: e.selectionStart,
+      end: e.selectionEnd,
+    }));
+    await page.waitForTimeout(400);
+    assert.deepEqual(
+      await field.evaluate((e) => ({
+        start: e.selectionStart,
+        end: e.selectionEnd,
+      })),
+      caret,
+    );
+    await field.press("Enter");
+    await field.fill("cancel this edit");
+    await field.press("Escape");
+    assert.equal(await field.inputValue(), longText);
     const wrapped = await item.evaluate((row) => {
-      const field = row.querySelector(".name");
-      const text = document.createElement("div");
-      text.className = "name";
-      text.textContent =
-        "Wrapped synthetic item\nwith multiple lines and additional words";
-      text.style.whiteSpace = "pre-wrap";
-      field.replaceWith(text);
+      const field = row.querySelector("textarea.name");
       const r = row.getBoundingClientRect(),
-        c = row.querySelector(".photo-manage").getBoundingClientRect();
+        c = row.querySelector(".photo-manage").getBoundingClientRect(),
+        h = row.querySelector(".drag-handle").getBoundingClientRect();
       return {
         height: r.height,
+        editorHeight: field.clientHeight,
+        contentHeight: field.scrollHeight,
+        horizontalOverflow: field.scrollWidth > field.clientWidth,
         cameraWithin: c.top >= r.top && c.bottom <= r.bottom,
+        centersAligned:
+          Math.abs(c.top + c.height / 2 - (h.top + h.height / 2)) < 1,
         padding: getComputedStyle(row).padding,
       };
     });
-    assert(wrapped.cameraWithin);
-    assert.equal(wrapped.padding, before[0].padding);
+    assert(wrapped.height > before[0].row.h);
+    assert(
+      wrapped.cameraWithin &&
+        wrapped.centersAligned &&
+        !wrapped.horizontalOverflow,
+    );
+    assert(wrapped.contentHeight <= wrapped.editorHeight + 1);
     await page.screenshot({
       path: new URL(`rows-${width}-wrapped.png`, out).pathname,
       fullPage: true,
+    });
+    const footer = await page.locator(".bottom").evaluate((e) => ({
+      bottomPadding: parseFloat(getComputedStyle(e).paddingBottom),
+      documentWidth: document.documentElement.scrollWidth,
+      viewport: innerWidth,
+    }));
+    assert(
+      footer.bottomPadding >= 20 && footer.documentWidth <= footer.viewport,
+    );
+    // Keyboard-sized viewport and a long list remain scrollable to the footer.
+    await page.setViewportSize({ width, height: 380 });
+    await field.focus();
+    await page.screenshot({
+      path: new URL(`keyboard-${width}.png`, out).pathname,
+    });
+    await field.press("Tab");
+    await page.locator(".bottom").scrollIntoViewIfNeeded();
+    assert(await page.locator(".about-link").isVisible());
+    await page.screenshot({
+      path: new URL(`footer-${width}.png`, out).pathname,
+    });
+    await page.setViewportSize({ width, height: 844 });
+    for (let n = 0; n < 14; n++) {
+      await page
+        .getByRole("textbox", { name: "New item", exact: true })
+        .fill(`Synthetic list item ${n}`);
+      await page.getByRole("button", { name: "add", exact: true }).click();
+    }
+    await page.locator(".bottom").scrollIntoViewIfNeeded();
+    const longFooter = await page.locator(".bottom").evaluate((e) => {
+      const r = e.getBoundingClientRect();
+      return {
+        top: r.top,
+        bottom: r.bottom,
+        viewport: innerHeight,
+        padding: parseFloat(getComputedStyle(e).paddingBottom),
+      };
+    });
+    assert(
+      longFooter.top >= 0 &&
+        longFooter.bottom <= longFooter.viewport &&
+        longFooter.padding >= 20,
+    );
+    await page.screenshot({
+      path: new URL(`long-footer-${width}.png`, out).pathname,
     });
     assert.deepEqual(errors, []);
     results.layouts.push({
@@ -286,8 +423,14 @@ try {
       after,
       saved,
       wrapped,
+      footer,
+      longFooter,
+      cachedOpenAdditionalDownloads: 0, // Asserted above before new rows load.
+      lightboxTapBackEscape: true,
+      wrappedTextCaretSaveCancel: true,
       cameraKeyboardNoReorder: true,
       handleKeyboardReorder: true,
+      handlePointerReorder: true,
       removeWhileUploadsPaused: true,
       reattachAfterRemoval: true,
       confirmedTextDeleteCleanup: true,
