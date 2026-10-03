@@ -1,0 +1,58 @@
+TAP version 13
+# Subtest: authorization failure or error never creates an admin client
+ok 1 - authorization failure or error never creates an admin client
+  ---
+  duration_ms: 9.488208
+  type: 'test'
+  ...
+# Subtest: deadline and method fail before SQL access
+ok 2 - deadline and method fail before SQL access
+  ---
+  duration_ms: 0.261833
+  type: 'test'
+  ...
+# Subtest: only named synthetic cases, no IDs, lists, paths, booleans or reset
+ok 3 - only named synthetic cases, no IDs, lists, paths, booleans or reset
+  ---
+  duration_ms: 1.484958
+  type: 'test'
+  ...
+# Subtest: body byte limit, content type, encoding and dishonest length
+ok 4 - body byte limit, content type, encoding and dishonest length
+  ---
+  duration_ms: 0.332708
+  type: 'test'
+  ...
+# Subtest: stalled body is canceled and cannot start SQL
+ok 5 - stalled body is canceled and cannot start SQL
+  ---
+  duration_ms: 1002.352833
+  type: 'test'
+  ...
+# Subtest: status works with no-store and simulated phase label
+ok 6 - status works with no-store and simulated phase label
+  ---
+  duration_ms: 1.331375
+  type: 'test'
+  ...
+# Subtest: SQL/SDK failures are sanitized, not echoed
+ok 7 - SQL/SDK failures are sanitized, not echoed
+  ---
+  duration_ms: 0.566125
+  type: 'test'
+  ...
+# Subtest: a client that ignores abort cannot hang or trigger an unsafe refund
+ok 8 - a client that ignores abort cannot hang or trigger an unsafe refund
+  ---
+  duration_ms: 27.447375
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1118.044292

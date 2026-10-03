@@ -1,0 +1,17 @@
+{
+  "name": "qlist-photo-storage-trial",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.21.0 <25"
+  },
+  "scripts": {
+    "test": "node --test handler.test.ts"
+  },
+  "dependencies": {
+    "@supabase/server": "1.9.0",
+    "@supabase/supabase-js": "2.117.2",
+    "@supabase/middleware": "1.0.0",
+    "jose": "6.2.12"
+  }
+}

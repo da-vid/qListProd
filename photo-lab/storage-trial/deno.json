@@ -1,0 +1,10 @@
+{
+  "imports": {
+    "@supabase/server/core": "npm:@supabase/server@1.9.0/core",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.117.2",
+    "@supabase/middleware": "npm:@supabase/middleware@1.0.0",
+    "jose": "npm:jose@6.2.12"
+  },
+  "nodeModulesDir": "none",
+  "lock": "deno.lock"
+}

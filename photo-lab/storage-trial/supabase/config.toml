@@ -1,0 +1,3 @@
+# Review-only configuration. No project link or environment values.
+[functions.qlist-photo-storage-trial]
+verify_jwt = true
