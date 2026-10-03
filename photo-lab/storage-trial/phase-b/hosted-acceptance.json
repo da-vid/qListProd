@@ -1,0 +1,90 @@
+{
+  "status": "hosted_synthetic_continuation_accepted",
+  "verified_at_utc": "2026-10-03T03:14:42Z",
+  "evidence": {
+    "library_file_id": "libfile_9fb125212c708191a16146fd3425793c",
+    "version": 1,
+    "file_name": "qList-phase-b-continuation-evidence.json",
+    "bytes": 35978,
+    "sha256": "d55ca3b06fd186603cece7464a7e3d4b712899f22266bc32db5c366afdd1439d",
+    "materialized_and_locally_checked": true,
+    "independent_hosted_recheck_by_this_task": false
+  },
+  "reviewed_source_commit": "977a803010ae8426aecc33b9ca0f2e36544d158b",
+  "project": "qmpdinzendwpkqhtqskz",
+  "function": {
+    "name": "qlist-photo-storage-trial",
+    "version": 3,
+    "verify_jwt": true,
+    "auth_unchanged": true,
+    "rpc_body_md5": "2eb833ea1dd34a573870a3fc00c54cb6",
+    "deployed_bundle_sha256": "20053588bd62fab641fb4e5d4cb95e37e330465fb1138c0d45f91fa4e9ba9a46"
+  },
+  "final_counters": {
+    "operation_count": 9,
+    "item_count": 6,
+    "read_count": 6,
+    "read_bytes": 2359296,
+    "used_bytes": 0,
+    "reserved_bytes": 0,
+    "photo_count": 0,
+    "pending_count": 0,
+    "batch_state": "blocked",
+    "continuation_state": "complete",
+    "expires_at": "2026-10-04T00:00:00+00:00",
+    "cap_bytes": 10485760
+  },
+  "passed_scenarios": [
+    {
+      "scenario": "partial_upload",
+      "reservation_retained_until_cleanup": true
+    },
+    {
+      "scenario": "deletion_during_upload",
+      "unacknowledged_writer_cleanup_denied": true,
+      "late_thumbnail_denied": true,
+      "physical_server_overlap_measured": false
+    },
+    {
+      "scenario": "noise_rejection",
+      "before_write_claim": true
+    },
+    {
+      "scenario": "oversize_rejection",
+      "before_decoder": true,
+      "before_write_claim": true
+    }
+  ],
+  "history_receipts_comparison": "All fields captured in prior evidence for four physical objects and two physical operations independently compared locally and unchanged",
+  "storage_api_inventory": {
+    "dashboard": "Bucket contents loaded; No files available for selection",
+    "url": "https://supabase.com/dashboard/project/qmpdinzendwpkqhtqskz/storage/files/buckets/qlist-photo-trial-v1",
+    "storage_api_list": {
+      "timestamp": "2026-10-03T03:13:53.684000Z",
+      "http_status": 200,
+      "response_bytes": 2
+    }
+  },
+  "runtime": {
+    "wall_ms": 10386,
+    "cpu_ms": 754,
+    "boot_ms": 54,
+    "shutdown_reason": "EarlyDrop",
+    "reported_memory_bytes": {
+      "heap": 14882488,
+      "external": 3040740,
+      "total": 17923228
+    },
+    "peak_memory_proven": false
+  },
+  "limitations": [
+    "Physical server overlap not measured; deletion-before-acknowledgment fence passed",
+    "Storage API receipts and inventory are not direct provider physical inventory or billing proof",
+    "Reported memory is not proven peak",
+    "No new unauthenticated negative POST was executed; authentication source and JWT configuration unchanged and verified",
+    "No production rollout or real-photo enablement"
+  ],
+  "production_enabled": false,
+  "new_changes_in_acceptance_task": "Local documentation and evidence summary only; no deployment, invocation, auth, key, data, billing or expiry changes",
+  "next_plan": "docs/photo-selected-list-beta-plan.md"
+}

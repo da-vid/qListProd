@@ -1,5 +1,8 @@
 # qList photo trial — Phase A review bundle
 
+**Current status — October 3, 2026:** the isolated hosted synthetic continuation passed all four remaining cases, with zero residual charges/objects. The browser UI is still a local mock; production photos are disabled. See [the current selected-list beta plan](../../docs/photo-selected-list-beta-plan.md) and its linked acceptance evidence. Material below describes earlier stages and must not be treated as pending setup, permission to rerun a trial, or permission to enable public photos. Existing expiry is unchanged.
+
+
 Update: the parent subsequently applied and verified Phase A SQL, without deploying its Edge harness or creating storage. See [Phase B](phase-b/README.md) for that evidence and the next review-only work. The original preparation report follows.
 
 **Prepared for parent review; nothing in this bundle has been applied remotely.** Target only the dedicated Supabase Free project `qmpdinzendwpkqhtqskz` (`qlist-photos`, us-west-2). Keep live qList photos off. No Netlify/Firebase changes, production lists/photos, new keys, paid services, public URLs, bucket, cron or real object writes.

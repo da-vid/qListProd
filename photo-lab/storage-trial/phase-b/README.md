@@ -1,4 +1,16 @@
-# qList private photo trial — bounded continuation review
+# qList private photo trial — hosted continuation accepted
+
+**Hosted acceptance passed on October 3, 2026. Do not apply/deploy/rerun the completed continuation.** Parent supplied the actual user-Send response, ledger, logs and empty Storage API inventory. This follow-up only verifies that evidence and updates local documentation; no hosted changes or Library replacement.
+
+All four scenarios passed. Final state: **9 historical operations, 6 items, 6 reads / 2,359,296 accounted read bytes; zero used/reserved bytes and zero current/pending photos**. Original batch remains blocked, separate continuation complete; prior physical history/receipts are unchanged. The existing `2026-10-04T00:00:00Z` expiry remains.
+
+Observed runtime: **754 ms CPU, 10,386 ms wall, 54 ms boot**, shutdown `EarlyDrop`; **17,923,228 bytes reported memory is a snapshot, not a proven peak**. No measured physical-server overlap or new unauthenticated negative POST is claimed. Production photos remain disabled.
+
+See [hosted-acceptance.json](hosted-acceptance.json) for checked evidence and [the selected-list beta plan](../../../docs/photo-selected-list-beta-plan.md) for actual remaining work and approval decisions. Evidence: Library `libfile_9fb125212c708191a16146fd3425793c` v1, 35,978 bytes, SHA-256 `d55ca3b06fd186603cece7464a7e3d4b712899f22266bc32db5c366afdd1439d`. Exact bytes, runtime source hashes, counters, scenario receipts and prior physical evidence were verified locally. No independent live-host recheck was made by this follow-up.
+
+The existing Library review bundle remains version 3, representing the source that was accepted. The preparation and one-send instructions below are retained historical review context, **not outstanding actions**.
+
+---
 
 Prepared locally for parent review. No hosted SQL, deploy, invocation, Storage, Netlify, Firebase, key, account or billing changes were made by this task. Production photos remain off. Target remains the existing Supabase Free project `qmpdinzendwpkqhtqskz`, function `qlist-photo-storage-trial`, private bucket `qlist-photo-trial-v1`. Preserve the separate benchmark function.
 

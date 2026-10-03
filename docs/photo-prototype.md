@@ -1,5 +1,8 @@
 # qList photo prototype — local review
 
+**Current status — October 3, 2026:** the isolated hosted synthetic continuation passed all four remaining cases, with zero residual charges/objects. The browser UI is still a local mock; production photos are disabled. See [the current selected-list beta plan](photo-selected-list-beta-plan.md) and its linked acceptance evidence. Material below describes earlier stages and must not be treated as pending setup, permission to rerun a trial, or permission to enable public photos. Existing expiry is unchanged.
+
+
 This records the first local stage. See [the current storage-trial plan](photo-storage-trial-plan.md) for verified hosted v4 evidence and subsequent local safeguards.
 
 Worktree: `qList-photo-prototype`; branch: `codex/photo-prototype`; base: `c7b163aacbf71422ac5774703072c6141b8101d4`.

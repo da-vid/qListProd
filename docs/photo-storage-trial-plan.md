@@ -1,5 +1,8 @@
 # Next photo stage: local safeguards and minimal hosted trial
 
+**Current status — October 3, 2026:** the isolated hosted synthetic continuation passed all four remaining cases, with zero residual charges/objects. The browser UI is still a local mock; production photos are disabled. See [the current selected-list beta plan](photo-selected-list-beta-plan.md) and its linked acceptance evidence. Material below describes earlier stages and must not be treated as pending setup, permission to rerun a trial, or permission to enable public photos. Existing expiry is unchanged.
+
+
 Phase A is now implemented and locally tested for review in [the trial bundle](../photo-lab/storage-trial/README.md). Its exact migration, harness, rollback and new test evidence supersede the proposed Phase A details below. The parent has since applied and verified Phase A SQL. [Phase B](../photo-lab/storage-trial/phase-b/README.md) is prepared locally for review; no Phase B changes have been applied remotely.
 
 Target only: Supabase Free project `qmpdinzendwpkqhtqskz` (`qlist-photos`). This plan does not apply schema changes, create a bucket or deploy a function. Live qList photos remain off. No new credentials, paid services, Firebase/Netlify photo work or relaxed authentication are proposed.
