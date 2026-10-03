@@ -1,0 +1,37 @@
+{
+  "scope": "Independent local review of exact cleanup-only overlay; no remote changes or invocation",
+  "overlay_library_id": "libfile_d6fc9500a758819188de1eba3a985596",
+  "overlay_version": 0,
+  "overlay_bytes": 14209,
+  "overlay_sha256": "942c4b3e3a80a0ef3686ac7f9e98a402d20ae2ff2d18b8de69e2509e3bcd7225",
+  "runtime_files_match_reviewed_overlay": true,
+  "runtime_sha256": {
+    "sdk.ts": "470b264b83211e8a7e367f75b0d0dc366cc17ddeecab7fa161ed4f550d13b5d5",
+    "engine.ts": "28c453899addea71420dc285de91e300c4d3dcfacbe9c1f476d9937d89c030a8",
+    "handler.ts": "110d50ed2fed40b7e4248a142e94295e899fcb34a4a6de8d1c484f450a2240ca"
+  },
+  "checks": {
+    "postgres_integration_tests": 21,
+    "http_sdk_tests": 14,
+    "safeupdate_source_tests": 4,
+    "jpeg_boundary_tests": 9,
+    "deno_frozen_lock": "passed (2.9.7)",
+    "node": "24.21.0"
+  },
+  "review_findings": [
+    "Only two fixed operations with expected fixtures/item/committed versions and settled writer states pass preflight.",
+    "Version-2 SQL removal fences current before Storage deletion; concurrent loser rejects before further deletion.",
+    "Blocked batch prevents new admissions/writer claims; every cleanup rechecks current and unsettled-writer fences transactionally.",
+    "Partial failure preserves remaining exact charge; repeated cleanup and lost acknowledgements cannot double-refund.",
+    "No new setup/upload/download/read-claim/reset occurs in the cleanup command.",
+    "Success returns cleanup_complete=true, trial_complete=false; unexecuted hosted cases remain explicitly untested."
+  ],
+  "blocking_concerns": [],
+  "limitations": [
+    "Parent-reported hosted state has not been independently reread by this task.",
+    "Actual hosted cleanup overlay remains undeployed/uninvoked by this task.",
+    "Postgres local/connector sessions do not exercise authenticator safeupdate preload; exact WHERE fix unchanged."
+  ],
+  "sql_changed": false,
+  "auth_or_expiry_changed": false
+}

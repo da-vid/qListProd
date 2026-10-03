@@ -629,6 +629,158 @@ try {
     },
     false,
   );
+  async function blockedHostedShape({ trial, store, budget }) {
+    const exists = store.exists;
+    store.exists = async (key) => {
+      if (key.includes("phaseb-batch-base"))
+        throw Error("object_absence_unverified");
+      return exists(key);
+    };
+    await assert.rejects(() => trial.run(), /object_absence_unverified/);
+    store.exists = exists;
+    const q = await budget();
+    assert.equal(q.batch_state, "blocked");
+    assert.equal(q.used_bytes, 37660);
+    assert.equal(q.reserved_bytes, 0);
+    assert.equal(q.read_bytes, 1572864);
+    assert.equal(q.read_count, 4);
+    assert.equal(q.operation_count, 5);
+    assert.equal(store.files.size, 2);
+    store.setup = async () => {
+      throw Error("cleanup_must_not_setup");
+    };
+    store.put = async () => {
+      throw Error("cleanup_must_not_upload");
+    };
+    store.read = async () => {
+      throw Error("cleanup_must_not_download");
+    };
+  }
+  await test("exact hosted-shape cleanup fences version 2, refunds only verified deletion, and repeats without Storage writes", async (ctx) => {
+    await blockedHostedShape(ctx);
+    const { trial, store, budget } = ctx;
+    const result = await trial.finishCleanup();
+    assert.equal(result.cleanup_complete, true);
+    assert.equal(result.trial_complete, false);
+    assert.deepEqual(result.untested, [
+      "partial_upload",
+      "deletion_during_upload",
+      "noise_rejection",
+    ]);
+    const q = await budget();
+    assert.equal(q.batch_state, "blocked");
+    assert.equal(q.used_bytes, 0);
+    assert.equal(q.reserved_bytes, 0);
+    assert.equal(q.photo_count, 0);
+    assert.equal(q.operation_count, 5);
+    assert.equal(q.read_bytes, 1572864);
+    assert.equal(store.files.size, 0);
+    const deletes = store.deletes;
+    assert.equal((await trial.finishCleanup()).cleanup_complete, true);
+    assert.equal(store.deletes, deletes);
+  });
+  await test("cleanup failure on replacement leaves its exact charge and safely re-enters from cleanup phase", async (ctx) => {
+    await blockedHostedShape(ctx);
+    const { trial, store, budget } = ctx;
+    store.beforeRemove = async (keys) => {
+      if (keys.some((k) => k.includes("phaseb-batch-replacement")))
+        throw Error("second_pair_delete_failed");
+    };
+    await assert.rejects(
+      () => trial.finishCleanup(),
+      /second_pair_delete_failed/,
+    );
+    const q = await budget();
+    assert.equal(q.used_bytes, 16448);
+    assert.equal(q.photo_count, 0);
+    assert.equal(store.files.size, 2);
+    store.beforeRemove = undefined;
+    assert.equal((await trial.finishCleanup()).cleanup_complete, true);
+    assert.equal((await budget()).used_bytes, 0);
+    assert.equal(store.files.size, 0);
+  });
+  await test("two cleanup callers racing the same current version yield one safe completion and a fenced loser", async (ctx) => {
+    await blockedHostedShape(ctx);
+    const { trial, rpc, store, budget } = ctx;
+    let arrivals = 0,
+      release;
+    const barrier = new Promise((r) => (release = r));
+    const raced = async (a, p, s) => {
+      if (a === "remove") {
+        arrivals++;
+        if (arrivals === 2) release();
+        await barrier;
+      }
+      return rpc(a, p, s);
+    };
+    trial.rpc = raced;
+    const other = new PhysicalTrial(
+      raced,
+      store,
+      processor,
+      fixtures,
+      AbortSignal.timeout(30000),
+      1000,
+    );
+    const done = await Promise.allSettled([
+      trial.finishCleanup(),
+      other.finishCleanup(),
+    ]);
+    assert.equal(done.filter((x) => x.status === "fulfilled").length, 1);
+    assert(
+      done.some(
+        (x) =>
+          x.status === "rejected" &&
+          String(x.reason).includes("version_conflict"),
+      ),
+    );
+    assert.equal((await budget()).used_bytes, 0);
+    assert.equal(store.files.size, 0);
+    assert.equal((await budget()).read_count, 4);
+  });
+  await test("current-version drift after preflight is rejected by SQL before any new deletion", async (ctx) => {
+    await blockedHostedShape(ctx);
+    const { trial, rpc, db, store, budget } = ctx;
+    const deletes = store.deletes;
+    trial.rpc = async (a, p, s) => {
+      if (a === "remove")
+        await sql(
+          "update qlist_photo_trial.items set version=3 where item_id='trial-physical-replace';",
+          db,
+        );
+      return rpc(a, p, s);
+    };
+    await assert.rejects(() => trial.finishCleanup(), /version_conflict/);
+    assert.equal(store.deletes, deletes);
+    assert.equal(store.files.size, 2);
+    assert.equal((await budget()).used_bytes, 37660);
+  });
+  await test("lost cleanup acknowledgement response does not double refund on re-entry", async (ctx) => {
+    await blockedHostedShape(ctx);
+    const { trial, rpc, store, budget } = ctx;
+    let lose = true;
+    trial.rpc = async (a, p, s) => {
+      const r = await rpc(a, p, s);
+      if (
+        a === "cleanup_ack" &&
+        p.operation_id === "phaseb-batch-base" &&
+        lose
+      ) {
+        lose = false;
+        throw Error("cleanup_ack_response_lost");
+      }
+      return r;
+    };
+    await assert.rejects(
+      () => trial.finishCleanup(),
+      /cleanup_ack_response_lost/,
+    );
+    assert.equal((await budget()).used_bytes, 16448);
+    assert.equal(store.files.size, 2);
+    assert.equal((await trial.finishCleanup()).cleanup_complete, true);
+    assert.equal((await budget()).used_bytes, 0);
+    assert.equal(store.files.size, 0);
+  });
   results.passed = true;
 } finally {
   await writeFile(

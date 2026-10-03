@@ -1,0 +1,40 @@
+{
+  "scope": "Review-only cleanup overlay; not deployed or invoked",
+  "runtime_changes": [
+    "exact NoSuchKey semantic404 over legacy transport400 compatibility",
+    "fixed two-operation cleanup-only command with current version2 transactional fence"
+  ],
+  "no_changes": [
+    "credentials",
+    "auth gate",
+    "JWT setting",
+    "caps",
+    "history",
+    "expiry",
+    "SQL",
+    "batch ownership/state"
+  ],
+  "tests": {
+    "http_sdk_recovery": 14,
+    "node": "24.19.0",
+    "full_postgres_suite": "Not rerun in this environment",
+    "deno_check": "Not rerun in this environment"
+  },
+  "hosted_state_at_review": {
+    "batch": "blocked",
+    "used_bytes": 37660,
+    "reserved_bytes": 0,
+    "read_bytes": 1572864,
+    "read_count": 4,
+    "physical_operations": 2,
+    "remaining_metadata_objects": 2,
+    "bucket_private": true,
+    "cpu_ms": 660,
+    "request_ms": 11165,
+    "shutdown": "EarlyDrop"
+  },
+  "observed_failure": "DELETE200 followed by object-info GET400; original adapter required transport404",
+  "compatibility_source": "https://raw.githubusercontent.com/supabase/storage/master/src/internal/errors/storage-error.ts",
+  "manual_action_after_approval": "One POST {\"command\":\"cleanup\"} by the user using existing default key. Permanently removes only synthetic objects and verifies absence before refund. Do not rerun/reset the original batch.",
+  "result_claim": "cleanup_complete true, trial_complete false; partial/deletion/noise scenarios remain untested in hosted storage"
+}

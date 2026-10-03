@@ -2,25 +2,25 @@ TAP version 13
 # Subtest: all canonical migration and rollback budget updates have the reviewed explicit scope predicate
 ok 1 - all canonical migration and rollback budget updates have the reviewed explicit scope predicate
   ---
-  duration_ms: 0.664334
+  duration_ms: 1.062
   type: 'test'
   ...
 # Subtest: removing the WHERE clause from any canonical budget update is caught
 ok 2 - removing the WHERE clause from any canonical budget update is caught
   ---
-  duration_ms: 0.140417
+  duration_ms: 0.170042
   type: 'test'
   ...
 # Subtest: comments, string literals, unrelated WHERE clauses and broadened scopes cannot satisfy the guard
 ok 3 - comments, string literals, unrelated WHERE clauses and broadened scopes cannot satisfy the guard
   ---
-  duration_ms: 0.049542
+  duration_ms: 0.064917
   type: 'test'
   ...
 # Subtest: canonical runtime bodies exactly match the reviewed hosted fix and supplied source hashes
 ok 4 - canonical runtime bodies exactly match the reviewed hosted fix and supplied source hashes
   ---
-  duration_ms: 1.51175
+  duration_ms: 2.177125
   type: 'test'
   ...
 1..4
@@ -31,4 +31,4 @@ ok 4 - canonical runtime bodies exactly match the reviewed hosted fix and suppli
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 64.152792
+# duration_ms 69.789875

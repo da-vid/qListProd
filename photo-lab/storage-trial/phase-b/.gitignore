@@ -8,3 +8,5 @@ validation.json
 stop-deploy-payload.json
 
 safeupdate-transfer/
+
+cleanup-transfer/

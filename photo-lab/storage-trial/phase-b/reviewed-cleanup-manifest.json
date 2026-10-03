@@ -1,0 +1,9 @@
+{
+  "photo-lab/storage-trial/phase-b/sdk.ts": "470b264b83211e8a7e367f75b0d0dc366cc17ddeecab7fa161ed4f550d13b5d5",
+  "photo-lab/storage-trial/phase-b/engine.ts": "28c453899addea71420dc285de91e300c4d3dcfacbe9c1f476d9937d89c030a8",
+  "photo-lab/storage-trial/phase-b/handler.ts": "110d50ed2fed40b7e4248a142e94295e899fcb34a4a6de8d1c484f450a2240ca",
+  "photo-lab/storage-trial/phase-b/cleanup.test.ts": "fbac2c3cd2a05bfdf52c48bd3b7d5b6341da5e4d57f3966b5dfdd968a7cdb0b2",
+  "cleanup.patch": "9d04f89f529baf90304343dd8ee3c7ccc6e9976ec0bebdbe65456bc50b36cd85",
+  "cleanup-tests.tap": "c6ef453cf74a7cd403a89423413f7f8a18df14086e11f139d9d2579d52ae1618",
+  "cleanup-review.json": "693c0066c4d9b4ed681ec48e0bbb9de075939584814b2fa3c9a0dcaccc4dc1be"
+}

@@ -2,55 +2,55 @@ TAP version 13
 # Subtest: small codec reencodes bounded pixels and strips every metadata marker
 ok 1 - small codec reencodes bounded pixels and strips every metadata marker
   ---
-  duration_ms: 52.403917
+  duration_ms: 55.292375
   type: 'test'
   ...
 # Subtest: small codec rejects truncated entropy and recovers on the next valid decode
 ok 2 - small codec rejects truncated entropy and recovers on the next valid decode
   ---
-  duration_ms: 42.63275
+  duration_ms: 46.133875
   type: 'test'
   ...
 # Subtest: small codec rejects bad format, length, dimensions and trailing data before decode
 ok 3 - small codec rejects bad format, length, dimensions and trailing data before decode
   ---
-  duration_ms: 1.041917
+  duration_ms: 0.426334
   type: 'test'
   ...
 # Subtest: small codec rejects concurrent decoding rather than sharing mutable WASM state
 ok 4 - small codec rejects concurrent decoding rather than sharing mutable WASM state
   ---
-  duration_ms: 38.193208
+  duration_ms: 41.563625
   type: 'test'
   ...
 # Subtest: streamed JPEG boundary accepts limit-1 and limit, rejects limit+1 including understated length
 ok 5 - streamed JPEG boundary accepts limit-1 and limit, rejects limit+1 including understated length
   ---
-  duration_ms: 13.890292
+  duration_ms: 13.616625
   type: 'test'
   ...
 # Subtest: unsupported encodings, MIME spoofing, empty bodies and malformed JPEG fail closed
 ok 6 - unsupported encodings, MIME spoofing, empty bodies and malformed JPEG fail closed
   ---
-  duration_ms: 1.365833
+  duration_ms: 1.847875
   type: 'test'
   ...
 # Subtest: dimensions at the 1280 edge are allowed; larger decoded dimensions are rejected before codec
 ok 7 - dimensions at the 1280 edge are allowed; larger decoded dimensions are rejected before codec
   ---
-  duration_ms: 0.63375
+  duration_ms: 0.972125
   type: 'test'
   ...
 # Subtest: a stalled upload is cancelled at its deadline without an unbounded body read
 ok 8 - a stalled upload is cancelled at its deadline without an unbounded body read
   ---
-  duration_ms: 17.124875
+  duration_ms: 16.856334
   type: 'test'
   ...
 # Subtest: empty and excessive chunk streams terminate without waiting for the deadline
 ok 9 - empty and excessive chunk streams terminate without waiting for the deadline
   ---
-  duration_ms: 5.698375
+  duration_ms: 5.85425
   type: 'test'
   ...
 1..9
@@ -61,4 +61,4 @@ ok 9 - empty and excessive chunk streams terminate without waiting for the deadl
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 207.500917
+# duration_ms 221.193833

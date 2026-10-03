@@ -68,7 +68,15 @@ export function adapters(admin: any): { storage: Store; rpc: Rpc } {
       exists: async (path) => {
         const r = await bucket.info(key(path));
         if (!r.error) return true;
-        if (r.error.code === "NoSuchKey" && Number(r.error.status) === 404)
+        // StorageBackendError renders semantic statusCode=404 with a legacy
+        // transport status of 400. Require the exact service code as well;
+        // a generic 400/404, auth failure, or message text is never proof.
+        if (
+          r.error.code === "NoSuchKey" &&
+          (Number(r.error.status) === 404 ||
+            (Number(r.error.status) === 400 &&
+              Number(r.error.statusCode) === 404))
+        )
           return false;
         throw new Error("object_absence_unverified");
       },

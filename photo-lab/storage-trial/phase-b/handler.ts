@@ -68,7 +68,7 @@ export function createHandler(d: Dependencies) {
         !input ||
         typeof input !== "object" ||
         Object.keys(input).length !== 1 ||
-        !["run", "status", "reconcile"].includes(input.command)
+        !["run", "status", "reconcile", "cleanup"].includes(input.command)
       )
         throw new Error("invalid_command");
       const { rpc, storage } = d.connect(control.signal);
@@ -92,6 +92,8 @@ export function createHandler(d: Dependencies) {
       const work =
         input.command === "run"
           ? trial.run()
+          : input.command === "cleanup"
+            ? trial.finishCleanup()
           : input.command === "reconcile"
             ? trial.reconcile()
             : trial.status();

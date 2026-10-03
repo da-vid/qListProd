@@ -310,6 +310,55 @@ export class PhysicalTrial {
     }
     return { retained, state: await this.status() };
   }
+  async finishCleanup() {
+    const ids = ["phaseb-batch-base", "phaseb-batch-replacement"];
+    const state = await this.status();
+    demand(
+      state.budgets.length === 2 &&
+        state.budgets.every((b: any) => b.batch_state === "blocked") &&
+        state.physical_operations.length === 2 &&
+        state.physical_operations.every((o: any) => ids.includes(o.operation_id)),
+      "cleanup_scope_mismatch",
+    );
+    const states = [];
+    for (const [index, id] of ids.entries()) {
+      const s = await this.status(id);
+      demand(
+        s.operation.operation_id === id &&
+          s.operation.item_id === "trial-physical-replace" &&
+          s.operation.fixture === (index === 0 ? "gradient" : "portrait") &&
+          s.operation.was_committed &&
+          s.operation.committed_version === index + 1 &&
+          (index === 0 ? ["cleanup", "released"] : ["committed", "cleanup", "released"]).includes(s.operation.phase) &&
+          s.objects.length === 2 &&
+          s.objects.every((o: any) => ["stored", "absent"].includes(o.writer_state)),
+        "cleanup_state_mismatch",
+      );
+      for (const kind of ["full", "thumb"] as const) this.object(s, kind);
+      states.push(s);
+    }
+    // Fence only the exact known synthetic current version. No new admission,
+    // write, batch ownership, quota reset, or optimistic physical refund.
+    if (states[1].operation.phase === "committed")
+      await this.call("remove", {
+        item_id: "trial-physical-replace",
+        expected_version: 2,
+      });
+    for (const id of ids) await this.cleanup(id);
+    const final = await this.status();
+    demand(
+      final.budgets.every((b: any) =>
+        b.batch_state === "blocked" && b.used_bytes === 0 &&
+        b.reserved_bytes === 0 && b.pending_count === 0 && b.photo_count === 0),
+      "cleanup_incomplete",
+    );
+    return {
+      cleanup_complete: true,
+      trial_complete: false,
+      untested: ["partial_upload", "deletion_during_upload", "noise_rejection"],
+      state: final,
+    };
+  }
   async run() {
     await this.call("batch_claim");
     try {
