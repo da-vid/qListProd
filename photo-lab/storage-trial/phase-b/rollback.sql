@@ -2,7 +2,7 @@
 begin;
 select 1 from qlist_photo_trial.budgets where scope='global' for update;
 select 1 from qlist_photo_trial.budgets where scope='PhotoDemo' for update;
-update qlist_photo_trial.budgets set stopped=true,batch_state='blocked';
+update qlist_photo_trial.budgets set stopped=true,batch_state='blocked' where scope in ('global','PhotoDemo');
 update qlist_photo_trial.operations set phase='cleanup' where mode='physical' and phase in ('reserved','staged');
 revoke execute on function public.qlist_photo_trial_b_rpc(text,jsonb) from public,anon,authenticated,service_role;
 revoke execute on function public.qlist_photo_trial_rpc(text,jsonb) from public,anon,authenticated,service_role;

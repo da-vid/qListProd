@@ -6,3 +6,5 @@ sha256-manifest.json
 validation.json
 
 stop-deploy-payload.json
+
+safeupdate-transfer/

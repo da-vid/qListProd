@@ -1,40 +1,27 @@
--- REVIEW ONLY: extends Phase A accounting, preserving history, limits and deadline.
--- No storage schema writes, bucket, policies, credentials or production changes.
 begin;
 select 1 from qlist_photo_trial.budgets where scope='global' for update;
 select 1 from qlist_photo_trial.budgets where scope='PhotoDemo' for update;
 do $$ begin
- if exists(select 1 from pg_catalog.pg_policies where schemaname='storage' and tablename in ('objects','buckets')) then raise exception 'existing_storage_policies_require_review'; end if;
- if exists(select 1 from qlist_photo_trial.operations where phase<>'released')
- or exists(select 1 from qlist_photo_trial.items where current_operation is not null)
- or exists(select 1 from qlist_photo_trial.budgets where used_bytes<>0 or reserved_bytes<>0 or pending_count<>0)
- then raise exception 'phase_a_not_quiescent'; end if;
+ if (select md5(prosrc) from pg_proc where oid='qlist_photo_trial.reconcile()'::regprocedure)<>'7ea463831e8cb1b35c6b5d6d30ab89b4' or (select md5(prosrc) from pg_proc where oid='public.qlist_photo_trial_b_rpc(text,jsonb)'::regprocedure)<>'13ad993c418234ce73e87fba30d2b31f' then raise exception 'source_drift'; end if;
 end $$;
-alter table qlist_photo_trial.budgets
- add column batch_state text not null default 'idle' check(batch_state in ('idle','running','complete','blocked')),
- add column batch_owner uuid;
-alter table qlist_photo_trial.operations
- drop constraint operations_operation_id_check,
- add constraint operations_operation_id_check check(operation_id ~ '^(phasea|phaseb)-[a-z0-9-]{1,64}$'),
- drop constraint operations_fixture_check,
- add constraint operations_fixture_check check(fixture in ('gradient','portrait','noise')),
- add column mode text not null default 'simulated' check(mode in ('simulated','physical')),
- add column writer_owner uuid;
-alter table qlist_photo_trial.objects
- add column physical_key text generated always as
-   (case when operation_id like 'phaseb-%' then 'phase-b/PhotoDemo/'||operation_id||'/'||kind||'.jpg' end) stored unique,
- add column writer_state text not null default 'simulated'
-   check(writer_state in ('simulated','unstarted','inflight','stored','uncertain','absent')),
- add column write_nonce uuid,
- add column verified boolean not null default false,
- add column read_nonce uuid,
- add column delete_nonce uuid,
- add column delete_receipt text check(delete_receipt ~ '^[0-9a-f]{64}$'),
- add column physical_deleted_at timestamptz;
--- The simulated API must not operate on physical reservations, even after a timeout.
-revoke execute on function public.qlist_photo_trial_rpc(text,jsonb) from public,anon,authenticated,service_role;
-
-create function public.qlist_photo_trial_b_rpc(action text,payload jsonb default '{}'::jsonb)
+create or replace function qlist_photo_trial.reconcile() returns void
+language plpgsql security invoker set search_path = '' as $$
+declare u bigint; r bigint; p integer; a integer; n integer; i integer;
+begin
+ perform 1 from qlist_photo_trial.budgets where scope='global' for update;
+ perform 1 from qlist_photo_trial.budgets where scope='PhotoDemo' for update;
+ select coalesce(sum(actual_bytes) filter (where was_committed and phase <> 'released'),0),
+        coalesce(sum(reserved_bytes) filter (where not was_committed and phase <> 'released'),0),
+        count(*) filter (where not was_committed and phase <> 'released'), count(*)
+ into u,r,a,n from qlist_photo_trial.operations;
+ select count(*) into i from qlist_photo_trial.items;
+ select (select count(*) from qlist_photo_trial.items where current_operation is not null)
+        + count(*) filter (where holds_photo and not was_committed and phase <> 'released')
+ into p from qlist_photo_trial.operations;
+ update qlist_photo_trial.budgets set used_bytes=u,reserved_bytes=r,photo_count=p,
+   pending_count=a,operation_count=n,item_count=i where scope in ('global','PhotoDemo');
+end $$;
+create or replace function public.qlist_photo_trial_b_rpc(action text,payload jsonb default '{}'::jsonb)
 returns jsonb language plpgsql security invoker set search_path='' set lock_timeout='3s' as $$
 declare
  b qlist_photo_trial.budgets%rowtype;
@@ -181,7 +168,5 @@ begin
   'objects',(select coalesce(jsonb_agg(to_jsonb(t) order by kind),'[]'::jsonb) from qlist_photo_trial.objects t where operation_id=oid and physical_key is not null),
   'physical_operations',(select coalesce(jsonb_agg(jsonb_build_object('operation_id',operation_id,'phase',phase) order by operation_id),'[]'::jsonb) from qlist_photo_trial.operations where mode='physical'));
 end $$;
-revoke all on function public.qlist_photo_trial_b_rpc(text,jsonb) from public,anon,authenticated;
-grant execute on function public.qlist_photo_trial_b_rpc(text,jsonb) to service_role;
 notify pgrst,'reload schema';
 commit;

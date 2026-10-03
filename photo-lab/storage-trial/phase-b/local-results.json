@@ -4,82 +4,82 @@
     {
       "name": "full bounded batch: codec, physical file bytes, readback, replacement, deletion, partial cleanup, noise and zero residuals",
       "passed": true,
-      "ms": 704
+      "ms": 730
     },
     {
       "name": "unsettled upload: timeout then late physical completion remains fully charged, never rewritten or cleaned",
       "passed": true,
-      "ms": 1313
+      "ms": 1256
     },
     {
       "name": "upload succeeds but acknowledgement is lost: retry cannot PUT again or refund",
       "passed": true,
-      "ms": 221
+      "ms": 196
     },
     {
       "name": "cleanup failure and false absence retain charges; safe retry refunds exactly once",
       "passed": true,
-      "ms": 244
+      "ms": 230
     },
     {
       "name": "corrupt or oversized readback cannot verify/commit; read attempts stay charged",
       "passed": true,
-      "ms": 230
+      "ms": 209
     },
     {
       "name": "concurrent write claims grant exactly one writer and never renew a lost claim",
       "passed": true,
-      "ms": 194
+      "ms": 187
     },
     {
       "name": "two simultaneous byte-budget admissions, two-pending cap, and no orphan metadata",
       "passed": true,
-      "ms": 160
+      "ms": 133
     },
     {
       "name": "5 MiB read cap charges worst-case bucket bytes and rejects before GET",
       "passed": true,
-      "ms": 409
+      "ms": 308
     },
     {
       "name": "service-only invoker/RLS, disabled simulated API, rejected caller proof fields and nonce checks",
       "passed": true,
-      "ms": 172
+      "ms": 125
     },
     {
       "name": "out-of-range thumbnail plan rolls back full-object metadata atomically",
       "passed": true,
-      "ms": 134
+      "ms": 116
     },
     {
       "name": "migration refuses active Phase A work and rolls back all schema changes",
       "passed": true,
-      "ms": 159
+      "ms": 103
     },
     {
       "name": "deletion while physical upload is still running blocks cleanup until acknowledged completion",
       "passed": true,
-      "ms": 238
+      "ms": 184
     },
     {
       "name": "lost commit response replays the durable physical commit without another upload",
       "passed": true,
-      "ms": 244
+      "ms": 212
     },
     {
       "name": "100 lifetime admissions include preserved Phase A history",
       "passed": true,
-      "ms": 233
+      "ms": 220
     },
     {
       "name": "expired lease retains charges; rollback fences access without deleting physical bytes or records",
       "passed": true,
-      "ms": 231
+      "ms": 194
     },
     {
       "name": "existing storage policies require explicit review; migration never changes them",
       "passed": true,
-      "ms": 119
+      "ms": 95
     }
   ],
   "storage": "actual local files via fault-injectable adapter; not Supabase Storage",

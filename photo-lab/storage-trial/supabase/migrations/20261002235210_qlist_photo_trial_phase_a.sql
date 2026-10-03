@@ -91,7 +91,7 @@ begin
         + count(*) filter (where holds_photo and not was_committed and phase <> 'released')
  into p from qlist_photo_trial.operations;
  update qlist_photo_trial.budgets set used_bytes=u,reserved_bytes=r,photo_count=p,
-   pending_count=a,operation_count=n,item_count=i;
+   pending_count=a,operation_count=n,item_count=i where scope in ('global','PhotoDemo');
 end $$;
 revoke all on function qlist_photo_trial.reconcile() from public, anon, authenticated;
 grant execute on function qlist_photo_trial.reconcile() to service_role;
@@ -222,7 +222,7 @@ begin
    'objects',(select coalesce(jsonb_agg(to_jsonb(t) order by t.kind),'[]'::jsonb) from qlist_photo_trial.objects t where t.operation_id=oid)) into result;
  if action='status' then
    bytes_to_charge := octet_length(result::text) + 128; -- conservative allowance for the added accounting field
-   update qlist_photo_trial.budgets set read_bytes=read_bytes+bytes_to_charge,read_count=read_count+1;
+   update qlist_photo_trial.budgets set read_bytes=read_bytes+bytes_to_charge,read_count=read_count+1 where scope in ('global','PhotoDemo');
    result := result || jsonb_build_object('charged_read_bytes',bytes_to_charge);
  end if;
  return result;

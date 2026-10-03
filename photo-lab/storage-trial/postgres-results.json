@@ -4,77 +4,77 @@
     {
       "name": "private tables, invoker functions, grants, RLS and synthetic scope",
       "passed": true,
-      "seconds": 0.042
+      "seconds": 0.049
     },
     {
       "name": "two real clients race for exact last-byte capacity; loser fully rolls back",
       "passed": true,
-      "seconds": 0.184
+      "seconds": 0.178
     },
     {
       "name": "simultaneous idempotent admission, conflicting reuse, lost-commit-response replay",
       "passed": true,
-      "seconds": 0.383
+      "seconds": 0.353
     },
     {
       "name": "two-reservation limit rolls back all third-operation metadata",
       "passed": true,
-      "seconds": 0.031
+      "seconds": 0.036
     },
     {
       "name": "concurrent replacements, old-byte retention and exactly-once cleanup",
       "passed": true,
-      "seconds": 0.256
+      "seconds": 0.264
     },
     {
       "name": "delete during partial staging fences late writers and prevents resurrection",
       "passed": true,
-      "seconds": 0.056
+      "seconds": 0.06
     },
     {
       "name": "remove/re-add ABA, stale removal and old commit replay cannot resurrect photos",
       "passed": true,
-      "seconds": 0.079
+      "seconds": 0.087
     },
     {
       "name": "expiry fences without refund; cleanup releases only after simulated absence",
       "passed": true,
-      "seconds": 0.045
+      "seconds": 0.048
     },
     {
       "name": "injected stage and cleanup SQL failures leave atomic state and retained charges",
       "passed": true,
-      "seconds": 0.061
+      "seconds": 0.065
     },
     {
       "name": "20 current-or-reserved photo cap",
       "passed": true,
-      "seconds": 0.029
+      "seconds": 0.032
     },
     {
       "name": "100 lifetime operations; retries consume no additional operation",
       "passed": true,
-      "seconds": 0.067
+      "seconds": 0.07
     },
     {
       "name": "100 item/tombstone bound without deleting evidence",
       "passed": true,
-      "seconds": 0.027
+      "seconds": 0.032
     },
     {
       "name": "100 verification reads and 5 MiB logical read budget fail closed",
       "passed": true,
-      "seconds": 0.036
+      "seconds": 0.043
     },
     {
       "name": "24-hour deadline and non-destructive rollback preserve charges/evidence",
       "passed": true,
-      "seconds": 0.042
+      "seconds": 0.049
     },
     {
       "name": "five hosted harness scenarios through actual SQL clients",
       "passed": true,
-      "seconds": 0.193
+      "seconds": 0.22
     }
   ],
   "passed": true,

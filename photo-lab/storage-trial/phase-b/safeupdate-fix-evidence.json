@@ -1,0 +1,32 @@
+{
+  "project": "qmpdinzendwpkqhtqskz",
+  "applied_at_utc": "2026-10-03T01:45:00Z",
+  "change": "Four explicit WHERE scope IN (global,PhotoDemo) predicates; no other runtime changes",
+  "fix_sha256": "81ad85d37eb83b7a31d9e1624d4ed24c296651a68be3fee13dbac091c647d5b7",
+  "source_md5": {
+    "qlist_photo_trial.reconcile": "d2ae306d98126389774c8cdc7e7ac128",
+    "public.qlist_photo_trial_b_rpc": "a062f7fd5e8b1535c282e5bad0068683"
+  },
+  "rollback_branch_tests_passed": [
+    "status and inherited reconcile",
+    "batch_claim",
+    "reserve",
+    "read_claim",
+    "batch_close"
+  ],
+  "safeupdate_connector_runtime_test": "Unavailable: library load denied; no bypass attempted",
+  "hosted_postgrest_run": "Pending manual user retry",
+  "ledger_verified": {
+    "batch_state": "idle",
+    "used_bytes": 0,
+    "reserved_bytes": 0,
+    "read_bytes": 0,
+    "physical_operations": 0,
+    "buckets": 0,
+    "operation_count": 3,
+    "expires_at": "2026-10-04T00:00:00Z"
+  },
+  "safeupdate_preload_preserved": true,
+  "grants_and_rls_preserved": true,
+  "edge_function_changed": false
+}

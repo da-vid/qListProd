@@ -1,8 +1,20 @@
 # qList private photo storage trial — Phase B review
 
-**Ready for review, not applied or deployed.** Only the dedicated Supabase Free project `qmpdinzendwpkqhtqskz` (`qlist-photos`). Keep production photos off and Netlify/Firebase unchanged. No new keys, paid features, public/signed photo URLs, user photos or account/security changes.
+**Safe-update source correction, synchronized locally after the parent applied it on the hosted project.** Only the dedicated Supabase Free project `qmpdinzendwpkqhtqskz` (`qlist-photos`). Keep production photos off and Netlify/Firebase unchanged. No new keys, paid features, public/signed photo URLs, user photos or account/security changes.
 
 Parent reports Phase A's exact SQL was applied and verified privately, with RLS and no Data API schema exposure. Final state: three released operations, one empty item, six simulated-absent objects; zero used/reserved bytes and no pending/current photos. Concurrent hosted requests produced one winner and one conflict, but actual server overlap was not measured. No Edge harness or bucket was created. Evidence supplied by parent: Library `libfile_9934c0254b28819192105a06f8d5e722`, version 1, `phase-a-hosted-evidence.json`, 10,897 bytes, SHA-256 `d26c72b0acc6a9b4509560394465d40f27ab871b19abf57013c2832217e39170`. This is parent-provided evidence, not a new independent hosted check by this task.
+
+## Safe-update correction — October 3, 2026
+
+The parent reports that the first authenticated PostgREST run hit `UPDATE requires a WHERE clause`. Its initial claim rolled back before any bucket, physical object or new charge. The four runtime budget updates (inherited reconciliation plus batch claim, batch close and read charging) now explicitly use `WHERE scope IN ('global','PhotoDemo')`; the parent already applied that exact guarded replacement remotely. **Do not reapply hosted SQL, redeploy, or reset the trial for this source synchronization.** The user's retry is pending; no successful physical-storage run is claimed here.
+
+The reviewed input archive was materialized through Library and verified: `libfile_d89f53e390e48191be29ff570b2d0b79`, version 0, 5,066 bytes, ZIP SHA-256 `f6a012b89d359ee6338be35c84208f309a8f5cfd16d7b013eaa0fa344ff8f376`. The exact patch and parent evidence are retained as `reviewed-safeupdate-fix.sql` and `safeupdate-fix-evidence.json`. That patch's old-source drift guard intentionally prevents blindly reapplying it. Runtime bodies match parent-reported `pg_proc.prosrc` MD5s: reconciliation `d2ae306d98126389774c8cdc7e7ac128`; Phase B RPC `a062f7fd5e8b1535c282e5bad0068683`.
+
+Local canonical migration sources contain those same four runtime predicates. Both stop/rollback scripts and dormant Phase A read accounting also receive the identical scope predicate, for seven guarded canonical updates total. No handler, deployment configuration, schema design, limits, grants, RLS, history, expiry or object logic changed in this correction.
+
+After this correction, all 15 Phase A and 16 Phase B local PostgreSQL integration tests passed again, and both temporary clusters stopped. `safeupdate.test.ts` adds four passing source-regression checks: all seven budget updates are scoped; removing any predicate fails; comments/literals/broadened conditions cannot satisfy the check; and function bodies exactly match the reviewed patch and hashes. **This is a source check, not execution of the safe-update module.** Connector SQL sessions and the original plain PostgreSQL tests lacked the authenticator's safe-update preload. The parent's attempt to LOAD the installed module was denied; no bypass was attempted here or there. Parent-reported rollback branch tests passed after the fix, but the actual PostgREST retry remains separate acceptance evidence.
+
+The remaining preparation and acceptance plan below describes the original Phase B bundle. The parent has since applied/deployed that work; it must not be restarted merely to consume this corrected bundle.
 
 ## Review these exact changes
 
@@ -58,12 +70,13 @@ Reproduce from the extracted repository-shaped bundle (or the local checkout), w
 python3 photo-lab/storage-trial/phase-b/test-local.py /absolute/postgresql/bin /absolute/node
 npm ci --prefix photo-lab/storage-trial --ignore-scripts --no-audit --no-fund
 node --test photo-lab/storage-trial/phase-b/boundaries.test.ts
+node --test photo-lab/storage-trial/phase-b/safeupdate.test.ts
 deno check --config photo-lab/storage-trial/deno.json --frozen-lockfile photo-lab/storage-trial/phase-b/index.ts
 ```
 
 The SQL runner creates a new local cluster and fresh databases; it cannot accept a remote DSN. The bundle already includes the verified codec/fixtures. Optional standalone JPEG tests require the separately pinned photo-lab dependencies. Do not install through the root application's node_modules symlink.
 
-## Parent execution after exact review
+## Original parent acceptance sequence — do not restart for this correction
 
 1. Verify dedicated project, Free plan, existing Phase A evidence/deadline, schema not exposed, current zero pending/current/charged bytes, and no unexpected buckets/policies/objects. Stop on drift. Keep evidence; never reset counters to make the trial fit.
 2. Review/apply only the **Phase B** migration in one transaction; Phase A SQL is included solely for reproducible fresh local tests. Verify RLS/grants, old API disabled, and provider advisors. The files include explicit transaction boundaries; account for the chosen runner's transaction handling.

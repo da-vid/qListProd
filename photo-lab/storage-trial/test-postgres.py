@@ -27,7 +27,7 @@ try:
    assert p.returncode, 'Expected SQL rejection'; return p.stderr
   return p.stdout.strip()
  sql('create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;')
- migration=next((ROOT/'supabase'/'migrations').glob('*.sql')).read_text()
+ migration=(ROOT/'supabase'/'migrations'/'20261002235210_qlist_photo_trial_phase_a.sql').read_text()
  db=''
  def call(action,payload=None,ok=True):
   body=json.dumps(payload or {},separators=(',',':')).replace("'","''")
