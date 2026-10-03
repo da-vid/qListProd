@@ -1,6 +1,6 @@
 # Selected-list photo beta — next integration plan
 
-Status: design only, after hosted synthetic acceptance on October 3, 2026. No real-photo enablement, new credentials, public access, auth relaxation, production deployment or test-expiry extension is included. Keep Netlify and Firebase text infrastructure. The existing admin trial remains closed to further batches and expires October 4; it is not a browser upload API.
+Status: updated October 3, 2026 after hosted synthetic acceptance and local beta integration. See the current [disabled integration review](../photo-lab/beta/README.md); the remaining historical planning text below is not deployment authorization. No real-photo enablement, new credentials, public access, auth relaxation, production deployment or test-expiry extension is included. Keep Netlify and Firebase text infrastructure. The existing admin trial remains closed to further batches and expires October 4; it is not a browser upload API.
 
 ## What is now proved
 
@@ -21,15 +21,11 @@ The browser normalization and mock gateway subset is now complete; see [local ac
 
 Completion of this batch produces a reviewable local UI/API contract and phone compatibility report, not a beta deployment.
 
-## Access decision before a client-facing service
+## Accepted same-link access model and disabled integration
 
-Current production source (`qListProd` at `c7b163aacbf71422ac5774703072c6141b8101d4`) uses anonymous link-addressed Firebase v2 lists. `production/database.rules.json` validates paths/items and the writes switch but does not require `auth`; list claims reserve names, not owners. Therefore a list URL, arbitrary item ID, CORS or anonymous identity cannot establish private-photo ownership.
+The user accepted “anyone with a list link can view and edit photos,” matching text, then authorized continued isolated work. This is the current beta model; invite-only membership/capabilities are no longer the pending default. Short/custom links are guessable and are not private ownership. Actual selected list IDs, final finite limits, retention and external enablement still need review.
 
-Recommended initial beta: one explicitly allowlisted list and invited testers, with independently revocable photo access. A shared high-entropy list-scoped photo capability is a possible low-friction design; it means shared bearer access, not individual ownership. An authenticated-membership design is the alternative if individual revocation/audit is required. Decide before implementing the hosted gateway; never silently grant photo access to everyone who can guess a list name.
-
-The browser must never receive the admin secret. Keep the current `secret:default`/JWT-verified trial function unchanged. A separate client-facing gateway needs an explicit reviewed authentication/authorization contract and negative tests, not relaxation of the existing function to make the prototype connect. Keep the bucket private and deny direct client writes/listing; authorize every photo read, operation status and mutation against the selected list and item scope. Store any future capabilities only as hashes server-side; specify delivery, browser storage, expiration, revocation and sharing risks before issuing them.
-
-Approval decisions for a later hosted release: selected list/testers; invite-only versus link-holder visibility; read/write/delete privileges; capability versus account membership and any new credentials; real-photo retention/export/removal policy; exact new gateway/grants/policies; finite beta duration/caps and production UI enablement. These are not requested or changed in this preparation task.
+The tested local backend/client, conservative proposed envelope, kill switch, required list/item checks and exact disabled deployment artifacts are in [the beta integration review](../photo-lab/beta/README.md). The new endpoint remains disabled and is not deployed. Public/anonymous ingress would require separate approval on that new function only; existing trial authentication, expiry and usage stay unchanged. No production client import was added.
 
 ## Phone images and HEIC
 

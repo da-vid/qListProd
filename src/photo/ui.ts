@@ -1,7 +1,10 @@
 import { bounded, type PhotoRecord } from "./adapter.ts";
 import { normalizePhoto, type NormalizedPhoto } from "./normalize.ts";
 import { type PhotoGateway, type PhotoUpload } from "./gateway.ts";
+import type { CleanupJournal } from "./cleanup-journal.ts";
 type Options = {
+  cleanupJournal?: CleanupJournal;
+  storage?: "tab" | "gateway";
   prepare?: (file: Blob, signal: AbortSignal) => Promise<NormalizedPhoto>;
   synthetic?: (signal: AbortSignal) => Promise<NormalizedPhoto>;
   timeout?: number;
@@ -25,6 +28,22 @@ export function installPhotoUI(
     }
   >();
   const cleanupQueue = new Set<string>();
+  let journalError = false;
+  try {
+    for (const key of options.cleanupJournal?.load() ?? [])
+      cleanupQueue.add(key);
+  } catch {
+    journalError = true;
+  }
+  function persistCleanup(key: string, removing = false) {
+    try {
+      if (removing) options.cleanupJournal?.remove(key);
+      else options.cleanupJournal?.add(key);
+      journalError = false;
+    } catch {
+      journalError = true;
+    }
+  }
   let currentDialog: { key: string; close: () => void } | undefined;
   const make = <K extends keyof HTMLElementTagNameMap>(tag: K, text = "") => {
     const el = doc.createElement(tag);
@@ -58,13 +77,19 @@ export function installPhotoUI(
     summary.textContent = cleanupQueue.size
       ? `${cleanupQueue.size} removed item's photo cleanup is waiting. Text deletion is saved. Retry photos when available.`
       : "";
+    if (journalError)
+      summary.textContent +=
+        " Photo cleanup retry data could not be saved or restored. Keep this tab open and retry when available.";
   }
+  cleanupStatus();
   async function cleanup(key: string) {
     cleanupQueue.add(key);
+    persistCleanup(key);
     cleanupStatus();
     try {
       await run((signal) => adapter.deleteItem(key, signal));
       cleanupQueue.delete(key);
+      persistCleanup(key, true);
     } catch {
       /* Keep only a local retry marker; do not roll back the text deletion. */
     }
@@ -242,7 +267,14 @@ export function installPhotoUI(
           return;
         }
         thumbnail(key, result);
-        report(key, deleting ? "Photo removed." : "Photo saved in this tab.");
+        report(
+          key,
+          deleting
+            ? "Photo removed."
+            : options.storage === "gateway"
+              ? "Photo saved."
+              : "Photo saved in this tab.",
+        );
         close();
       } catch (e) {
         if (!deleting && selected && !controller.signal.aborted) {
@@ -257,7 +289,12 @@ export function installPhotoUI(
                 controller.signal,
               );
               if (rows.has(key)) thumbnail(key, current);
-              report(key, "Photo save confirmed in this tab.");
+              report(
+                key,
+                options.storage === "gateway"
+                  ? "Photo save confirmed."
+                  : "Photo save confirmed in this tab.",
+              );
               close();
               return;
             }
@@ -283,7 +320,9 @@ export function installPhotoUI(
       heading,
       make(
         "p",
-        "Local preview · JPEG photos · nothing is uploaded. Photos disappear when this tab reloads.",
+        options.storage === "gateway"
+          ? "Photo beta · anyone with this list link can view or change photos. Text still works if photos are unavailable."
+          : "Local preview · JPEG photos · nothing is uploaded. Photos disappear when this tab reloads.",
       ),
       status,
       preview,

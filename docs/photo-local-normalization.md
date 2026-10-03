@@ -1,5 +1,7 @@
 # Local photo normalization and mock gateway acceptance
 
+Follow-up: the user subsequently accepted same-link access. Current integration status and remaining decisions are in [the disabled beta review](../photo-lab/beta/README.md).
+
 Completed October 3, 2026 in `qList-photo-prototype`, continuing the uncommitted work after `06e25d158043728dd39ed0b764e3dd08d00ffb1d`. This is a local-only acceptance batch. Production photos remain disabled; the hosted trial, expiry, counters, credentials, access policy and storage were untouched. No user photos or external uploads were used.
 
 ## Browser input and gateway contract

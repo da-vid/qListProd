@@ -1,0 +1,4 @@
+project_id = "qlist-photo-beta-local-review"
+# Inert review config. Anonymous ingress requires separate approval before deployment.
+[functions.qlist-photo-beta]
+verify_jwt = true

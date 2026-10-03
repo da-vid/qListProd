@@ -1,0 +1,15 @@
+{
+  "mode": "headless Chrome phone-sized touch emulation; no physical device",
+  "browser": "154.0.8037.97",
+  "local_only": true,
+  "isolated_context_loopback_permission": true,
+  "second_client_reads_same_photo": true,
+  "reload_restores_photo": true,
+  "text_survives_kill_switch": true,
+  "cleanup_intent_survives_reload": true,
+  "cleanup_retry_after_restoration": true,
+  "loopback_photo_requests": 11,
+  "external_requests": 0,
+  "hosted_uploads": 0,
+  "passed": true
+}

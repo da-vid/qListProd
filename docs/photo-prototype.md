@@ -1,5 +1,7 @@
 # qList photo prototype — local review
 
+**Local beta integration update — October 3, 2026:** the accepted same-link model now has a tested local backend/client, disabled migration and deployment artifacts. See [the integration review](../photo-lab/beta/README.md) for current scope, evidence and remaining external approvals. Production remains untouched.
+
 **Local normalization update — October 3, 2026:** single-JPEG normalization and the local mock gateway are complete. See [the current local acceptance report](photo-local-normalization.md) for 121 passing tests, synthetic browser evidence, and explicit real-device limitations. Historical preparation/test counts below describe earlier stages.
 
 **Hosted status — October 3, 2026:** the isolated hosted synthetic continuation passed all four remaining cases, with zero residual charges/objects. The browser UI is still a local mock; production photos are disabled. See [the current selected-list beta plan](photo-selected-list-beta-plan.md) and its linked acceptance evidence. Material below describes earlier stages and must not be treated as pending setup, permission to rerun a trial, or permission to enable public photos. Existing expiry is unchanged.

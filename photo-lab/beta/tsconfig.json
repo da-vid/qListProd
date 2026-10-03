@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {"allowJs": true, "checkJs": false},
+  "include": ["engine.ts", "handler.ts", "ledger.ts", "sdk.ts", "text-authority.ts", "../../src/photo/http-gateway.ts"]
+}

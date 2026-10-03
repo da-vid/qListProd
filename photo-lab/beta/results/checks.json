@@ -1,0 +1,79 @@
+{
+  "date": "2026-10-03",
+  "base_commit": "3ad74998ad2df8669b05d21eb4b9c77273e16a3d",
+  "runtime": "Node 24.21.0; PostgreSQL 17.11; Deno 2.9.7",
+  "scope": "local synthetic only",
+  "passed": true,
+  "node_tests": {
+    "core": 34,
+    "photos": 52,
+    "trial_handler_and_phase_b": 31,
+    "release_build": 4,
+    "beta": 15,
+    "total": 136
+  },
+  "postgres_checks": 10,
+  "temporary_cluster_stopped": true,
+  "browser": "browser.json",
+  "postgres": "postgres.json",
+  "checks": [
+    "root TypeScript",
+    "beta TypeScript",
+    "frozen cached Deno entry check",
+    "normal preview build",
+    "photo preview build",
+    "modern maintenance rollback builds",
+    "exact payload/source hashes",
+    "normal and release bundle photo exclusion",
+    "git diff --check"
+  ],
+  "deployment_payload_sha256": "339fd625f7270c957a0e368c6b4563a76bfd42322720c6bbe30b5156ced4ab63",
+  "normal_release_assets": [
+    {
+      "path": "dist/assets/index-Pbxy0MnN.js",
+      "sha256": "f52900d8a98e56df9641f5dcd43710b53b686f65354e1f7edb8cb239496ed70c"
+    },
+    {
+      "path": "dist/assets/index-DRPEDXlX.css",
+      "sha256": "d5b0bdf1205faae73b82edaea7dd31e51d29481f141a967de312a388f14c40bb"
+    },
+    {
+      "path": "release-artifacts/modern/assets/index.esm-fGDxllVm.js",
+      "sha256": "5a779553911cac1845621b3011f33e24e727b3b21dcacf4180bd63ab9b6f468c"
+    },
+    {
+      "path": "release-artifacts/modern/assets/index-mdo84YK0.js",
+      "sha256": "1f36d2b31b2c263bc3558962ac87a4ac8b8c7bafb0b23326076d86d8a1e4f7ce"
+    },
+    {
+      "path": "release-artifacts/modern/assets/production-store-DJmz2iCE.js",
+      "sha256": "ee3fca1dc87d042bac93b187473979c03793540802bab41f9df2271ec816b76f"
+    },
+    {
+      "path": "release-artifacts/modern/assets/index-DRPEDXlX.css",
+      "sha256": "d5b0bdf1205faae73b82edaea7dd31e51d29481f141a967de312a388f14c40bb"
+    },
+    {
+      "path": "release-artifacts/modern/assets/firebase-store-T6qRi_NB.js",
+      "sha256": "d55d9adce2251dd106d50a54c69db601eea66623fd1e43ab49c37f19c33f6831"
+    },
+    {
+      "path": "release-artifacts/maintenance/assets/index-DRPEDXlX.css",
+      "sha256": "d5b0bdf1205faae73b82edaea7dd31e51d29481f141a967de312a388f14c40bb"
+    },
+    {
+      "path": "release-artifacts/maintenance/assets/index-llmCTJ1A.js",
+      "sha256": "b01aa4da70a7cc72dfa6a66bc0013b3495740ba15b9b8bcf2e8db83860b492b8"
+    },
+    {
+      "path": "release-artifacts/rollback/assets/index-DRPEDXlX.css",
+      "sha256": "d5b0bdf1205faae73b82edaea7dd31e51d29481f141a967de312a388f14c40bb"
+    },
+    {
+      "path": "release-artifacts/rollback/assets/index-iAdDZMOa.js",
+      "sha256": "9c09d402e7460bf6f84476bebcd260ca35d9d40bfc1cda9c1a11e17018529dc5"
+    }
+  ],
+  "hosted_changes": false,
+  "real_device_tested": false
+}

@@ -28,7 +28,9 @@
     "test:migration": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/migration.integration.ts\"",
     "test:release-ui": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/release-ui.integration.ts\"",
     "release:review": "node scripts/review-release.mjs",
-    "test:production-rules": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/production-rules.integration.ts\""
+    "test:production-rules": "firebase emulators:exec --config firebase.candidate-test.json --only database --project demo-qlist \"node --test --test-timeout=60000 test/production-rules.integration.ts\"",
+    "test:photo-beta": "node --test --test-timeout=15000 photo-lab/beta/*.test.ts",
+    "typecheck:photo-beta": "tsc --noEmit -p photo-lab/beta/tsconfig.json"
   },
   "devDependencies": {
     "@types/node": "24.19.0",
