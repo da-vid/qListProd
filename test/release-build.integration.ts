@@ -50,6 +50,22 @@ test("release manifests verify all bytes and keep variants separate", async () =
     assert.doesNotMatch(headers, /unsafe-inline|unsafe-eval/);
     assert.match(headers, /no-store/);
     const js = await scripts(variant);
+    if (variant === "modern") {
+      assert.match(
+        headers,
+        /https:\/\/qmpdinzendwpkqhtqskz\.supabase\.co\/functions\/v1\/qlist-photos/,
+      );
+      assert.match(headers, /img-src[^;]+blob:/);
+      assert.match(js, /functions\/v1\/qlist-photos/);
+      assert.doesNotMatch(
+        js,
+        /Synthetic photo service|Local photo experiment/,
+      );
+      assert.doesNotMatch(js, /sb_secret_|service_role|createAdminClient/);
+    } else {
+      assert.doesNotMatch(headers, /supabase|blob:/);
+      assert.doesNotMatch(js, /functions\/v1\/qlist-photos/);
+    }
     if (variant === "maintenance")
       assert.doesNotMatch(js, /firebaseio\.com|firebase\/|FirebaseStore/);
     else {

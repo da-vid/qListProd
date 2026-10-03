@@ -1,0 +1,666 @@
+{
+  "browser": "154.0.8037.97",
+  "scope": "loopback synthetic production photo UI with real local codec/files; desktop/mobile emulation",
+  "layouts": [
+    {
+      "width": 320,
+      "before": [
+        {
+          "key": "fa52ca3f4ef640cf8eb259ddf3334e1b",
+          "row": {
+            "x": 0,
+            "y": 166.140625,
+            "w": 320,
+            "h": 45,
+            "right": 320,
+            "bottom": 211.140625
+          },
+          "handle": {
+            "x": 271,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 315,
+            "bottom": 210.140625
+          },
+          "check": {
+            "x": 13,
+            "y": 178.640625,
+            "w": 19,
+            "h": 19,
+            "right": 32,
+            "bottom": 197.640625
+          },
+          "camera": null,
+          "padding": "0px 5px 0px 10px"
+        },
+        {
+          "key": "20790b873dcc4842a92effa6c911d9dd",
+          "row": {
+            "x": 0,
+            "y": 211.140625,
+            "w": 320,
+            "h": 45,
+            "right": 320,
+            "bottom": 256.140625
+          },
+          "handle": {
+            "x": 271,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 315,
+            "bottom": 255.140625
+          },
+          "check": {
+            "x": 13,
+            "y": 223.640625,
+            "w": 19,
+            "h": 19,
+            "right": 32,
+            "bottom": 242.640625
+          },
+          "camera": null,
+          "padding": "0px 5px 0px 10px"
+        }
+      ],
+      "after": [
+        {
+          "key": "fa52ca3f4ef640cf8eb259ddf3334e1b",
+          "row": {
+            "x": 0,
+            "y": 166.140625,
+            "w": 320,
+            "h": 45,
+            "right": 320,
+            "bottom": 211.140625
+          },
+          "handle": {
+            "x": 271,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 315,
+            "bottom": 210.140625
+          },
+          "check": {
+            "x": 13,
+            "y": 178.640625,
+            "w": 19,
+            "h": 19,
+            "right": 32,
+            "bottom": 197.640625
+          },
+          "camera": {
+            "x": 227,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 271,
+            "bottom": 210.140625
+          },
+          "padding": "0px 5px 0px 10px"
+        },
+        {
+          "key": "20790b873dcc4842a92effa6c911d9dd",
+          "row": {
+            "x": 0,
+            "y": 211.140625,
+            "w": 320,
+            "h": 45,
+            "right": 320,
+            "bottom": 256.140625
+          },
+          "handle": {
+            "x": 271,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 315,
+            "bottom": 255.140625
+          },
+          "check": {
+            "x": 13,
+            "y": 223.640625,
+            "w": 19,
+            "h": 19,
+            "right": 32,
+            "bottom": 242.640625
+          },
+          "camera": {
+            "x": 227,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 271,
+            "bottom": 255.140625
+          },
+          "padding": "0px 5px 0px 10px"
+        }
+      ],
+      "saved": [
+        {
+          "key": "fa52ca3f4ef640cf8eb259ddf3334e1b",
+          "row": {
+            "x": 0,
+            "y": 166.140625,
+            "w": 320,
+            "h": 45,
+            "right": 320,
+            "bottom": 211.140625
+          },
+          "handle": {
+            "x": 271,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 315,
+            "bottom": 210.140625
+          },
+          "check": {
+            "x": 13,
+            "y": 178.640625,
+            "w": 19,
+            "h": 19,
+            "right": 32,
+            "bottom": 197.640625
+          },
+          "camera": {
+            "x": 227,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 271,
+            "bottom": 210.140625
+          },
+          "padding": "0px 5px 0px 10px"
+        },
+        {
+          "key": "20790b873dcc4842a92effa6c911d9dd",
+          "row": {
+            "x": 0,
+            "y": 211.140625,
+            "w": 320,
+            "h": 45,
+            "right": 320,
+            "bottom": 256.140625
+          },
+          "handle": {
+            "x": 271,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 315,
+            "bottom": 255.140625
+          },
+          "check": {
+            "x": 13,
+            "y": 223.640625,
+            "w": 19,
+            "h": 19,
+            "right": 32,
+            "bottom": 242.640625
+          },
+          "camera": {
+            "x": 227,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 271,
+            "bottom": 255.140625
+          },
+          "padding": "0px 5px 0px 10px"
+        }
+      ],
+      "wrapped": {
+        "height": 118.9375,
+        "cameraWithin": true,
+        "padding": "0px 5px 0px 10px"
+      },
+      "cameraKeyboardNoReorder": true,
+      "handleKeyboardReorder": true,
+      "removeWhileUploadsPaused": true
+    },
+    {
+      "width": 390,
+      "before": [
+        {
+          "key": "6004a493334549f198f63691b8ac0775",
+          "row": {
+            "x": 0,
+            "y": 166.140625,
+            "w": 390,
+            "h": 45,
+            "right": 390,
+            "bottom": 211.140625
+          },
+          "handle": {
+            "x": 341,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 385,
+            "bottom": 210.140625
+          },
+          "check": {
+            "x": 19,
+            "y": 178.640625,
+            "w": 19,
+            "h": 19,
+            "right": 38,
+            "bottom": 197.640625
+          },
+          "camera": null,
+          "padding": "0px 5px 0px 16px"
+        },
+        {
+          "key": "234dbdd12bec4eec9248dbb253252260",
+          "row": {
+            "x": 0,
+            "y": 211.140625,
+            "w": 390,
+            "h": 45,
+            "right": 390,
+            "bottom": 256.140625
+          },
+          "handle": {
+            "x": 341,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 385,
+            "bottom": 255.140625
+          },
+          "check": {
+            "x": 19,
+            "y": 223.640625,
+            "w": 19,
+            "h": 19,
+            "right": 38,
+            "bottom": 242.640625
+          },
+          "camera": null,
+          "padding": "0px 5px 0px 16px"
+        }
+      ],
+      "after": [
+        {
+          "key": "6004a493334549f198f63691b8ac0775",
+          "row": {
+            "x": 0,
+            "y": 166.140625,
+            "w": 390,
+            "h": 45,
+            "right": 390,
+            "bottom": 211.140625
+          },
+          "handle": {
+            "x": 341,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 385,
+            "bottom": 210.140625
+          },
+          "check": {
+            "x": 19,
+            "y": 178.640625,
+            "w": 19,
+            "h": 19,
+            "right": 38,
+            "bottom": 197.640625
+          },
+          "camera": {
+            "x": 297,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 341,
+            "bottom": 210.140625
+          },
+          "padding": "0px 5px 0px 16px"
+        },
+        {
+          "key": "234dbdd12bec4eec9248dbb253252260",
+          "row": {
+            "x": 0,
+            "y": 211.140625,
+            "w": 390,
+            "h": 45,
+            "right": 390,
+            "bottom": 256.140625
+          },
+          "handle": {
+            "x": 341,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 385,
+            "bottom": 255.140625
+          },
+          "check": {
+            "x": 19,
+            "y": 223.640625,
+            "w": 19,
+            "h": 19,
+            "right": 38,
+            "bottom": 242.640625
+          },
+          "camera": {
+            "x": 297,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 341,
+            "bottom": 255.140625
+          },
+          "padding": "0px 5px 0px 16px"
+        }
+      ],
+      "saved": [
+        {
+          "key": "6004a493334549f198f63691b8ac0775",
+          "row": {
+            "x": 0,
+            "y": 166.140625,
+            "w": 390,
+            "h": 45,
+            "right": 390,
+            "bottom": 211.140625
+          },
+          "handle": {
+            "x": 341,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 385,
+            "bottom": 210.140625
+          },
+          "check": {
+            "x": 19,
+            "y": 178.640625,
+            "w": 19,
+            "h": 19,
+            "right": 38,
+            "bottom": 197.640625
+          },
+          "camera": {
+            "x": 297,
+            "y": 166.140625,
+            "w": 44,
+            "h": 44,
+            "right": 341,
+            "bottom": 210.140625
+          },
+          "padding": "0px 5px 0px 16px"
+        },
+        {
+          "key": "234dbdd12bec4eec9248dbb253252260",
+          "row": {
+            "x": 0,
+            "y": 211.140625,
+            "w": 390,
+            "h": 45,
+            "right": 390,
+            "bottom": 256.140625
+          },
+          "handle": {
+            "x": 341,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 385,
+            "bottom": 255.140625
+          },
+          "check": {
+            "x": 19,
+            "y": 223.640625,
+            "w": 19,
+            "h": 19,
+            "right": 38,
+            "bottom": 242.640625
+          },
+          "camera": {
+            "x": 297,
+            "y": 211.140625,
+            "w": 44,
+            "h": 44,
+            "right": 341,
+            "bottom": 255.140625
+          },
+          "padding": "0px 5px 0px 16px"
+        }
+      ],
+      "wrapped": {
+        "height": 80.5625,
+        "cameraWithin": true,
+        "padding": "0px 5px 0px 16px"
+      },
+      "cameraKeyboardNoReorder": true,
+      "handleKeyboardReorder": true,
+      "removeWhileUploadsPaused": true
+    },
+    {
+      "width": 1024,
+      "before": [
+        {
+          "key": "1395112a2836486c90c66adbe4babe30",
+          "row": {
+            "x": 262,
+            "y": 168.125,
+            "w": 500,
+            "h": 45,
+            "right": 762,
+            "bottom": 213.125
+          },
+          "handle": {
+            "x": 713,
+            "y": 168.125,
+            "w": 44,
+            "h": 44,
+            "right": 757,
+            "bottom": 212.125
+          },
+          "check": {
+            "x": 281,
+            "y": 180.625,
+            "w": 19,
+            "h": 19,
+            "right": 300,
+            "bottom": 199.625
+          },
+          "camera": null,
+          "padding": "0px 5px 0px 16px"
+        },
+        {
+          "key": "377e2069097f4c2db7719078b62689e7",
+          "row": {
+            "x": 262,
+            "y": 213.125,
+            "w": 500,
+            "h": 45,
+            "right": 762,
+            "bottom": 258.125
+          },
+          "handle": {
+            "x": 713,
+            "y": 213.125,
+            "w": 44,
+            "h": 44,
+            "right": 757,
+            "bottom": 257.125
+          },
+          "check": {
+            "x": 281,
+            "y": 225.625,
+            "w": 19,
+            "h": 19,
+            "right": 300,
+            "bottom": 244.625
+          },
+          "camera": null,
+          "padding": "0px 5px 0px 16px"
+        }
+      ],
+      "after": [
+        {
+          "key": "1395112a2836486c90c66adbe4babe30",
+          "row": {
+            "x": 262,
+            "y": 168.125,
+            "w": 500,
+            "h": 45,
+            "right": 762,
+            "bottom": 213.125
+          },
+          "handle": {
+            "x": 713,
+            "y": 168.125,
+            "w": 44,
+            "h": 44,
+            "right": 757,
+            "bottom": 212.125
+          },
+          "check": {
+            "x": 281,
+            "y": 180.625,
+            "w": 19,
+            "h": 19,
+            "right": 300,
+            "bottom": 199.625
+          },
+          "camera": {
+            "x": 669,
+            "y": 168.125,
+            "w": 44,
+            "h": 44,
+            "right": 713,
+            "bottom": 212.125
+          },
+          "padding": "0px 5px 0px 16px"
+        },
+        {
+          "key": "377e2069097f4c2db7719078b62689e7",
+          "row": {
+            "x": 262,
+            "y": 213.125,
+            "w": 500,
+            "h": 45,
+            "right": 762,
+            "bottom": 258.125
+          },
+          "handle": {
+            "x": 713,
+            "y": 213.125,
+            "w": 44,
+            "h": 44,
+            "right": 757,
+            "bottom": 257.125
+          },
+          "check": {
+            "x": 281,
+            "y": 225.625,
+            "w": 19,
+            "h": 19,
+            "right": 300,
+            "bottom": 244.625
+          },
+          "camera": {
+            "x": 669,
+            "y": 213.125,
+            "w": 44,
+            "h": 44,
+            "right": 713,
+            "bottom": 257.125
+          },
+          "padding": "0px 5px 0px 16px"
+        }
+      ],
+      "saved": [
+        {
+          "key": "1395112a2836486c90c66adbe4babe30",
+          "row": {
+            "x": 262,
+            "y": 168.125,
+            "w": 500,
+            "h": 45,
+            "right": 762,
+            "bottom": 213.125
+          },
+          "handle": {
+            "x": 713,
+            "y": 168.125,
+            "w": 44,
+            "h": 44,
+            "right": 757,
+            "bottom": 212.125
+          },
+          "check": {
+            "x": 281,
+            "y": 180.625,
+            "w": 19,
+            "h": 19,
+            "right": 300,
+            "bottom": 199.625
+          },
+          "camera": {
+            "x": 669,
+            "y": 168.125,
+            "w": 44,
+            "h": 44,
+            "right": 713,
+            "bottom": 212.125
+          },
+          "padding": "0px 5px 0px 16px"
+        },
+        {
+          "key": "377e2069097f4c2db7719078b62689e7",
+          "row": {
+            "x": 262,
+            "y": 213.125,
+            "w": 500,
+            "h": 45,
+            "right": 762,
+            "bottom": 258.125
+          },
+          "handle": {
+            "x": 713,
+            "y": 213.125,
+            "w": 44,
+            "h": 44,
+            "right": 757,
+            "bottom": 257.125
+          },
+          "check": {
+            "x": 281,
+            "y": 225.625,
+            "w": 19,
+            "h": 19,
+            "right": 300,
+            "bottom": 244.625
+          },
+          "camera": {
+            "x": 669,
+            "y": 213.125,
+            "w": 44,
+            "h": 44,
+            "right": 713,
+            "bottom": 257.125
+          },
+          "padding": "0px 5px 0px 16px"
+        }
+      ],
+      "wrapped": {
+        "height": 66.6875,
+        "cameraWithin": true,
+        "padding": "0px 5px 0px 16px"
+      },
+      "cameraKeyboardNoReorder": true,
+      "handleKeyboardReorder": true,
+      "removeWhileUploadsPaused": true
+    }
+  ],
+  "external_requests": 0,
+  "hosted_uploads": 0,
+  "passed": true
+}

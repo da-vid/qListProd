@@ -1,0 +1,4 @@
+project_id = "qlist-photos-production-review"
+# New public endpoint only. Applying this requires explicit per-action approval.
+[functions.qlist-photos]
+verify_jwt = false

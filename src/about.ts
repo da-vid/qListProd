@@ -20,7 +20,7 @@ export function installAboutPrivacy(app: HTMLElement, footer: HTMLElement) {
     p.textContent = text;
     dialog.append(p);
   };
-  paragraph("Effective October 1, 2026", "notice-date");
+  paragraph("Effective October 3, 2026", "notice-date");
   paragraph(
     "qList is a free, lightweight shared-list tool intended for people ages 13 and up.",
   );
@@ -40,9 +40,9 @@ export function installAboutPrivacy(app: HTMLElement, footer: HTMLElement) {
     [
       "Storage and privacy",
       [
-        "Lists are stored using Google Firebase, and Netlify hosts the website. These providers process technical information such as IP addresses and browser details. The current app has no advertising or analytics integration.",
+        "Lists are stored using Google Firebase, photos use Supabase, and Netlify hosts the website. These providers process technical information such as IP addresses and browser details. The current app has no advertising or analytics integration.",
         "A cookie remembers your last list for up to 60 days. Firebase also uses browser storage for technical operation. qList does not currently respond to Do Not Track or Global Privacy Control signals.",
-        "Deleting an item removes it from the current list. Older copies may remain in backups.",
+        "Anyone with a list link can also view, replace or remove its photos. Photos are compressed JPEGs with image metadata removed. Deleting an item queues its photo for removal; service failures may delay cleanup. Photos do not expire automatically. Older copies may remain in backups.",
       ],
     ],
     [

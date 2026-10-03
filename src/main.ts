@@ -501,12 +501,13 @@ function render(next: ListState, discardEdits = false) {
     if (discardEdits || document.activeElement !== inputs[1])
       inputs[1].value = item.name;
     inputs[1].setAttribute("aria-label", `Edit ${item.name}`);
-    const buttons = row.querySelectorAll("button");
-    buttons[0].disabled = !item.checked || !writesAllowed;
-    buttons[1].disabled = !writesAllowed;
-    buttons[0].hidden = !item.checked;
-    buttons[0].setAttribute("aria-label", `Delete ${item.name}`);
-    buttons[1].setAttribute("aria-label", `Reorder ${item.name}`);
+    const removeButton = row.querySelector<HTMLButtonElement>(".delete-item")!;
+    const reorderButton = row.querySelector<HTMLButtonElement>(".drag-handle")!;
+    removeButton.disabled = !item.checked || !writesAllowed;
+    reorderButton.disabled = !writesAllowed;
+    removeButton.hidden = !item.checked;
+    removeButton.setAttribute("aria-label", `Delete ${item.name}`);
+    reorderButton.setAttribute("aria-label", `Reorder ${item.name}`);
     const at = list.children[i];
     if (at !== row) list.insertBefore(row, at || null);
     existing.delete(item.key);
@@ -647,6 +648,12 @@ async function start() {
     },
     (e) => showError(e.message),
   );
+  if (production) {
+    // Photo initialization is independent of text saves and cannot disable the list.
+    void import("./photo/production-entry.ts")
+      .then(({ installProductionPhotos }) => installProductionPhotos(app, id))
+      .catch(() => {});
+  }
   if (local && id === "Demo23" && state.items.length === 0 && !state.title) {
     await store.apply({ type: "title", title: "A good kind of day" });
     for (const [i, name] of [

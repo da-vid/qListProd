@@ -1,7 +1,10 @@
 import type { Ledger, Snapshot, State } from "./ledger.ts";
 import type { StoragePort } from "./engine.ts";
 export const BETA_BUCKET = "qlist-photo-beta-v1";
-export function sdkPorts(admin: any): {
+export function sdkPorts(
+  admin: any,
+  production = false,
+): {
   ledger: Ledger;
   storage: StoragePort;
   checkBucket: () => Promise<void>;
@@ -10,7 +13,9 @@ export function sdkPorts(admin: any): {
     if (r.error) throw new Error("Photo service unavailable");
     return r.data;
   };
-  const bucket = admin.storage.from(BETA_BUCKET);
+  const bucketName = production ? "qlist-photos-v1" : BETA_BUCKET;
+  const rpc = production ? "qlist_photos" : "qlist_photo_beta";
+  const bucket = admin.storage.from(bucketName);
   const key = (value: string) => {
     if (!/^beta-v1\/[0-9a-f-]{36}\/full\.jpg$/.test(value))
       throw new Error("Invalid storage key");
@@ -19,16 +24,14 @@ export function sdkPorts(admin: any): {
   return {
     ledger: {
       load: async (signal) => {
-        const value = check(
-          await admin.rpc("qlist_photo_beta_load").abortSignal(signal),
-        );
+        const value = check(await admin.rpc(rpc + "_load").abortSignal(signal));
         if (!value) throw new Error("Missing budget");
         return value as Snapshot;
       },
       swap: async (before: Snapshot, state: State, signal: AbortSignal) =>
         check(
           await admin
-            .rpc("qlist_photo_beta_swap", {
+            .rpc(rpc + "_swap", {
               expected_revision: before.revision,
               expected_control: before.control,
               legacy_token: before.legacyToken,
@@ -38,7 +41,7 @@ export function sdkPorts(admin: any): {
         ) === true,
     },
     checkBucket: async () => {
-      const b = check(await admin.storage.getBucket(BETA_BUCKET));
+      const b = check(await admin.storage.getBucket(bucketName));
       if (
         b.public !== false ||
         Number(b.file_size_limit) !== 393216 ||

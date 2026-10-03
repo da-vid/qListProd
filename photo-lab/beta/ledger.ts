@@ -20,6 +20,7 @@ export type Control = {
   enabled: boolean;
   maintenance: boolean;
   lists: string[];
+  allLists?: boolean;
 };
 export type Legacy = {
   bytes: number;
@@ -99,7 +100,7 @@ export function open(s: Snapshot, list: string, now: number) {
     503,
   );
   demand(
-    s.control.lists.includes(list),
+    s.control.allLists === true || s.control.lists.includes(list),
     "Photos are unavailable for this list.",
     403,
   );
@@ -107,7 +108,7 @@ export function open(s: Snapshot, list: string, now: number) {
 export function maintain(s: Snapshot, list: string) {
   demand(s.control.maintenance, "Photo maintenance is paused.", 503);
   demand(
-    s.control.lists.includes(list),
+    s.control.allLists === true || s.control.lists.includes(list),
     "Photos are unavailable for this list.",
     403,
   );

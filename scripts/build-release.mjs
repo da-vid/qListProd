@@ -43,11 +43,18 @@ await build({
 await writeFile(`${outDir}/_redirects`, "/* /index.html 200\n");
 // RTDB can redirect WebSockets to rotating shards under firebaseio.com. No HTTP,
 // JSONP, frames, scripts or arbitrary WebSocket destinations are permitted.
-const connect = variant === "maintenance" ? "" : " wss://*.firebaseio.com";
+const connect =
+  variant === "maintenance"
+    ? ""
+    : " wss://*.firebaseio.com" +
+      (variant === "modern"
+        ? " https://qmpdinzendwpkqhtqskz.supabase.co/functions/v1/qlist-photos"
+        : "");
+const images = variant === "modern" ? " blob:" : "";
 await writeFile(
   `${outDir}/_headers`,
   `/*
-  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'${connect}; style-src 'self'; img-src 'self' data:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self'${connect}; style-src 'self'; img-src 'self' data:${images}; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   Referrer-Policy: no-referrer
   X-Content-Type-Options: nosniff
   X-Robots-Tag: noindex, nofollow

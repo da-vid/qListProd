@@ -3,6 +3,7 @@ import { normalizePhoto, type NormalizedPhoto } from "./normalize.ts";
 import { type PhotoGateway, type PhotoUpload } from "./gateway.ts";
 import type { CleanupJournal } from "./cleanup-journal.ts";
 type Options = {
+  minimal?: boolean;
   cleanupJournal?: CleanupJournal;
   storage?: "tab" | "gateway";
   prepare?: (file: Blob, signal: AbortSignal) => Promise<NormalizedPhoto>;
@@ -102,8 +103,10 @@ export function installPhotoUI(
     if (entry.thumb) win.URL.revokeObjectURL(entry.thumb);
     entry.bar.querySelector(".photo-thumbnail")?.remove();
     entry.thumb = undefined;
-    const edit = entry.bar.querySelector("button")!;
-    edit.textContent = record ? "Change photo" : "Add photo";
+    const edit = entry.bar.querySelector<HTMLButtonElement>(".photo-manage")!;
+    const label = record ? "Change photo" : "Add photo";
+    edit.setAttribute("aria-label", label);
+    edit.title = label;
     if (!record) return;
     const url = win.URL.createObjectURL(record.thumbnail);
     entry.thumb = url;
@@ -116,7 +119,7 @@ export function installPhotoUI(
     img.width = 48;
     img.height = 48;
     b.append(img);
-    entry.bar.append(b);
+    entry.bar.insertBefore(b, edit);
   }
   async function refresh(key: string) {
     const entry = rows.get(key);
@@ -269,11 +272,13 @@ export function installPhotoUI(
         thumbnail(key, result);
         report(
           key,
-          deleting
-            ? "Photo removed."
-            : options.storage === "gateway"
-              ? "Photo saved."
-              : "Photo saved in this tab.",
+          options.minimal
+            ? ""
+            : deleting
+              ? "Photo removed."
+              : options.storage === "gateway"
+                ? "Photo saved."
+                : "Photo saved in this tab.",
         );
         close();
       } catch (e) {
@@ -318,12 +323,16 @@ export function installPhotoUI(
     }
     dialog.append(
       heading,
-      make(
-        "p",
-        options.storage === "gateway"
-          ? "Photo beta · anyone with this list link can view or change photos. Text still works if photos are unavailable."
-          : "Local preview · JPEG photos · nothing is uploaded. Photos disappear when this tab reloads.",
-      ),
+      ...(options.minimal
+        ? []
+        : [
+            make(
+              "p",
+              options.storage === "gateway"
+                ? "Photo beta · anyone with this list link can view or change photos. Text still works if photos are unavailable."
+                : "Local preview · JPEG photos · nothing is uploaded. Photos disappear when this tab reloads.",
+            ),
+          ]),
       status,
       preview,
       camera,
@@ -350,7 +359,9 @@ export function installPhotoUI(
           ? record
             ? ""
             : "This photo is no longer available."
-          : "Choose a JPEG or try the synthetic image.";
+          : options.synthetic
+            ? "Choose a JPEG or try the synthetic image."
+            : "Choose a photo.";
         if (expanded) cancel.textContent = "Close";
       })
       .catch((e) => {
@@ -368,12 +379,20 @@ export function installPhotoUI(
       const bar = make("div");
       bar.className = "photo-controls";
       const message = make("span");
+      message.className = "sr-only";
       message.setAttribute("role", "status");
-      bar.append(
-        button("Add photo", () => open(key)),
-        message,
-      );
-      row.append(bar);
+      const manage = button("", () => open(key));
+      manage.className = "icon photo-manage";
+      manage.setAttribute("aria-label", "Add photo");
+      manage.title = "Add photo";
+      const glyph = make("span", "\uf030");
+      glyph.className = "photo-camera-glyph";
+      glyph.setAttribute("aria-hidden", "true");
+      manage.append(glyph);
+      bar.append(manage, message);
+      const handle = row.querySelector(".drag-handle");
+      if (handle) handle.before(bar);
+      else row.append(bar);
       rows.set(key, {
         row,
         bar,

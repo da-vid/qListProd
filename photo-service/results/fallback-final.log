@@ -1,0 +1,12 @@
+✔ source JPEG accepts orientation metadata before decode and enforces actual header dimensions (0.639834ms)
+✔ HEIC hints and actual container header produce helpful rejection without claiming decode support (1.616416ms)
+✔ oversized source and pre-aborted selection stop before browser allocation (1.721042ms)
+✔ progressive source is accepted only by source validation; normalized wire contract remains baseline (0.865041ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 75.631625

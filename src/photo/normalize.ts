@@ -3,7 +3,7 @@ import { inspectJpeg, MAX_EDGE, MAX_UPLOAD_BYTES, PhotoError } from "./jpeg.ts";
 export type NormalizedPhoto = { jpeg: Blob; width: number; height: number };
 export const SOURCE_BYTES = 10 * 1024 * 1024;
 export const HEIC_HELP =
-  "HEIC/HEIF isn’t supported in this local preview. Export or share a JPEG copy, then choose it here. Your text list is unchanged.";
+  "HEIC/HEIF isn’t supported here. Export or share a JPEG copy, then choose it here. Your text list is unchanged.";
 let preparing = false;
 
 export function inspectSource(bytes: Uint8Array, type = "", name = "") {
@@ -19,7 +19,7 @@ export function inspectSource(bytes: Uint8Array, type = "", name = "") {
     throw new PhotoError(HEIC_HELP);
   if (!jpeg)
     throw new PhotoError(
-      "Choose a JPEG photo. Other image formats aren’t supported in this local preview.",
+      "Choose a JPEG photo. Other image formats aren’t supported here.",
     );
   try {
     return inspectJpeg(bytes, {

@@ -1,0 +1,19 @@
+{
+  "runtime": "v24.21.0",
+  "scope": "temporary PostgreSQL with actual local JPEG files; no hosted services",
+  "tests": [
+    "migration starts disabled, empty allowlist, no activation deadline",
+    "anon and authenticated cannot call RPC or read ledger; service cannot change control",
+    "HTTP client plus PostgreSQL CAS plus real codec/files round-trip",
+    "lost CAS and kill-switch control changes reject stale state",
+    "cleanup failure remains charged, retry removes files, no historical rows disappear",
+    "prior trial expiry and every cumulative field are unchanged",
+    "global last-capacity race serializes across PostgreSQL sessions",
+    "global last-rate-token race serializes and independent SQL cap guard rejects forged counter",
+    "actual pg-safeupdate rejects unqualified UPDATE in service sessions",
+    "review verification and stop artifacts execute without deleting state or objects",
+    "upload stop and historical read totals cannot block read-only status or explicit cleanup"
+  ],
+  "safeupdate": true,
+  "passed": true
+}

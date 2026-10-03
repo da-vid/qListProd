@@ -1,0 +1,12 @@
+PASS migration starts disabled, empty allowlist, no activation deadline
+PASS anon and authenticated cannot call RPC or read ledger; service cannot change control
+PASS HTTP client plus PostgreSQL CAS plus real codec/files round-trip
+PASS lost CAS and kill-switch control changes reject stale state
+PASS cleanup failure remains charged, retry removes files, no historical rows disappear
+PASS prior trial expiry and every cumulative field are unchanged
+PASS global last-capacity race serializes across PostgreSQL sessions
+PASS global last-rate-token race serializes and independent SQL cap guard rejects forged counter
+PASS actual pg-safeupdate rejects unqualified UPDATE in service sessions
+PASS review verification and stop artifacts execute without deleting state or objects
+PASS upload stop and historical read totals cannot block read-only status or explicit cleanup
+Temporary beta PostgreSQL stopped; no hosted changes.

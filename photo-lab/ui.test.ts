@@ -65,7 +65,10 @@ function click(dom: JSDOM, label: string) {
   const buttons = [
     ...dom.window.document.querySelectorAll<HTMLButtonElement>("button"),
   ];
-  const b = buttons.find((b) => b.textContent === label && !b.hidden)!;
+  const b = buttons.find(
+    (b) =>
+      (b.getAttribute("aria-label") ?? b.textContent) === label && !b.hidden,
+  )!;
   assert.ok(b, `button ${label} exists`);
   assert.equal(b.disabled, false);
   b.click();

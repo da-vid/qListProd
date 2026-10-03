@@ -29,9 +29,9 @@
     "photo-lab/beta/index.ts": "36f97d50279e0fba14e16e04de0c825cf699b249eb2f858d168c6d007f2c631e",
     "photo-lab/beta/handler.ts": "2c581b31a47a6df7ebb9549a5ef55cc3236f7a22cfd12cf7b35095c9f10c3e99",
     "photo-lab/beta/engine.ts": "d8a6347f869b7546a91273876d42570ecb5b0fc38f0927187d1902135348d2fe",
-    "photo-lab/beta/ledger.ts": "f6d2c2ba26874e5a374baf407aad8540f59225f544b0fdb671dcc99ebfb893ca",
+    "photo-lab/beta/ledger.ts": "e679f27b062d611ad0ba53d1893b71b83f0bbef5bb8323e9c9da474f7b3eb76c",
     "photo-lab/beta/text-authority.ts": "5af54d6eb344529fd78471023832afcf7dc6fe59a80ffde3291be3b40aac3a53",
-    "photo-lab/beta/sdk.ts": "23a4a21d9f590d7176263c248863f7d3114c73d52ba395d5758c7bda671e0f57",
+    "photo-lab/beta/sdk.ts": "fc85817babfcc1cb1b3691635e8035e894041df13a1718013d87c20577a1d68d",
     "photo-lab/storage-trial/phase-b/codec.js": "75a280f9a74ad26420d10cb68d8bbea9689e31b2e6bf6d2cd58c45aacdc27ab2",
     "photo-lab/storage-trial/deno.json": "694ef4e84bcf73a45cb2db779526afe4f985e0f6d04a50af13fa490b8cbd9bae",
     "photo-lab/storage-trial/deno.lock": "9bc50c0b08917abe2191bde906abe77558b234ea8ecbc54049eec24acf6054c9",
@@ -46,7 +46,7 @@
     "src/photo/beta-entry.ts": "8bab5cc9d7c689fd44e68ea4a4cdd8f18e9413f8429302a59068142087cce419",
     "src/photo/http-gateway.ts": "d34671db2657adecae881efa4732cd7469fed909c7f1010c0038f9ad1b904b57",
     "src/photo/cleanup-journal.ts": "e4823a6b2476fe8d0167beaeef0ae99092eaad6b8eb62d119af6f43d609c74ba",
-    "src/photo/ui.ts": "176efd0d4bfddc3d5d95359f2ba6e4445ff0f275fc8c9d2798a479718a1403b0"
+    "src/photo/ui.ts": "b23dd449d5df7c86161f482833696ed45f5a99a43b7fcf369ffdab13d814d4ab"
   },
-  "payload_sha256": "cdd9a43e13d901c3f366ac43509351427c340380b9e4844de7b1eac01a7a2133"
+  "payload_sha256": "7bd2f58f2e27ce646ab52470f64a4d60a46ec36e5dffdb888e38d931521f4b30"
 }

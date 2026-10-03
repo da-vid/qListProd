@@ -1,26 +1,47 @@
-.item {
-  flex-wrap: wrap;
-}
+/* Inline controls share the existing action row: no row padding or extra line. */
 .photo-controls {
-  flex-basis: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.2rem 0 0.5rem 2rem;
+  flex: 0 0 auto;
+  gap: 0;
 }
-.photo-controls [role="status"],
+.photo-manage {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0;
+  touch-action: manipulation;
+}
+.photo-camera-glyph {
+  font-family: "qList Welcome Icons";
+  font-size: 17px;
+  line-height: 1;
+}
+.photo-manage:focus-visible,
+.photo-thumbnail:focus-visible {
+  outline: 2px solid #7e7856;
+  outline-offset: -2px;
+}
+.photo-thumbnail {
+  width: 36px;
+  min-width: 36px;
+  height: 44px;
+  padding: 5px 1px;
+  border: 0;
+  background: transparent;
+}
+.photo-thumbnail img {
+  display: block;
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 4px;
+}
 .photo-cleanup {
   font-size: 0.8rem;
 }
-.photo-thumbnail {
-  padding: 0;
-  width: 50px;
-  height: 50px;
-  overflow: hidden;
-}
-.photo-thumbnail img {
-  object-fit: cover;
+.photo-cleanup:empty {
+  display: none;
 }
 .photo-dialog {
   max-width: min(32rem, calc(100vw - 2rem));

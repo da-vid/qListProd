@@ -497,7 +497,7 @@ test("About & Privacy is optional, dismissible and returns focus without recordi
       [...notice.querySelectorAll("button")].map((b) => b.textContent),
       ["Close"],
     );
-    assert.match(notice.textContent!, /Effective October 1, 2026/);
+    assert.match(notice.textContent!, /Effective October 3, 2026/);
     assert.match(notice.textContent!, /Older copies may remain in backups\./);
     assert.match(notice.textContent!, /Do Not Track or Global Privacy Control/);
     notice.querySelector<HTMLButtonElement>("button")!.click();
