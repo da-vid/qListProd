@@ -58,7 +58,9 @@ try {
     await page.keyboard.press("Escape");
     assert.equal(await input.inputValue(), "Synthetic draft 🍎");
     await page.getByRole("button", { name: "new list", exact: true }).click();
-    await page.getByRole("button", { name: "Stay", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Close dialog", exact: true })
+      .click();
     assert.equal(await input.inputValue(), "Synthetic draft 🍎");
     const before = page.url();
     await page.goto(base + "/Interrupted").catch(() => {});

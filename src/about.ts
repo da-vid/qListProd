@@ -1,3 +1,4 @@
+import { installModalDismissal } from "./modal.ts";
 export function installAboutPrivacy(app: HTMLElement, footer: HTMLElement) {
   const link = document.createElement("a");
   link.href = "#about-privacy";
@@ -59,28 +60,13 @@ export function installAboutPrivacy(app: HTMLElement, footer: HTMLElement) {
     for (const text of paragraphs) paragraph(text);
   }
   paragraph("Changes to this notice will appear here with an updated date.");
-  const close = document.createElement("button");
-  close.type = "button";
-  close.className = "btn";
-  close.textContent = "Close";
-  function dismiss() {
-    dialog.close();
-    link.focus();
-  }
-  close.addEventListener("click", dismiss);
-  dialog.addEventListener("cancel", (event) => {
-    event.preventDefault();
-    dismiss();
+  const modal = installModalDismissal(dialog, {
+    label: "Close About & Privacy",
   });
-  dialog.addEventListener("close", () => link.focus());
-  const actions = document.createElement("div");
-  actions.className = "nav";
-  actions.append(close);
-  dialog.append(actions);
   app.append(dialog);
   link.addEventListener("click", (event) => {
     event.preventDefault();
-    dialog.showModal();
+    modal.show();
     heading.focus();
   });
 }

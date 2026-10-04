@@ -232,10 +232,12 @@ test("dialogs have accessible names and copy confirmation stays inside the dialo
     assert.equal(dialog.getAttribute("aria-labelledby"), "dialog-title");
     assert.equal(
       d.getElementById("dialog-title")!.textContent,
-      "share your list",
+      "Share your list",
     );
     assert.equal(dialog.getAttribute("aria-describedby"), "dialog-description");
-    (dialog.querySelector(".primary") as HTMLButtonElement).click();
+    (
+      dialog.querySelector(".link-copy-actions button") as HTMLButtonElement
+    ).click();
     await tick();
     assert.equal(
       dialog.querySelector('[role="status"]')!.textContent,
@@ -439,7 +441,7 @@ test("clear confirmation uses singular and plural checked-item counts", async ()
           ? "1 checked item will be removed."
           : "2 checked items will be removed.",
       );
-      (d.querySelector("dialog .btn") as HTMLButtonElement).click();
+      (d.querySelector("dialog .modal-close") as HTMLButtonElement).click();
     }
   } finally {
     dom.window.close();
@@ -495,7 +497,7 @@ test("About & Privacy is optional, dismissible and returns focus without recordi
     assert.equal(notice.querySelectorAll("input,form").length, 0);
     assert.deepEqual(
       [...notice.querySelectorAll("button")].map((b) => b.textContent),
-      ["Close"],
+      ["×"],
     );
     assert.match(notice.textContent!, /Effective October 3, 2026/);
     assert.match(notice.textContent!, /Older copies may remain in backups\./);
@@ -557,7 +559,7 @@ test("new-item drafts have honest feedback, navigation protection and compositio
     );
     const stay = [
       ...d.querySelectorAll<HTMLButtonElement>("dialog button"),
-    ].find((b) => b.textContent === "Stay")!;
+    ].find((b) => b.getAttribute("aria-label") === "Close dialog")!;
     stay.click();
     assert.equal(input.value, "Synthetic draft 🍎");
     assert.equal(d.querySelectorAll(".item").length, 0);
@@ -616,6 +618,96 @@ test("failed new-item save retains exact retry content and blocks new-list navig
       d.querySelector<HTMLTextAreaElement>(".item .name")!.value,
       "Retained synthetic item",
     );
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("new-list and share use the same current-link UI; copy never confirms and fallback preserves drafts", async () => {
+  const dom = await ui("https://preview.example/MyCustomList");
+  try {
+    const d = dom.window.document;
+    let copied = "";
+    dom.window.navigator.clipboard.writeText = async (value) => {
+      copied = value;
+    };
+    const input = d.querySelector<HTMLInputElement>('[aria-label="New item"]')!;
+    input.value = "Keep unsubmitted draft";
+    input.dispatchEvent(new dom.window.Event("input"));
+    const openNew = () =>
+      (d.querySelector("nav button") as HTMLButtonElement).click();
+    openNew();
+    let dialog = d.querySelector<HTMLDialogElement>("dialog[open]")!;
+    const markup = dialog.querySelector(".link-sharing")!.outerHTML;
+    const link = dialog.querySelector<HTMLInputElement>(
+      '[aria-label="Current list link"]',
+    )!;
+    assert.equal(link.value, "https://preview.example/MyCustomList");
+    assert.equal(link.readOnly, true);
+    const enter = new dom.window.KeyboardEvent("keydown", {
+      key: "Enter",
+      cancelable: true,
+    });
+    link.dispatchEvent(enter);
+    assert.equal(enter.defaultPrevented, true);
+    (
+      dialog.querySelector(".link-copy-actions button") as HTMLButtonElement
+    ).click();
+    await tick();
+    assert.equal(copied, link.value);
+    assert.equal(dialog.open, true);
+    assert.equal(input.value, "Keep unsubmitted draft");
+    assert.equal(d.querySelectorAll(".item").length, 0);
+    assert.match(
+      dialog.querySelector(".copy-feedback")!.textContent!,
+      /Link copied/,
+    );
+    (dialog.querySelector(".modal-close") as HTMLButtonElement).click();
+    (d.querySelector("nav .primary") as HTMLButtonElement).click();
+    dialog = d.querySelector<HTMLDialogElement>("dialog[open]")!;
+    assert.equal(dialog.querySelector(".link-sharing")!.outerHTML, markup);
+    assert.equal(dialog.querySelector(".nav .primary"), null);
+    dom.window.navigator.clipboard.writeText = async () => {
+      throw new Error("Clipboard unavailable");
+    };
+    (
+      dialog.querySelector(".link-copy-actions button") as HTMLButtonElement
+    ).click();
+    await tick();
+    assert.match(
+      dialog.querySelector(".copy-feedback")!.textContent!,
+      /copy the link manually/,
+    );
+    const fallback = dialog.querySelector<HTMLInputElement>("input")!;
+    assert.equal(fallback.selectionStart, 0);
+    assert.equal(fallback.selectionEnd, fallback.value.length);
+    Object.assign(dom.window.navigator.clipboard, { writeText: undefined });
+    (
+      dialog.querySelector(".link-copy-actions button") as HTMLButtonElement
+    ).click();
+    await tick();
+    assert.match(
+      dialog.querySelector(".copy-feedback")!.textContent!,
+      /copy the link manually/,
+    );
+    assert.equal(dialog.open, true);
+    (dialog.querySelector(".modal-close") as HTMLButtonElement).click();
+    openNew();
+    let reject!: (e: Error) => void;
+    dom.window.navigator.clipboard.writeText = () =>
+      new Promise((_resolve, r) => {
+        reject = r;
+      });
+    dialog = d.querySelector<HTMLDialogElement>("dialog[open]")!;
+    (
+      dialog.querySelector(".link-copy-actions button") as HTMLButtonElement
+    ).click();
+    (dialog.querySelector(".modal-close") as HTMLButtonElement).click();
+    input.focus();
+    reject(new Error("Late failure"));
+    await tick();
+    assert.equal(d.activeElement, input);
+    assert.equal(input.value, "Keep unsubmitted draft");
   } finally {
     dom.window.close();
   }

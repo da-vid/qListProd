@@ -157,7 +157,7 @@ try {
   await page
     .getByRole("button", { name: "Remove photo", exact: true })
     .waitFor();
-  await page.getByRole("button", { name: "Cancel", exact: true }).click();
+  await page.getByRole("button", { name: "Close photo", exact: true }).click();
   await page.locator(".item .name").fill("Text still saves with beta paused");
   await page.locator(".item .name").press("Tab");
   assert.equal(

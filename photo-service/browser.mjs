@@ -265,7 +265,9 @@ try {
     await page.screenshot({
       path: new URL(`management-${width}.png`, out).pathname,
     });
-    await page.getByRole("button", { name: "Close", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Close photo", exact: true })
+      .click();
     assert.equal(
       photoReads,
       cachedReads,

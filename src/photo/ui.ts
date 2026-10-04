@@ -1,3 +1,4 @@
+import { installModalDismissal } from "../modal.ts";
 import { bounded, type PhotoRecord } from "./adapter.ts";
 import { normalizePhoto, type NormalizedPhoto } from "./normalize.ts";
 import { type PhotoGateway, type PhotoUpload } from "./gateway.ts";
@@ -72,7 +73,7 @@ export function installPhotoUI(
     el.textContent = text;
     return el;
   };
-  const button = (text: string, action: () => void) => {
+  const button = (text: string, action: (event: MouseEvent) => void) => {
     const b = make("button", text);
     b.type = "button";
     b.className = "btn photo-button";
@@ -100,7 +101,25 @@ export function installPhotoUI(
   retryCleanupButton.hidden = true;
   const recovery = make("div");
   recovery.className = "photo-recovery";
-  recovery.append(summary, retryCleanupButton);
+  const operationNotice = make("p");
+  operationNotice.className = "photo-operation";
+  operationNotice.setAttribute("role", "status");
+  operationNotice.hidden = true;
+  recovery.append(summary, retryCleanupButton, operationNotice);
+  const pendingOperations = new Set<object>();
+  let operationMessage = "";
+  function renderOperationStatus() {
+    const message = pendingOperations.size
+      ? `${pendingOperations.size} photo request${pendingOperations.size === 1 ? " is" : "s are"} still in progress. Closing the photo does not cancel it.`
+      : operationMessage;
+    operationNotice.textContent = message;
+    operationNotice.hidden = !message;
+    recovery.hidden = !summary.textContent && !message;
+  }
+  function operationStatus(message: string) {
+    operationMessage = message;
+    renderOperationStatus();
+  }
   (root.querySelector("main") ?? root).prepend(recovery);
   const cleaning = new Map<string, Promise<void>>();
   let retrying: Promise<void> | undefined;
@@ -114,7 +133,7 @@ export function installPhotoUI(
     if (hasJournalError())
       summary.textContent +=
         " Photo cleanup retry data could not be saved or restored. Keep this tab open and retry when available.";
-    recovery.hidden = !summary.textContent;
+    recovery.hidden = !summary.textContent && !operationNotice.textContent;
     retryCleanupButton.hidden = cleanupQueue.size === 0 && !hasJournalError();
     retryCleanupButton.disabled = !!retrying || cleaning.size > 0;
   }
@@ -235,17 +254,18 @@ export function installPhotoUI(
       observedVersion: number | undefined,
       busy = false,
       generation = 0;
-    let expanded = false;
+    let expanded = false,
+      closed = false;
+    const operationToken = {};
     const historyKey = win.crypto.randomUUID();
-    const previewButton = button("", () => setExpanded(!expanded));
+    const previewButton = button("", (event) => {
+      if (!expanded || event.target === preview || event.detail === 0)
+        setExpanded(!expanded);
+    });
     previewButton.className = "photo-preview";
     previewButton.hidden = true;
     previewButton.setAttribute("aria-label", "Expand photo");
     previewButton.append(preview);
-    const lightboxClose = button("×", close);
-    lightboxClose.classList.add("photo-lightbox-close");
-    lightboxClose.setAttribute("aria-label", "Close photo");
-    lightboxClose.hidden = true;
     const back = button("Back", () => setExpanded(false));
     back.classList.add("photo-lightbox-back");
     back.setAttribute("aria-label", "Return to photo controls");
@@ -254,7 +274,7 @@ export function installPhotoUI(
       if (value === expanded) return;
       expanded = value;
       dialog.classList.toggle("photo-lightbox", value);
-      back.hidden = lightboxClose.hidden = !value;
+      back.hidden = !value;
       previewButton.setAttribute(
         "aria-label",
         value ? "Return to photo controls" : "Expand photo",
@@ -276,6 +296,14 @@ export function installPhotoUI(
     };
     win.addEventListener("popstate", onBack);
     function close() {
+      if (closed) return;
+      closed = true;
+      if (busy) {
+        entry.loadedAt = 0;
+        operationStatus(
+          "Photo request may still finish. Reopen the photo to check.",
+        );
+      }
       if (expanded) setExpanded(false);
       win.removeEventListener("popstate", onBack);
       controller.abort();
@@ -287,13 +315,17 @@ export function installPhotoUI(
       if (origin?.isConnected) origin.focus();
     }
     currentDialog = { key, close };
-    dialog.addEventListener("cancel", (e) => {
-      e.preventDefault();
-      if (expanded) setExpanded(false);
-      else close();
+    const modal = installModalDismissal(dialog, {
+      label: "Close photo",
+      dismiss: close,
+      escape: () => {
+        if (expanded) setExpanded(false);
+        else close();
+      },
+      outside: (event) =>
+        expanded && (event.target === previewButton || event.target === dialog),
     });
-    const cancel = button("Cancel", close),
-      save = button("Save photo", () => {
+    const save = button("Save photo", () => {
         void commit(false);
       }),
       remove = button("Remove photo", () => {
@@ -369,6 +401,8 @@ export function installPhotoUI(
     async function commit(deleting: boolean) {
       if (busy || (!deleting && !selected)) return;
       busy = true;
+      pendingOperations.add(operationToken);
+      operationStatus("");
       save.disabled = true;
       remove.disabled = true;
       controls.forEach((b) => (b.disabled = true));
@@ -377,7 +411,7 @@ export function installPhotoUI(
         const result = deleting
           ? (await run(
               (s) => adapter.remove(key, existing!.version, s),
-              controller.signal,
+              entry.lifetime.signal,
             ),
             undefined)
           : await run(
@@ -388,7 +422,7 @@ export function installPhotoUI(
                   selected!,
                   s,
                 ),
-              controller.signal,
+              entry.lifetime.signal,
             );
         if (!rows.has(key)) return;
         thumbnail(key, result);
@@ -402,20 +436,23 @@ export function installPhotoUI(
                 ? "Photo saved."
                 : "Photo saved in this tab.",
         );
+        busy = false;
+        if (closed)
+          operationStatus(deleting ? "Photo removed." : "Photo saved.");
         close();
       } catch (e) {
         entry.revision++; // Invalidate reads started before this failed/uncertain write.
         entry.loadedAt = 0; // Revalidate after any uncertain write; never retry against an assumed revision.
-        if (!deleting && selected && !controller.signal.aborted) {
+        if (!deleting && selected && !entry.lifetime.signal.aborted) {
           try {
             const operation = await run(
               (s) => adapter.status(selected!.operationId, s),
-              controller.signal,
+              entry.lifetime.signal,
             );
             if (operation?.state === "committed") {
               const current = await run(
                 (s) => adapter.get(key, s),
-                controller.signal,
+                entry.lifetime.signal,
               );
               if (rows.has(key)) thumbnail(key, current);
               report(
@@ -424,21 +461,31 @@ export function installPhotoUI(
                   ? "Photo save confirmed."
                   : "Photo save confirmed in this tab.",
               );
+              busy = false;
+              if (closed) operationStatus("Photo save confirmed.");
               close();
               return;
             }
             if (operation?.state === "pending") {
               status.textContent =
-                "The photo save is still being checked. Keep this window open and retry later. Text edits still work.";
+                "The photo save is still being checked. Reopen or retry later to check its status. Text edits still work.";
+              if (closed) operationStatus(status.textContent);
               return;
             }
           } catch {
             /* Unavailable status is not proof that a save failed. */
           }
         }
-        if (!controller.signal.aborted)
+        if (!entry.lifetime.signal.aborted) {
           status.textContent = error(e) + " Text edits still work.";
+          if (closed)
+            operationStatus(
+              "Photo request could not be confirmed. Reopen the photo to check. Text edits still work.",
+            );
+        }
       } finally {
+        pendingOperations.delete(operationToken);
+        renderOperationStatus();
         busy = false;
         save.disabled = !selected;
         remove.disabled = false;
@@ -460,13 +507,11 @@ export function installPhotoUI(
       status,
       previewButton,
       back,
-      lightboxClose,
       camera,
       library,
       ...controls,
       save,
       remove,
-      cancel,
     );
     const reload = button("Refresh", () => {
       void load();
@@ -479,7 +524,6 @@ export function installPhotoUI(
       [libraryButton, "Choose", "\uf03e"],
       [save, "Save", "\uf00c"],
       [remove, "Delete", "\uf014"],
-      [cancel, "Close", "\uf00d"],
       [reload, "Refresh", "\uf021"],
     ] as const) {
       control.setAttribute(
@@ -492,8 +536,7 @@ export function installPhotoUI(
       control.replaceChildren(icon, doc.createTextNode(label));
     }
     root.append(dialog);
-    dialog.showModal();
-    cancel.focus();
+    modal.show();
     function showRecord(record?: PhotoRecord) {
       // A chosen draft owns both its preview and its original base revision.
       // Background reads may update the row cache, but must never silently rebase
@@ -503,7 +546,6 @@ export function installPhotoUI(
       observedVersion = record?.version ?? adapter.observedVersion?.(key);
       entry.photoVersion = observedVersion;
       heading.hidden = !!record;
-      cancel.setAttribute("aria-label", record ? "Close" : "Cancel");
       remove.hidden = !record;
       controls.forEach((b) => (b.disabled = false));
       if (record) display(record.full);

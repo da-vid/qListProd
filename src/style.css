@@ -417,6 +417,31 @@ dialog {
   background: #fff;
   box-shadow: 0 5px 15px #0008;
 }
+.modal-dismiss {
+  position: sticky;
+  top: -22px;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  margin: -18px -18px 4px;
+  background: inherit;
+}
+.modal-close {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: inherit;
+  color: inherit;
+  font-size: 24px;
+  line-height: 1;
+  touch-action: manipulation;
+}
+.modal-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: -4px;
+}
 dialog::backdrop {
   background: #0008;
 }
@@ -435,6 +460,27 @@ dialog input {
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 12px;
+}
+.dialog-link-label {
+  display: block;
+  font-size: 13px;
+}
+.dialog-link-label input {
+  display: block;
+  margin-top: 6px;
+}
+.link-copy-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.link-copy-actions .copy-feedback {
+  flex: 1;
+  min-width: 120px;
+  font-size: 13px;
+  margin: 0;
 }
 dialog .nav {
   justify-content: flex-end;

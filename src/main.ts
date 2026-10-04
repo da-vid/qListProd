@@ -1,4 +1,5 @@
 import "./style.css";
+import { installModalDismissal } from "./modal.ts";
 import { applyWithPhotoCleanup } from "./photo/text-delete.ts";
 import { installAboutPrivacy } from "./about.ts";
 import Sortable from "sortablejs";
@@ -235,6 +236,7 @@ shell.append(main);
 if (!production) app.append(notice);
 app.append(sticky, shell);
 const dialog = element("dialog");
+const modal = installModalDismissal(dialog);
 app.append(dialog);
 installAboutPrivacy(app, bottom);
 function labelDialog() {
@@ -245,17 +247,51 @@ function labelDialog() {
   dialog.setAttribute("aria-labelledby", heading.id);
   dialog.setAttribute("aria-describedby", description.id);
 }
+function currentLink(label = "Current list link") {
+  const input = element("input");
+  input.readOnly = true;
+  input.value = location.origin + location.pathname;
+  input.setAttribute("aria-label", label);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") event.preventDefault();
+  });
+  const caption = element("label", "dialog-link-label", label);
+  caption.append(input);
+  const feedback = element("p", "copy-feedback");
+  feedback.setAttribute("role", "status");
+  feedback.setAttribute("aria-live", "polite");
+  const copy = button("Copy link", "btn", () => {
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(input.value);
+        feedback.textContent = "Link copied";
+      } catch {
+        feedback.textContent =
+          "Copy is unavailable. Select and copy the link manually.";
+        if (dialog.open && input.isConnected) input.select();
+      }
+    })();
+  });
+  const content = element("div", "link-sharing");
+  const actions = element("div", "link-copy-actions");
+  actions.append(copy, feedback);
+  content.append(caption, actions);
+  return { content, input };
+}
 function openDialog(
   heading: string,
   message: string,
   action: () => void,
   confirm = "Continue",
-  cancel = "Cancel",
+  includeLink = false,
 ) {
   dialog.replaceChildren(element("h2", "", heading), element("p", "", message));
   const actions = element("div", "nav");
+  if (includeLink) {
+    const link = currentLink();
+    dialog.append(link.content);
+  }
   actions.append(
-    button(cancel, "btn", () => dialog.close()),
     button(confirm, "btn primary", () => {
       dialog.close();
       action();
@@ -263,7 +299,7 @@ function openDialog(
   );
   dialog.append(actions);
   labelDialog();
-  dialog.showModal();
+  modal.show();
 }
 function hasNewItemDraft() {
   return addInput.value.trim().length > 0;
@@ -280,10 +316,11 @@ function newList() {
         "",
         "Stay on this list until saving finishes, or retry the changes that need attention. Your new item draft will stay here too.",
       ),
-      button("Stay", "btn", () => dialog.close()),
     );
+    const link = currentLink();
+    dialog.append(link.content);
     labelDialog();
-    dialog.showModal();
+    modal.show();
     return;
   }
   const draft = addInput.value;
@@ -291,7 +328,7 @@ function newList() {
   openDialog(
     discardDraft ? "Leave your draft item?" : "Create a new list?",
     (discardDraft
-      ? "Your new item hasn't been added. Stay to add it, or discard it and create a new list. "
+      ? "Your new item hasn't been added. Close this dialog to keep your draft, or discard it and create a new list. "
       : "") +
       "This list will remain available at its current address. Save or copy the link to return.",
     () => {
@@ -307,14 +344,14 @@ function newList() {
       location.assign("/new");
     },
     discardDraft ? "Discard draft and create" : "Create list",
-    discardDraft ? "Stay" : "Cancel",
+    true,
   );
 }
 nav.append(
   button("new list", "btn", newList),
   button("share your list", "btn primary", () => {
     dialog.replaceChildren(
-      element("h2", "", "share your list"),
+      element("h2", "", "Share your list"),
       element(
         "p",
         "",
@@ -323,33 +360,11 @@ nav.append(
           : "Anyone with this link can view and edit the list.",
       ),
     );
-    const input = element("input");
-    input.readOnly = true;
-    input.value = location.origin + location.pathname;
-    input.setAttribute("aria-label", "List link");
-    const copyFeedback = element("p", "copy-feedback");
-    copyFeedback.setAttribute("role", "status");
-    copyFeedback.setAttribute("aria-live", "polite");
-    const actions = element("div", "nav");
-    actions.append(
-      button("Close", "btn", () => dialog.close()),
-      button("Copy link", "btn primary", () => {
-        void navigator.clipboard.writeText(input.value).then(
-          () => {
-            copyFeedback.textContent = "Link copied";
-          },
-          () => {
-            input.select();
-            copyFeedback.textContent =
-              "Copy is unavailable. Select and copy the link manually.";
-          },
-        );
-      }),
-    );
-    dialog.append(input, copyFeedback, actions);
+    const link = currentLink();
+    dialog.append(link.content);
     labelDialog();
-    dialog.showModal();
-    input.select();
+    modal.show();
+    link.input.select();
   }),
 );
 function updateStatus() {

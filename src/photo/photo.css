@@ -107,7 +107,7 @@
   color: white;
 }
 .photo-lightbox
-  > :not(.photo-preview):not(.photo-lightbox-back):not(.photo-lightbox-close) {
+  > :not(.photo-preview):not(.photo-lightbox-back):not(.modal-dismiss) {
   display: none !important;
 }
 .photo-lightbox .photo-preview {
@@ -139,11 +139,19 @@
   font-size: 13px;
   margin: 8px 0;
 }
-.photo-lightbox .photo-lightbox-close {
+.photo-lightbox .modal-dismiss {
   position: absolute;
   top: max(12px, env(safe-area-inset-top, 0px));
   right: max(12px, env(safe-area-inset-right, 0px));
   background: #fff;
   color: #444;
-  font-size: 22px;
+  margin: 0;
+}
+
+.photo-dialog .modal-close {
+  margin: 0;
+}
+.photo-operation {
+  font-size: 0.9rem;
+  margin: 8px 0;
 }

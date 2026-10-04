@@ -350,7 +350,7 @@ try {
     ),
   );
   results.reselection_after_heic = true;
-  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await page.getByRole("button", { name: "Close photo", exact: true }).click();
   await page
     .locator(".item .name")
     .fill("Text still works after unsupported photo");

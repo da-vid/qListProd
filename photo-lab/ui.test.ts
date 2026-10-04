@@ -97,7 +97,7 @@ test("preview/cancel/save/replace/remove/expand and URL cleanup use separate pho
     await tick();
     click(dom, "Try synthetic image");
     await tick();
-    click(dom, "Cancel");
+    click(dom, "Close photo");
     assert.equal(mock.records.size, 0);
     assert.equal(live.size, 0);
     click(dom, "Add photo");
@@ -117,7 +117,7 @@ test("preview/cancel/save/replace/remove/expand and URL cleanup use separate pho
       dom.window.document.querySelector<HTMLElement>("dialog h2")!.hidden,
       true,
     );
-    click(dom, "Close");
+    click(dom, "Close photo");
     click(dom, "Change photo");
     await tick();
     click(dom, "Try synthetic image");
@@ -160,7 +160,7 @@ test("late preparation cannot resurrect a cancelled dialog or leak preview URLs"
     click(dom, "Add photo");
     await tick();
     click(dom, "Try synthetic image");
-    click(dom, "Cancel");
+    click(dom, "Close photo");
     resolve(photo);
     await tick();
     assert.equal(live.size, 0);
@@ -205,7 +205,7 @@ test("built qList text add/edit/check/delete works through every photo-service f
       await tick();
       click(dom, "Add photo");
       await tick();
-      click(dom, "Cancel");
+      click(dom, "Close photo");
       change(dom, ".item .name", "Edited while photos fail");
       await tick();
       const checkbox = dom.window.document.querySelector<HTMLInputElement>(
@@ -539,7 +539,7 @@ test("photo cache reuses loaded bytes, refreshes remote revisions, and releases 
       await tick();
       assert.equal(dom.window.document.querySelector(".photo-lightbox"), null);
       assert(dialog.isConnected);
-      click(dom, "Close");
+      click(dom, "Close photo");
       assert.equal(live.size, 1);
     }
     const clock = Date.now;
@@ -548,7 +548,7 @@ test("photo cache reuses loaded bytes, refreshes remote revisions, and releases 
       click(dom, "Change photo");
       await tick();
       assert.equal(reads, 2, "expired cache revalidates on open");
-      click(dom, "Close");
+      click(dom, "Close photo");
     } finally {
       Date.now = clock;
     }
@@ -628,7 +628,7 @@ test("lightbox preserves a selected draft and stale cached writes cannot overwri
     await tick();
     assert.equal(mock.records.get("a")!.version, remote.version);
     assert(dom.window.document.querySelector("dialog"));
-    click(dom, "Close");
+    click(dom, "Close photo");
     click(dom, "Change photo");
     await tick();
     click(dom, "Remove photo");
@@ -722,7 +722,7 @@ test("late stale-cache revalidation cannot rebase a selected or reselected draft
     await tick();
     assert.deepEqual(expectedRemovals, [first.version]);
     assert.equal(mock.records.get("a")!.version, remote.version);
-    click(dom, "Close");
+    click(dom, "Close photo");
     assert.equal(live.size, 1);
     click(dom, "Change photo");
     await tick();
@@ -779,7 +779,7 @@ test("closing a stale cached dialog discards its draft and late read before reop
     const remote = await put("a", first.version, upload(), signal);
     click(dom, "Try synthetic image");
     await tick();
-    click(dom, "Close");
+    click(dom, "Close photo");
     assert.equal(live.size, 1);
     click(dom, "Change photo");
     await tick();
@@ -862,7 +862,7 @@ test("background revalidation does not change removal's displayed revision while
     await tick();
     assert.deepEqual(expected, [first.version, first.version]);
     assert.equal(mock.records.get("a")!.version, remote.version);
-    click(dom, "Close");
+    click(dom, "Close photo");
     click(dom, "Change photo");
     await tick();
     click(dom, "Remove photo");
@@ -918,7 +918,7 @@ test("a failed draft write invalidates an older pending read instead of marking 
     );
     release(first);
     await tick();
-    click(dom, "Close");
+    click(dom, "Close photo");
     click(dom, "Change photo");
     await tick();
     assert.equal(
@@ -1119,3 +1119,133 @@ for (const failure of ["load", "add", "remove"] as const) {
     }
   });
 }
+
+for (const deleting of [false, true]) {
+  test(`closing during photo ${deleting ? "removal" : "save"} keeps the dispatched operation and does not close a reopened dialog`, async () => {
+    const dom = new JSDOM(
+      '<div id="app"><li class="item" data-key="a"></li></div>',
+    );
+    setup(dom);
+    const mock = new MockPhotos(),
+      signal = new AbortController().signal;
+    await mock.put(
+      "a",
+      null,
+      { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+      signal,
+    );
+    let release!: () => void, requestSignal: AbortSignal | undefined;
+    const put = mock.put.bind(mock),
+      remove = mock.remove.bind(mock);
+    if (deleting)
+      mock.remove = async (key, version, s) => {
+        requestSignal = s;
+        await new Promise<void>((r) => {
+          release = r;
+        });
+        return remove(key, version, s);
+      };
+    else
+      mock.put = async (key, version, upload, s) => {
+        requestSignal = s;
+        await new Promise<void>((r) => {
+          release = r;
+        });
+        return put(key, version, upload, s);
+      };
+    const root = dom.window.document.querySelector<HTMLElement>("#app")!;
+    const ui = installPhotoUI(root, mock, {
+      synthetic: async () => photo,
+      timeout: 1000,
+    });
+    try {
+      await tick();
+      click(dom, "Change photo");
+      await tick();
+      if (!deleting) {
+        click(dom, "Try synthetic image");
+        await tick();
+      }
+      click(dom, deleting ? "Remove photo" : "Save photo");
+      await tick();
+      click(dom, "Close photo");
+      assert.equal(requestSignal!.aborted, false);
+      assert.match(
+        root.querySelector(".photo-operation")!.textContent!,
+        /does not cancel/,
+      );
+      click(dom, "Change photo");
+      await tick();
+      const reopened = root.querySelector("dialog")!;
+      release();
+      await tick();
+      assert.equal(reopened.open, true);
+      assert.match(
+        root.querySelector(".photo-operation")!.textContent!,
+        deleting ? /Photo removed/ : /Photo saved/,
+      );
+      assert.equal(mock.records.size, deleting ? 0 : 1);
+    } finally {
+      ui.close();
+      dom.window.close();
+    }
+  });
+}
+
+test("closing overlapping photo removals keeps remaining in-progress feedback truthful", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li><li class="item" data-key="b"></li></div>',
+  );
+  setup(dom);
+  const mock = new MockPhotos(),
+    signal = new AbortController().signal;
+  for (const key of ["a", "b"])
+    await mock.put(
+      key,
+      null,
+      { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+      signal,
+    );
+  const remove = mock.remove.bind(mock),
+    releases = new Map<string, () => void>();
+  mock.remove = async (key, version, s) => {
+    await new Promise<void>((r) => {
+      releases.set(key, r);
+    });
+    return remove(key, version, s);
+  };
+  const root = dom.window.document.querySelector<HTMLElement>("#app")!;
+  const ui = installPhotoUI(root, mock, { timeout: 1000 });
+  try {
+    await tick();
+    for (const key of ["a", "b"]) {
+      root
+        .querySelector<HTMLButtonElement>(`[data-key="${key}"] .photo-manage`)!
+        .click();
+      await tick();
+      click(dom, "Remove photo");
+      await tick();
+      click(dom, "Close photo");
+    }
+    assert.match(
+      root.querySelector(".photo-operation")!.textContent!,
+      /2 photo requests/,
+    );
+    releases.get("a")!();
+    await tick();
+    assert.match(
+      root.querySelector(".photo-operation")!.textContent!,
+      /1 photo request is still in progress/,
+    );
+    releases.get("b")!();
+    await tick();
+    assert.equal(
+      root.querySelector(".photo-operation")!.textContent,
+      "Photo removed.",
+    );
+    assert.equal(mock.records.size, 0);
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
