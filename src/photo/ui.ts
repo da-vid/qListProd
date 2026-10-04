@@ -78,28 +78,76 @@ export function installPhotoUI(
   const summary = make("p");
   summary.className = "photo-cleanup";
   summary.setAttribute("role", "status");
-  root.append(summary);
+  const retryCleanupButton = button("Retry photo cleanup", () => {
+    void retryCleanup();
+  });
+  retryCleanupButton.hidden = true;
+  const recovery = make("div");
+  recovery.className = "photo-recovery";
+  recovery.append(summary, retryCleanupButton);
+  (root.querySelector("main") ?? root).prepend(recovery);
+  const cleaning = new Map<string, Promise<void>>();
+  let retrying: Promise<void> | undefined;
+  let cleanupCompleted = false;
   function cleanupStatus() {
     summary.textContent = cleanupQueue.size
-      ? `${cleanupQueue.size} item's photo cleanup is waiting. Text editing still works. Retry photos when available.`
-      : "";
+      ? `${cleanupQueue.size} item's photo cleanup is ${cleaning.size ? "in progress" : "waiting"}. Text editing still works.`
+      : cleanupCompleted
+        ? "Photo cleanup complete."
+        : "";
     if (journalError)
       summary.textContent +=
         " Photo cleanup retry data could not be saved or restored. Keep this tab open and retry when available.";
+    recovery.hidden = !summary.textContent;
+    retryCleanupButton.hidden = cleanupQueue.size === 0 && !journalError;
+    retryCleanupButton.disabled = !!retrying || cleaning.size > 0;
   }
   cleanupStatus();
-  async function cleanup(intent: CleanupIntent) {
-    cleanupQueue.set(intentKey(intent), intent);
+  function cleanup(intent: CleanupIntent): Promise<void> {
+    const id = intentKey(intent);
+    const active = cleaning.get(id);
+    if (active) return active;
+    cleanupQueue.set(id, intent);
     persistCleanup(intent);
+    // Defer execution until the in-flight marker exists, even for a synchronous adapter.
+    const operation = Promise.resolve().then(async () => {
+      try {
+        await run((signal) =>
+          adapter.remove(intent.key, intent.version, signal),
+        );
+        cleanupQueue.delete(id);
+        persistCleanup(intent, true);
+      } catch {
+        // Retain the exact observed version; a conflict never rebases the deletion.
+      } finally {
+        cleaning.delete(id);
+        cleanupStatus();
+      }
+    });
+    cleaning.set(id, operation);
     cleanupStatus();
+    return operation;
+  }
+  function retryCleanup(): Promise<void> {
+    if (retrying) return retrying;
     try {
-      await run((signal) => adapter.remove(intent.key, intent.version, signal));
-      cleanupQueue.delete(intentKey(intent));
-      persistCleanup(intent, true);
+      for (const intent of options.cleanupJournal?.load() ?? [])
+        cleanupQueue.set(intentKey(intent), intent);
+      journalError = false;
     } catch {
-      /* Keep only a local retry marker; do not roll back the text deletion. */
+      journalError = true;
     }
+    const hadWork = cleanupQueue.size > 0 || journalError;
+    retrying = Promise.all([...cleanupQueue.values()].map(cleanup))
+      .then(() => {})
+      .finally(() => {
+        retrying = undefined;
+        if (hadWork && cleanupQueue.size === 0 && !journalError)
+          cleanupCompleted = true;
+        cleanupStatus();
+      });
     cleanupStatus();
+    return retrying;
   }
   function thumbnail(key: string, record?: PhotoRecord) {
     const entry = rows.get(key);
@@ -540,7 +588,7 @@ export function installPhotoUI(
   reconcile();
   return {
     async retry() {
-      await Promise.all([...cleanupQueue.values()].map(cleanup));
+      await retryCleanup();
       await Promise.all([...rows.keys()].map(refresh));
     },
     close() {
@@ -553,7 +601,7 @@ export function installPhotoUI(
         entry.bar.remove();
       }
       rows.clear();
-      summary.remove();
+      recovery.remove();
     },
   };
 }

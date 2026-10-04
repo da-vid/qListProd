@@ -250,11 +250,12 @@ function openDialog(
   message: string,
   action: () => void,
   confirm = "Continue",
+  cancel = "Cancel",
 ) {
   dialog.replaceChildren(element("h2", "", heading), element("p", "", message));
   const actions = element("div", "nav");
   actions.append(
-    button("Cancel", "btn", () => dialog.close()),
+    button(cancel, "btn", () => dialog.close()),
     button(confirm, "btn primary", () => {
       dialog.close();
       action();
@@ -264,15 +265,53 @@ function openDialog(
   labelDialog();
   dialog.showModal();
 }
-nav.append(
-  button("new list", "btn", () =>
-    openDialog(
-      "Create a new list?",
+function hasNewItemDraft() {
+  return addInput.value.trim().length > 0;
+}
+function hasUnsavedChanges() {
+  return pending > 0 || failed.length > 0 || drafts.size > 0;
+}
+function newList() {
+  if (hasUnsavedChanges()) {
+    dialog.replaceChildren(
+      element("h2", "", "Changes haven't saved yet"),
+      element(
+        "p",
+        "",
+        "Stay on this list until saving finishes, or retry the changes that need attention. Your new item draft will stay here too.",
+      ),
+      button("Stay", "btn", () => dialog.close()),
+    );
+    labelDialog();
+    dialog.showModal();
+    return;
+  }
+  const draft = addInput.value;
+  const discardDraft = hasNewItemDraft();
+  openDialog(
+    discardDraft ? "Leave your draft item?" : "Create a new list?",
+    (discardDraft
+      ? "Your new item hasn't been added. Stay to add it, or discard it and create a new list. "
+      : "") +
       "This list will remain available at its current address. Save or copy the link to return.",
-      () => location.assign("/new"),
-      "Create list",
-    ),
-  ),
+    () => {
+      // A remote update or programmatic edit can arrive while this dialog is open.
+      if (hasUnsavedChanges() || addInput.value !== draft) {
+        newList();
+        return;
+      }
+      if (discardDraft) {
+        addInput.value = "";
+        updateStatus();
+      }
+      location.assign("/new");
+    },
+    discardDraft ? "Discard draft and create" : "Create list",
+    discardDraft ? "Stay" : "Cancel",
+  );
+}
+nav.append(
+  button("new list", "btn", newList),
   button("share your list", "btn primary", () => {
     dialog.replaceChildren(
       element("h2", "", "share your list"),
@@ -333,6 +372,13 @@ function updateStatus() {
                 : online
                   ? "All changes saved"
                   : "Offline · keep this tab open";
+  if (hasNewItemDraft()) {
+    const hint = "Draft item · press Enter or Add";
+    status.textContent =
+      !ready || !writesAllowed || hasUnsavedChanges() || !online
+        ? `${status.textContent} · ${hint}`
+        : hint;
+  }
 }
 async function save(change: Change) {
   if (!writesAllowed) {
@@ -557,10 +603,23 @@ bindEditable(
   () => state.title,
   (value) => ({ type: "title", title: value }),
 );
+let addingComposition = false;
+addInput.addEventListener("input", updateStatus);
+addInput.addEventListener("compositionstart", () => {
+  addingComposition = true;
+});
+addInput.addEventListener("compositionend", () => {
+  addingComposition = false;
+  updateStatus();
+});
+addInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.isComposing || addingComposition))
+    e.preventDefault();
+});
 addForm.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = addInput.value.trim();
-  if (!name) return;
+  if (!name || addingComposition || !ready) return;
   const key = crypto.randomUUID().replaceAll("-", "");
   let priority;
   try {
@@ -576,12 +635,14 @@ addForm.addEventListener("submit", (e) => {
     checked: false,
     priority,
   };
-  addInput.value = "";
+  // save synchronously takes ownership in pending/failed before clearing the field.
   void save({ type: "add", item });
+  addInput.value = "";
+  updateStatus();
   addInput.focus();
 });
 window.addEventListener("beforeunload", (e) => {
-  if (pending || failed.length || drafts.size) {
+  if (hasUnsavedChanges() || hasNewItemDraft()) {
     e.preventDefault();
     e.returnValue = "";
   }

@@ -518,3 +518,105 @@ test("About & Privacy is optional, dismissible and returns focus without recordi
     dom.window.close();
   }
 });
+
+test("new-item drafts have honest feedback, navigation protection and composition-safe submission", async () => {
+  const dom = await ui();
+  try {
+    const d = dom.window.document;
+    const input = d.querySelector<HTMLInputElement>('[aria-label="New item"]')!;
+    const unload = () => {
+      const e = new dom.window.Event("beforeunload", { cancelable: true });
+      dom.window.dispatchEvent(e);
+      return e.defaultPrevented;
+    };
+    const type = (text: string) => {
+      input.value = text;
+      input.dispatchEvent(
+        new dom.window.InputEvent("input", {
+          bubbles: true,
+          inputType: "insertFromPaste",
+        }),
+      );
+    };
+    type("   ");
+    assert.equal(unload(), false);
+    type("Synthetic draft 🍎");
+    assert.match(
+      d.querySelector(".status")!.textContent!,
+      /Draft item.*Enter or Add/,
+    );
+    assert.equal(unload(), true);
+    (d.querySelector("nav button") as HTMLButtonElement).click();
+    assert.match(
+      d.querySelector("dialog[open]")!.textContent!,
+      /hasn.t been added/,
+    );
+    assert.match(
+      d.querySelector("dialog[open]")!.textContent!,
+      /Discard draft and create/,
+    );
+    const stay = [
+      ...d.querySelectorAll<HTMLButtonElement>("dialog button"),
+    ].find((b) => b.textContent === "Stay")!;
+    stay.click();
+    assert.equal(input.value, "Synthetic draft 🍎");
+    assert.equal(d.querySelectorAll(".item").length, 0);
+    input.dispatchEvent(new dom.window.CompositionEvent("compositionstart"));
+    submit(dom, "Synthetic draft 🍎");
+    assert.equal(d.querySelectorAll(".item").length, 0);
+    assert.equal(input.value, "Synthetic draft 🍎");
+    input.dispatchEvent(new dom.window.CompositionEvent("compositionend"));
+    d.querySelector("form")!.dispatchEvent(
+      new dom.window.Event("submit", { cancelable: true }),
+    );
+    d.querySelector("form")!.dispatchEvent(
+      new dom.window.Event("submit", { cancelable: true }),
+    );
+    await tick();
+    assert.equal(d.querySelectorAll(".item").length, 1);
+    assert.equal(input.value, "");
+    assert.equal(d.activeElement, input);
+    assert.equal(unload(), false);
+  } finally {
+    dom.window.close();
+  }
+});
+
+test("failed new-item save retains exact retry content and blocks new-list navigation", async () => {
+  const dom = await ui();
+  try {
+    const d = dom.window.document;
+    const original = dom.window.Storage.prototype.setItem;
+    dom.window.Storage.prototype.setItem = () => {
+      throw new Error("Synthetic storage failure");
+    };
+    submit(dom, "Retained synthetic item");
+    await tick();
+    assert.match(
+      d.querySelector(".status")!.textContent!,
+      /Changes need attention/,
+    );
+    (d.querySelector("nav button") as HTMLButtonElement).click();
+    assert.match(
+      d.querySelector("dialog[open]")!.textContent!,
+      /haven.t saved/,
+    );
+    assert.equal(
+      [...d.querySelectorAll("dialog button")].some((b) =>
+        /Create list|Discard/.test(b.textContent!),
+      ),
+      false,
+    );
+    (d.querySelector("dialog button") as HTMLButtonElement).click();
+    dom.window.Storage.prototype.setItem = original;
+    (d.querySelector(".error button") as HTMLButtonElement).click();
+    await tick();
+    assert.equal(d.querySelectorAll(".item").length, 1);
+    assert.equal(
+      d.querySelector<HTMLTextAreaElement>(".item .name")!.value,
+      "Retained synthetic item",
+    );
+  } finally {
+    dom.window.close();
+  }
+});

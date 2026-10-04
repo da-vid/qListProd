@@ -37,8 +37,15 @@
   object-fit: cover;
   border-radius: 4px;
 }
+.photo-recovery {
+  padding: 8px 16px;
+}
+.photo-recovery .photo-button {
+  min-height: 44px;
+}
 .photo-cleanup {
-  font-size: 0.8rem;
+  margin: 0 0 8px;
+  font-size: 0.9rem;
 }
 .photo-cleanup:empty {
   display: none;

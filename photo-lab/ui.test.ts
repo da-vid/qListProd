@@ -278,8 +278,13 @@ test("text deletion survives photo cleanup failure and retry removes the orphan"
     assert.equal(mock.records.size, 1);
     assert.equal(dom.window.document.querySelector(".item"), null);
     mock.fault = "healthy";
-    await ui.retry();
+    click(dom, "Retry photo cleanup");
+    await tick();
     assert.equal(mock.records.size, 0);
+    assert.match(
+      dom.window.document.querySelector(".photo-cleanup")!.textContent!,
+      /complete/,
+    );
   } finally {
     ui.close();
     dom.window.close();
@@ -932,6 +937,93 @@ test("a failed draft write invalidates an older pending read instead of marking 
     Date.now = clock;
     ui.close();
     assert.equal(live.size, 0);
+    dom.window.close();
+  }
+});
+
+test("visible cleanup retry survives reopen, deduplicates attempts and preserves newer photos", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><li class="item" data-key="a"></li></div>',
+  );
+  setup(dom);
+  const { cleanupJournal } = await import("../src/photo/cleanup-journal.ts");
+  const memory = new Map<string, string>();
+  const journal = cleanupJournal(
+    {
+      get length() {
+        return memory.size;
+      },
+      key: (i) => [...memory.keys()][i] ?? null,
+      getItem: (k) => memory.get(k) ?? null,
+      setItem: (k, v) => {
+        memory.set(k, v);
+      },
+      removeItem: (k) => {
+        memory.delete(k);
+      },
+    },
+    "Synthetic",
+  );
+  const mock = new MockPhotos();
+  const signal = new AbortController().signal;
+  const first = await mock.put(
+    "a",
+    null,
+    { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+    signal,
+  );
+  const root = dom.window.document.querySelector<HTMLElement>("#app")!;
+  let ui = installPhotoUI(root, mock, {
+    cleanupJournal: journal,
+    timeout: 500,
+  });
+  try {
+    await tick();
+    mock.fault = "offline";
+    await applyWithPhotoCleanup(
+      root,
+      { type: "delete", key: "a" },
+      async () => {
+        root.querySelector(".item")!.remove();
+      },
+    );
+    await tick();
+    assert.deepEqual(journal.load(), [{ key: "a", version: first.version }]);
+    ui.close();
+    ui = installPhotoUI(root, mock, { cleanupJournal: journal, timeout: 500 });
+    assert.match(root.querySelector(".photo-cleanup")!.textContent!, /waiting/);
+    mock.fault = "healthy";
+    const newer = await mock.put(
+      "a",
+      first.version,
+      { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+      signal,
+    );
+    const remove = mock.remove.bind(mock);
+    let calls = 0,
+      release!: () => void;
+    mock.remove = async (key, expected, s) => {
+      calls++;
+      await new Promise<void>((r) => {
+        release = r;
+      });
+      return remove(key, expected, s);
+    };
+    const retry = click(dom, "Retry photo cleanup");
+    retry.click();
+    const concurrent = ui.retry();
+    await tick();
+    assert.equal(calls, 1);
+    assert.equal(retry.disabled, true);
+    release();
+    await concurrent;
+    assert.equal(mock.records.get("a")!.version, newer.version);
+    assert.deepEqual(journal.load(), [{ key: "a", version: first.version }]);
+    assert.equal(retry.disabled, false);
+    assert.match(root.querySelector(".photo-cleanup")!.textContent!, /waiting/);
+    assert.equal(root.querySelector(".item"), null);
+  } finally {
+    ui.close();
     dom.window.close();
   }
 });

@@ -149,6 +149,31 @@ test(
           d.querySelectorAll(".item").length === 1 &&
           d.querySelector(".status")?.textContent === "All changes saved",
       );
+      const newItem = d.querySelector<HTMLInputElement>(
+        '[aria-label="New item"]',
+      )!;
+      newItem.value = "Unsubmitted emulator draft";
+      newItem.dispatchEvent(
+        new modern.window.InputEvent("input", { bubbles: true }),
+      );
+      assert.match(d.querySelector(".status")!.textContent!, /Draft item/);
+      assert.doesNotMatch(
+        d.querySelector(".status")!.textContent!,
+        /All changes saved/,
+      );
+      const leave = new modern.window.Event("beforeunload", {
+        cancelable: true,
+      });
+      modern.window.dispatchEvent(leave);
+      assert.equal(leave.defaultPrevented, true);
+      newItem.value = "";
+      newItem.dispatchEvent(
+        new modern.window.InputEvent("input", { bubbles: true }),
+      );
+      assert.equal(
+        d.querySelector(".status")!.textContent,
+        "All changes saved",
+      );
       const rules = JSON.parse(
         await readFile("candidate/database.rules.json", "utf8"),
       );
