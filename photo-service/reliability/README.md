@@ -28,6 +28,9 @@ that migration nor independently queries live capacity.
   composition suppresses premature submission.
 - A failed observed-photo cleanup has a visible Retry photo cleanup button above
   the list. Requests are deduplicated while in flight, and retry status is shown.
+  Journal-load failures and per-entry failed writes stay unresolved until that
+  operation recovers; success on another entry cannot clear the warning. Failed
+  local journal removals retry locally without repeating completed gateway deletion.
   Routine successful cleanup stays quiet; a successful explicit retry announces
   completion. Text editing remains available.
 - Reinstall/reload reads the existing device-local cleanup journal and presents a
@@ -42,7 +45,7 @@ this device”, the new-list dialog ignored a failed save, and the cleanup retry
 button was absent. The production-mode emulator also verifies that “All changes
 saved” is replaced while a new-item draft exists.
 
-- 165 Node tests pass across the list UI, photo gateway, beta/storage trials and
+- 168 Node tests pass across the list UI, photo gateway, beta/storage trials and
   service suites, including late-cache/draft-version regressions.
 - Two production rules/UI integration tests pass against the local demo Firebase
   emulator. No production database is used.
@@ -80,3 +83,15 @@ normalization contract are unchanged.
 Review/release approval and physical-device acceptance are the next decisions.
 Undo/retention semantics, other audit polish and optional product features remain
 separate work requiring agreement; this batch does not implement them.
+
+## Independent review follow-up
+
+The shared journal-error flag could falsely report completion after one entry
+failed and another succeeded. Multi-entry load and remove regressions reproduced
+this on commit `816710003220dc5ac343bdfb4ca9797e5ea42124`. Load errors and failed
+per-entry writes are now tracked separately, with add/load/remove recovery
+regressions and no repeated gateway deletion for failed local journal removals.
+
+Vite development-server ResizeObserver loop warnings were observed during layout
+runs; browser assertions passed. These warnings and physical-device behavior
+remain outside this journal correction.

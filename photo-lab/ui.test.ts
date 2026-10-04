@@ -1027,3 +1027,95 @@ test("visible cleanup retry survives reopen, deduplicates attempts and preserves
     dom.window.close();
   }
 });
+
+for (const failure of ["load", "add", "remove"] as const) {
+  test(`multi-entry cleanup retains unresolved journal ${failure} errors until that operation recovers`, async () => {
+    const dom = new JSDOM(
+      '<div id="app"><li class="item" data-key="a"></li><li class="item" data-key="b"></li></div>',
+    );
+    setup(dom);
+    const root = dom.window.document.querySelector<HTMLElement>("#app")!;
+    const mock = new MockPhotos();
+    const signal = new AbortController().signal;
+    for (const key of ["a", "b"])
+      await mock.put(
+        key,
+        null,
+        { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+        signal,
+      );
+    const memory = new Map<string, { key: string; version: number }>();
+    let failing = true;
+    const removalCalls: string[] = [];
+    const remove = mock.remove.bind(mock);
+    mock.remove = async (key, version, s) => {
+      removalCalls.push(key);
+      if (failing && failure === "add" && key === "a")
+        throw new Error("Synthetic gateway failure");
+      return remove(key, version, s);
+    };
+    const journal = {
+      load() {
+        if (failing && failure === "load")
+          throw new Error("Synthetic journal load failure");
+        return [...memory.values()];
+      },
+      add(intent: { key: string; version: number }) {
+        if (failing && failure === "add" && intent.key === "a")
+          throw new Error("Synthetic journal add failure");
+        memory.set(intent.key, intent);
+      },
+      remove(intent: { key: string; version: number }) {
+        if (failing && failure === "remove" && intent.key === "a")
+          throw new Error("Synthetic journal remove failure");
+        memory.delete(intent.key);
+      },
+    };
+    const ui = installPhotoUI(root, mock, { cleanupJournal: journal });
+    try {
+      await tick();
+      mock.fault = "offline";
+      for (const key of ["a", "b"])
+        await applyWithPhotoCleanup(root, { type: "delete", key }, async () => {
+          root.querySelector(`[data-key="${key}"]`)!.remove();
+        });
+      await tick();
+      mock.fault = "healthy";
+      await ui.retry();
+      assert.equal(mock.records.size, failure === "add" ? 1 : 0);
+      removalCalls.length = 0;
+      const message = root.querySelector(".photo-cleanup")!;
+      assert.match(
+        message.textContent!,
+        /retry data could not be saved or restored/,
+      );
+      assert.doesNotMatch(message.textContent!, /cleanup complete/);
+      const retry = [
+        ...root.querySelectorAll<HTMLButtonElement>("button"),
+      ].find((b) => b.textContent === "Retry photo cleanup")!;
+      assert.equal(retry.hidden, false);
+      // Successful work on b must not clear a's failed remove, or the earlier failed load.
+      await ui.retry();
+      assert.match(
+        message.textContent!,
+        /retry data could not be saved or restored/,
+      );
+      assert.doesNotMatch(message.textContent!, /cleanup complete/);
+      failing = false;
+      await ui.retry();
+      assert.equal(memory.size, 0);
+      assert.equal(message.textContent, "Photo cleanup complete.");
+      assert.equal(retry.hidden, true);
+      assert.equal(mock.records.size, 0);
+      if (failure === "remove")
+        assert.deepEqual(
+          removalCalls,
+          [],
+          "failed local journal removal must not resend completed gateway deletion",
+        );
+    } finally {
+      ui.close();
+      dom.window.close();
+    }
+  });
+}

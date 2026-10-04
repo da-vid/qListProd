@@ -34,20 +34,36 @@ export function installPhotoUI(
   >();
   const cleanupQueue = new Map<string, CleanupIntent>();
   const intentKey = (i: CleanupIntent) => JSON.stringify(i);
-  let journalError = false;
-  try {
-    for (const intent of options.cleanupJournal?.load() ?? [])
-      cleanupQueue.set(intentKey(intent), intent);
-  } catch {
-    journalError = true;
+  let journalLoadError = false;
+  const journalWrites = new Map<
+    string,
+    { intent: CleanupIntent; removing: boolean }
+  >();
+  const hasJournalError = () => journalLoadError || journalWrites.size > 0;
+  function restoreCleanup() {
+    try {
+      for (const intent of options.cleanupJournal?.load() ?? []) {
+        const id = intentKey(intent);
+        // A failed journal removal has already completed remote cleanup. Retry
+        // its local write without sending the deletion to the gateway again.
+        if (!journalWrites.get(id)?.removing) cleanupQueue.set(id, intent);
+      }
+      journalLoadError = false;
+    } catch {
+      journalLoadError = true;
+    }
   }
+  restoreCleanup();
   function persistCleanup(intent: CleanupIntent, removing = false) {
+    const id = intentKey(intent);
     try {
       if (removing) options.cleanupJournal?.remove(intent);
       else options.cleanupJournal?.add(intent);
-      journalError = false;
+      journalWrites.delete(id);
     } catch {
-      journalError = true;
+      // Keep the latest desired journal state for this exact key/version.
+      // Success on another entry cannot resolve this failure or a failed load.
+      journalWrites.set(id, { intent, removing });
     }
   }
   let currentDialog: { key: string; close: () => void } | undefined;
@@ -92,14 +108,14 @@ export function installPhotoUI(
   function cleanupStatus() {
     summary.textContent = cleanupQueue.size
       ? `${cleanupQueue.size} item's photo cleanup is ${cleaning.size ? "in progress" : "waiting"}. Text editing still works.`
-      : cleanupCompleted
+      : cleanupCompleted && !hasJournalError()
         ? "Photo cleanup complete."
         : "";
-    if (journalError)
+    if (hasJournalError())
       summary.textContent +=
         " Photo cleanup retry data could not be saved or restored. Keep this tab open and retry when available.";
     recovery.hidden = !summary.textContent;
-    retryCleanupButton.hidden = cleanupQueue.size === 0 && !journalError;
+    retryCleanupButton.hidden = cleanupQueue.size === 0 && !hasJournalError();
     retryCleanupButton.disabled = !!retrying || cleaning.size > 0;
   }
   cleanupStatus();
@@ -130,19 +146,17 @@ export function installPhotoUI(
   }
   function retryCleanup(): Promise<void> {
     if (retrying) return retrying;
-    try {
-      for (const intent of options.cleanupJournal?.load() ?? [])
-        cleanupQueue.set(intentKey(intent), intent);
-      journalError = false;
-    } catch {
-      journalError = true;
-    }
-    const hadWork = cleanupQueue.size > 0 || journalError;
+    const hadJournalWork = hasJournalError();
+    for (const { intent, removing } of [...journalWrites.values()])
+      persistCleanup(intent, removing);
+    restoreCleanup();
+    const hadWork =
+      hadJournalWork || cleanupQueue.size > 0 || hasJournalError();
     retrying = Promise.all([...cleanupQueue.values()].map(cleanup))
       .then(() => {})
       .finally(() => {
         retrying = undefined;
-        if (hadWork && cleanupQueue.size === 0 && !journalError)
+        if (hadWork && cleanupQueue.size === 0 && !hasJournalError())
           cleanupCompleted = true;
         cleanupStatus();
       });
