@@ -117,6 +117,17 @@ try {
           },
           { pseudo, paint },
         );
+      // Explicit user-requested legacy checked palette; keep all other contrast targets.
+      const legacyChecked = {
+        "completed editable text": "rgb(184, 174, 126)",
+        "focused completed text": "rgb(184, 174, 126)",
+        "checked checkmark": "rgb(201, 192, 144)",
+        "checked border": "rgb(209, 200, 152)",
+      };
+      if (legacyChecked[name]) {
+        assert.equal(s.color, legacyChecked[name]);
+        target = null;
+      }
       samples.push({ name, target, ...s });
       if (
         ["saved status", "footer count", "About link"].includes(name) &&
@@ -128,7 +139,7 @@ try {
           fontSize: s.fontSize,
           minimumFontSize: 12,
         });
-      if (s.ratio < target)
+      if (target !== null && s.ratio < target)
         results.failures.push({ width, name, ratio: s.ratio, target });
     }
     async function interactionStates(
@@ -167,7 +178,7 @@ try {
       await page.evaluate(() => getSelection()?.removeAllRanges());
     }
     await measure("saved status", ".status");
-    await measure("footer count", ".bottom > span");
+    await measure("footer count", ".checked-count");
     await measure("About link", ".about-link");
     await measure("completed editable text", ".item.done .name");
     await measure(

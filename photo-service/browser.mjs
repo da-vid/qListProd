@@ -323,7 +323,9 @@ try {
     await other.locator(".delete-item").click();
     await other.waitFor({ state: "detached" });
     await page.waitForFunction(
-      () => !document.querySelector(".photo-cleanup")?.textContent,
+      () =>
+        document.querySelector(".photo-cleanup-feedback")?.dataset.active ===
+        "false",
     );
     assert.equal(f.paths.size, beforeDelete - 1);
     const longText = "Wrapped synthetic item " + "longword".repeat(24);

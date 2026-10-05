@@ -130,7 +130,7 @@ try {
     await page.waitForFunction(
       () =>
         ![...document.querySelectorAll("button")].find(
-          (b) => b.textContent === "Retry photo cleanup",
+          (b) => b.getAttribute("aria-label") === "Retry photo cleanup",
         ).disabled,
     );
     assert.equal(await page.locator(".item").count(), 0);

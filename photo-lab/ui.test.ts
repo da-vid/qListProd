@@ -1092,7 +1092,7 @@ for (const failure of ["load", "add", "remove"] as const) {
       assert.doesNotMatch(message.textContent!, /cleanup complete/);
       const retry = [
         ...root.querySelectorAll<HTMLButtonElement>("button"),
-      ].find((b) => b.textContent === "Retry photo cleanup")!;
+      ].find((b) => b.getAttribute("aria-label") === "Retry photo cleanup")!;
       assert.equal(retry.hidden, false);
       // Successful work on b must not clear a's failed remove, or the earlier failed load.
       await ui.retry();
@@ -1244,6 +1244,106 @@ test("closing overlapping photo removals keeps remaining in-progress feedback tr
       "Photo removed.",
     );
     assert.equal(mock.records.size, 0);
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
+
+test("inline cleanup keeps new failures visible past an earlier success timer and hides only resolved work", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><div class="clear-feedback"></div><main><li class="item" data-key="a"></li><li class="item" data-key="b"></li></main></div>',
+  );
+  setup(dom);
+  const root = dom.window.document.querySelector<HTMLElement>("#app")!;
+  const mock = new MockPhotos();
+  for (const key of ["a", "b"])
+    await mock.put(
+      key,
+      null,
+      { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+      new AbortController().signal,
+    );
+  const visibility: boolean[] = [];
+  root.addEventListener("qlist:photo-cleanup-status", (event) =>
+    visibility.push((event as CustomEvent).detail.active),
+  );
+  const ui = installPhotoUI(root, mock);
+  const summary = root.querySelector(".clear-feedback .photo-cleanup")!;
+  try {
+    await tick();
+    const remove = async (key: string) =>
+      applyWithPhotoCleanup(root, { type: "delete", key }, async () => {
+        root.querySelector(`[data-key="${key}"]`)!.remove();
+      });
+    await remove("a");
+    await tick();
+    assert.equal(summary.textContent, "Photo cleanup complete.");
+    assert.equal(
+      root.querySelector<HTMLElement>("main .photo-recovery")!.hidden,
+      true,
+    );
+    mock.fault = "offline";
+    await remove("b");
+    await tick();
+    assert.match(summary.textContent!, /waiting/);
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    assert.match(summary.textContent!, /waiting/);
+    assert.equal(visibility.at(-1), true);
+    mock.fault = "healthy";
+    await ui.retry();
+    assert.equal(summary.textContent, "Photo cleanup complete.");
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    assert.equal(summary.textContent, "Photo cleanup complete.");
+    assert.equal(summary.parentElement!.dataset.active, "false");
+    assert.equal(visibility.at(-1), false);
+    assert.equal(mock.records.size, 0);
+  } finally {
+    ui.close();
+    dom.window.close();
+  }
+});
+
+test("closing inline cleanup prevents late completion from changing a replacement view", async () => {
+  const dom = new JSDOM(
+    '<div id="app"><div class="clear-feedback"></div><li class="item" data-key="a"></li></div>',
+  );
+  setup(dom);
+  const root = dom.window.document.querySelector<HTMLElement>("#app")!;
+  const mock = new MockPhotos();
+  await mock.put(
+    "a",
+    null,
+    { operationId: crypto.randomUUID(), jpeg: photo.jpeg },
+    new AbortController().signal,
+  );
+  let release!: () => void;
+  mock.remove = async () => {
+    await new Promise<void>((resolve) => {
+      release = resolve;
+    });
+  };
+  const visibility: boolean[] = [];
+  root.addEventListener("qlist:photo-cleanup-status", (event) =>
+    visibility.push((event as CustomEvent).detail.active),
+  );
+  const ui = installPhotoUI(root, mock);
+  try {
+    await tick();
+    await applyWithPhotoCleanup(
+      root,
+      { type: "delete", key: "a" },
+      async () => {
+        root.querySelector(".item")!.remove();
+      },
+    );
+    await tick();
+    ui.close();
+    const count = visibility.length;
+    release();
+    await tick();
+    assert.equal(visibility.length, count);
+    assert.equal(root.querySelector(".photo-cleanup-feedback"), null);
   } finally {
     ui.close();
     dom.window.close();

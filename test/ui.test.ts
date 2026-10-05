@@ -392,7 +392,15 @@ test("sticky clear action follows current checks, sits below input, and returns 
     assert.ok(sticky.querySelector("header nav"));
     assert.ok(controls.querySelector(".title"));
     assert.equal(controls.querySelector(".add")!.nextElementSibling, slot);
-    assert.equal(clear.textContent, "Clear all checked");
+    assert.equal(clear.getAttribute("aria-label"), "Clear all checked");
+    assert.equal(
+      clear.querySelector(".clear-icons")!.textContent,
+      "\uf057 \uf046",
+    );
+    assert.equal(
+      clear.querySelector(".clear-icons")!.getAttribute("aria-hidden"),
+      "true",
+    );
     assert.equal(clear.disabled, true);
     assert.equal(slot.getAttribute("aria-hidden"), "true");
     assert.equal(slot.inert, true);
@@ -404,6 +412,11 @@ test("sticky clear action follows current checks, sits below input, and returns 
     check.dispatchEvent(new dom.window.Event("change"));
     await tick();
     assert.equal(slot.classList.contains("available"), true);
+    assert.equal(
+      slot.querySelector(".checked-count")!.textContent,
+      "1 of 1 checked",
+    );
+    assert.equal(d.querySelector(".bottom .checked-count"), null);
     assert.equal(clear.disabled, false);
     assert.equal(slot.inert, false);
     clear.focus();

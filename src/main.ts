@@ -1,5 +1,9 @@
 import "./style.css";
 import { installModalDismissal } from "./modal.ts";
+import {
+  PHOTO_CLEANUP_STATUS,
+  type PhotoCleanupStatus,
+} from "./photo/cleanup-status.ts";
 import { applyWithPhotoCleanup } from "./photo/text-delete.ts";
 import { installAboutPrivacy } from "./about.ts";
 import Sortable from "sortablejs";
@@ -200,22 +204,43 @@ empty.append(
   element("p", "", "no sign up, no spam. start your list right here!"),
 );
 const bottom = element("footer", "bottom");
-const progress = element("span");
+const progress = element("span", "checked-count");
+let clearing = false,
+  cleanupVisible = false;
 const clear = button("Clear all checked", "text-button", () => {
+  if (clearing || cleanupVisible) return;
   const checkedCount = state.items.filter((x) => x.checked).length;
   openDialog(
     "Clear all checked items?",
     `${checkedCount} checked item${checkedCount === 1 ? "" : "s"} will be removed.`,
     () => {
-      for (const item of state.items.filter((x) => x.checked))
-        void save({ type: "delete", key: item.key });
+      if (clearing || cleanupVisible) return;
+      clearing = true;
+      renderClear();
+      void Promise.all(
+        state.items
+          .filter((x) => x.checked)
+          .map((item) => save({ type: "delete", key: item.key })),
+      ).finally(() => {
+        clearing = false;
+        renderClear();
+      });
     },
     "Clear all checked",
   );
 });
+const clearIcons = element("span", "clear-icons", "\uf057 \uf046");
+clearIcons.setAttribute("aria-hidden", "true");
+clear.prepend(clearIcons);
+clear.setAttribute("aria-label", "Clear all checked");
 const clearSlot = element("div", "clear-slot");
 const clearInner = element("div", "clear-inner");
-clearInner.append(clear);
+const clearPending = element("span", "clear-pending", "Clearing checked…");
+clearPending.setAttribute("role", "status");
+clearPending.hidden = true;
+const clearFeedback = element("div", "clear-feedback");
+clearFeedback.hidden = true;
+clearInner.append(clear, clearPending, clearFeedback);
 clearSlot.append(clearInner);
 clearSlot.inert = true;
 clearSlot.setAttribute("aria-hidden", "true");
@@ -239,6 +264,37 @@ const dialog = element("dialog");
 const modal = installModalDismissal(dialog);
 app.append(dialog);
 installAboutPrivacy(app, bottom);
+function renderClear() {
+  const done = state.items.filter((x) => x.checked).length;
+  const visible = done > 0 || clearing || cleanupVisible;
+  const replacing = clearing || cleanupVisible;
+  if (
+    (!visible && clearSlot.contains(document.activeElement)) ||
+    (replacing && document.activeElement === clear) ||
+    (!cleanupVisible && clearFeedback.contains(document.activeElement))
+  )
+    addInput.focus({ preventScroll: true });
+  const parent = visible ? clearInner : bottom;
+  if (progress.parentElement !== parent) parent.prepend(progress);
+  progress.textContent = state.items.length
+    ? `${done} of ${state.items.length} checked`
+    : "";
+  clearSlot.classList.toggle("available", visible);
+  clearSlot.inert = !visible;
+  clearSlot.setAttribute("aria-hidden", String(!visible));
+  clear.disabled = done === 0 || !writesAllowed || replacing;
+  // Preserve the outgoing content while the existing slot transition collapses it.
+  // In particular, never flash the clear button after successful cleanup.
+  if (visible) {
+    clear.hidden = replacing;
+    clearPending.hidden = !clearing || cleanupVisible;
+    clearFeedback.hidden = !cleanupVisible;
+  }
+}
+app.addEventListener(PHOTO_CLEANUP_STATUS, (event) => {
+  cleanupVisible = (event as CustomEvent<PhotoCleanupStatus>).detail.active;
+  renderClear();
+});
 function labelDialog() {
   const heading = dialog.querySelector("h2")!;
   const description = dialog.querySelector("p")!;
@@ -488,20 +544,10 @@ function render(next: ListState, discardEdits = false) {
   if (discardEdits || document.activeElement !== title)
     title.value = state.title;
   count.textContent = `${state.items.length} item${state.items.length === 1 ? "" : "s"}`;
-  const done = state.items.filter((x) => x.checked).length;
-  progress.textContent = state.items.length
-    ? `${done} of ${state.items.length} complete`
-    : "";
   addInput.placeholder = state.items.length
     ? "enter your next item"
     : "enter your first item here";
-  const canClear = done > 0;
-  if (!canClear && document.activeElement === clear)
-    addInput.focus({ preventScroll: true });
-  clearSlot.classList.toggle("available", canClear);
-  clearSlot.inert = !canClear;
-  clearSlot.setAttribute("aria-hidden", String(!canClear));
-  clear.disabled = !canClear || !writesAllowed;
+  renderClear();
   empty.hidden = state.items.length > 0;
   const existing = new Map(
     [...list.children].map((x) => [

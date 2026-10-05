@@ -1,3 +1,4 @@
+import { PHOTO_CLEANUP_STATUS } from "./cleanup-status.ts";
 import { installModalDismissal } from "../modal.ts";
 import { bounded, type PhotoRecord } from "./adapter.ts";
 import { normalizePhoto, type NormalizedPhoto } from "./normalize.ts";
@@ -95,9 +96,10 @@ export function installPhotoUI(
   const summary = make("p");
   summary.className = "photo-cleanup";
   summary.setAttribute("role", "status");
-  const retryCleanupButton = button("Retry photo cleanup", () => {
+  const retryCleanupButton = button("Retry", () => {
     void retryCleanup();
   });
+  retryCleanupButton.setAttribute("aria-label", "Retry photo cleanup");
   retryCleanupButton.hidden = true;
   const recovery = make("div");
   recovery.className = "photo-recovery";
@@ -105,7 +107,12 @@ export function installPhotoUI(
   operationNotice.className = "photo-operation";
   operationNotice.setAttribute("role", "status");
   operationNotice.hidden = true;
-  recovery.append(summary, retryCleanupButton, operationNotice);
+  const cleanupPanel = make("div");
+  cleanupPanel.className = "photo-cleanup-feedback";
+  cleanupPanel.append(summary, retryCleanupButton);
+  const inlineCleanup = root.querySelector(".clear-feedback");
+  (inlineCleanup ?? recovery).append(cleanupPanel);
+  recovery.append(operationNotice);
   const pendingOperations = new Set<object>();
   let operationMessage = "";
   function renderOperationStatus() {
@@ -114,7 +121,8 @@ export function installPhotoUI(
       : operationMessage;
     operationNotice.textContent = message;
     operationNotice.hidden = !message;
-    recovery.hidden = !summary.textContent && !message;
+    recovery.hidden =
+      (Boolean(inlineCleanup) || !summary.textContent) && !message;
   }
   function operationStatus(message: string) {
     operationMessage = message;
@@ -124,18 +132,60 @@ export function installPhotoUI(
   const cleaning = new Map<string, Promise<void>>();
   let retrying: Promise<void> | undefined;
   let cleanupCompleted = false;
+  let hadCleanupWork = cleanupQueue.size > 0 || hasJournalError();
+  let completionTimer: number | undefined;
+  let closed = false;
   function cleanupStatus() {
-    summary.textContent = cleanupQueue.size
-      ? `${cleanupQueue.size} item's photo cleanup is ${cleaning.size ? "in progress" : "waiting"}. Text editing still works.`
-      : cleanupCompleted && !hasJournalError()
+    if (closed) return;
+    const unfinished =
+      cleanupQueue.size > 0 || hasJournalError() || cleaning.size > 0;
+    if (unfinished) {
+      hadCleanupWork = true;
+      cleanupCompleted = false;
+      win.clearTimeout(completionTimer);
+      completionTimer = undefined;
+    } else if (hadCleanupWork) {
+      hadCleanupWork = false;
+      cleanupCompleted = true;
+      completionTimer = win.setTimeout(() => {
+        cleanupCompleted = false;
+        completionTimer = undefined;
+        cleanupStatus();
+      }, 1400);
+    }
+    let message = cleanupQueue.size
+      ? cleaning.size
+        ? "Cleaning photos…"
+        : "Photo cleanup waiting."
+      : cleanupCompleted
         ? "Photo cleanup complete."
         : "";
     if (hasJournalError())
-      summary.textContent +=
-        " Photo cleanup retry data could not be saved or restored. Keep this tab open and retry when available.";
-    recovery.hidden = !summary.textContent && !operationNotice.textContent;
-    retryCleanupButton.hidden = cleanupQueue.size === 0 && !hasJournalError();
+      message +=
+        " Photo cleanup retry data could not be saved or restored. Keep this tab open.";
+    // Keep resolved text painted during the host slot's exit transition. Its
+    // inactive host is inert/aria-hidden; a later operation replaces the text.
+    summary.textContent = message || (inlineCleanup ? summary.textContent : "");
+    cleanupPanel.dataset.active = String(!!message);
+    recovery.hidden =
+      (Boolean(inlineCleanup) || !summary.textContent) &&
+      !operationNotice.textContent;
+    const hideRetry =
+      (cleanupQueue.size === 0 && !hasJournalError()) ||
+      !!retrying ||
+      cleaning.size > 0;
+    if (hideRetry && doc.activeElement === retryCleanupButton)
+      root
+        .querySelector<HTMLInputElement>(".add input")
+        ?.focus({ preventScroll: true });
+    retryCleanupButton.hidden = hideRetry;
     retryCleanupButton.disabled = !!retrying || cleaning.size > 0;
+    if (inlineCleanup)
+      root.dispatchEvent(
+        new win.CustomEvent(PHOTO_CLEANUP_STATUS, {
+          detail: { active: !!message },
+        }),
+      );
   }
   cleanupStatus();
   function cleanup(intent: CleanupIntent): Promise<void> {
@@ -165,18 +215,13 @@ export function installPhotoUI(
   }
   function retryCleanup(): Promise<void> {
     if (retrying) return retrying;
-    const hadJournalWork = hasJournalError();
     for (const { intent, removing } of [...journalWrites.values()])
       persistCleanup(intent, removing);
     restoreCleanup();
-    const hadWork =
-      hadJournalWork || cleanupQueue.size > 0 || hasJournalError();
     retrying = Promise.all([...cleanupQueue.values()].map(cleanup))
       .then(() => {})
       .finally(() => {
         retrying = undefined;
-        if (hadWork && cleanupQueue.size === 0 && !hasJournalError())
-          cleanupCompleted = true;
         cleanupStatus();
       });
     cleanupStatus();
@@ -648,6 +693,16 @@ export function installPhotoUI(
       await Promise.all([...rows.keys()].map(refresh));
     },
     close() {
+      if (closed) return;
+      closed = true;
+      win.clearTimeout(completionTimer);
+      if (inlineCleanup)
+        root.dispatchEvent(
+          new win.CustomEvent(PHOTO_CLEANUP_STATUS, {
+            detail: { active: false },
+          }),
+        );
+      cleanupPanel.remove();
       observer.disconnect();
       root.removeEventListener(PHOTO_DELETE_INTENT, onDeleteIntent);
       currentDialog?.close();
