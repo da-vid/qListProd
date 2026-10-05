@@ -35,12 +35,12 @@ try {
     page.setDefaultTimeout(5000);
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
-    await page.goto(base + "/Synthetic");
+    // Use normal preview mode: exercise a real long route, not history mutation.
+    const longPath = "/MyCustomList" + "LongName".repeat(12);
+    await page.goto(base + longPath);
     const add = page.getByRole("textbox", { name: "New item", exact: true });
     await add.fill("Draft stays here");
-    const longPath = "/MyCustomList" + "LongName".repeat(12);
-    await page.evaluate((path) => {
-      history.replaceState(null, "", path);
+    await page.evaluate(() => {
       Object.defineProperty(navigator, "clipboard", {
         configurable: true,
         value: {
@@ -49,7 +49,7 @@ try {
           },
         },
       });
-    }, longPath);
+    });
     const current = base + longPath;
     const modal = page.locator("dialog[open]");
     async function outside(touch = false) {

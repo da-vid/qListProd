@@ -84,7 +84,7 @@ try {
     page.setDefaultTimeout(7000);
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
-    await page.goto(base + "/index.html", { waitUntil: "networkidle" });
+    await page.goto(base + "/PhotoDemo", { waitUntil: "networkidle" });
     for (const text of [
       "Synthetic apples",
       "Synthetic long item with enough words to inspect editing space at a narrow mobile width",

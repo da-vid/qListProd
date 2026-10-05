@@ -141,7 +141,7 @@ test("production origin refuses persistence and hosted bundle excludes Firebase 
   const dom = await ui("https://www.qlist.cc/AbC234");
   try {
     assert.match(
-      dom.window.document.querySelector(".error")!.textContent!,
+      dom.window.document.querySelector(".list-load-error")!.textContent!,
       /cannot run/,
     );
     assert.equal(

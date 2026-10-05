@@ -89,6 +89,12 @@ export class FirebaseStore implements Store {
     error: (e: Error) => void,
   ) {
     let state: ListState = { title: "", items: [] };
+    let itemsReady = false,
+      titleReady = false,
+      active = true;
+    const publish = () => {
+      if (active && itemsReady && titleReady) fn(state);
+    };
     const a = onValue(
       ref(this.db, this.path(`lists/${this.id}`)),
       (snap) => {
@@ -105,7 +111,8 @@ export class FirebaseStore implements Store {
             });
         });
         state = { ...state, items: ordered(items) };
-        fn(state);
+        itemsReady = true;
+        publish();
       },
       error,
     );
@@ -116,7 +123,8 @@ export class FirebaseStore implements Store {
           ...state,
           title: typeof snap.val() === "string" ? snap.val() : "",
         };
-        fn(state);
+        titleReady = true;
+        publish();
       },
       error,
     );
@@ -124,6 +132,7 @@ export class FirebaseStore implements Store {
       connection(snap.val() === true),
     );
     return () => {
+      active = false;
       a();
       b();
       c();
@@ -205,7 +214,11 @@ export class FirebaseStore implements Store {
     goOnline(this.db);
   }
   close() {
-    goOffline(this.db);
-    void deleteApp(this.db.app);
+    closeDatabase(this.db);
   }
+}
+
+export function closeDatabase(db: Database) {
+  goOffline(db);
+  void deleteApp(db.app);
 }

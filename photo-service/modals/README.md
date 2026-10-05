@@ -63,7 +63,7 @@ its own confirmation row. Sharing has no create action.
   and JPEG reselection, and continued text editing after failure pass in Chrome.
   All browser harnesses block external traffic; none use production list data.
 
-Run the new browser suite with Vite photo-preview on 127.0.0.1:4174:
+Run the new browser suite with Vite in normal preview mode on 127.0.0.1:4174:
 
 ```sh
 node photo-service/modal-browser.mjs /absolute/path/to/playwright/index.mjs /absolute/evidence/directory

@@ -32,6 +32,21 @@ let store: Store,
   dragging = false,
   failed: Change[] = [];
 const local = mode === "preview" || mode === "photo-preview";
+function existingRoute() {
+  try {
+    return (
+      mode === "photo-preview" ||
+      routeRequest(location.pathname, document.cookie) !== null
+    );
+  } catch {
+    return true;
+  }
+}
+let openingExisting = existingRoute();
+let loadPhase: "loading" | "ready" | "error" = "loading";
+let loadRevision = 0;
+let stopLoad = () => {};
+let loadTimer: ReturnType<typeof setTimeout> | undefined;
 const production = mode === "release";
 let writesAllowed = !production;
 const drafts = new Set<HTMLInputElement | HTMLTextAreaElement>();
@@ -180,6 +195,23 @@ function welcomeIcons(...glyphs: string[]) {
   return row;
 }
 const empty = element("div", "empty");
+empty.hidden = openingExisting;
+list.hidden = true;
+const listArea = element("div", "list-area");
+const listLoading = element("div", "list-loading");
+listLoading.setAttribute("role", "status");
+listLoading.setAttribute("aria-label", "Loading list");
+const spinner = element("span", "list-spinner");
+spinner.setAttribute("aria-hidden", "true");
+listLoading.append(spinner, element("span", "sr-only", "Loading list…"));
+listLoading.hidden = !openingExisting;
+const loadError = element("div", "list-load-error");
+loadError.hidden = true;
+loadError.setAttribute("role", "alert");
+const loadErrorText = element("p");
+const retryLoad = button("Retry loading list", "btn", () => beginLoad());
+loadError.append(loadErrorText, retryLoad);
+listArea.append(listLoading, loadError, list, empty);
 empty.append(
   element("strong", "", "welcome to your qList!"),
   element(
@@ -248,7 +280,7 @@ clear.disabled = true;
 controls.append(title, addForm, clearSlot);
 sticky.append(header, controls);
 bottom.append(progress);
-main.append(errorBox, reorderHelp, reorderStatus, list, empty, meta, bottom);
+main.append(errorBox, reorderHelp, reorderStatus, listArea, meta, bottom);
 if (local)
   main.append(
     element(
@@ -548,7 +580,7 @@ function render(next: ListState, discardEdits = false) {
     ? "enter your next item"
     : "enter your first item here";
   renderClear();
-  empty.hidden = state.items.length > 0;
+  updateLoadView();
   const existing = new Map(
     [...list.children].map((x) => [
       (x as HTMLElement).dataset.key!,
@@ -708,7 +740,89 @@ window.addEventListener("beforeunload", (e) => {
     e.returnValue = "";
   }
 });
-async function start() {
+type LoadSession = {
+  path: string;
+  current: () => boolean;
+  own: (dispose: () => void) => void;
+  loaded: (next: ListState) => void;
+  failed: (error: Error) => void;
+};
+function updateLoadView() {
+  listArea.setAttribute("aria-busy", String(loadPhase === "loading"));
+  listLoading.hidden = loadPhase !== "loading" || !openingExisting;
+  loadError.hidden = loadPhase !== "error";
+  list.hidden = !ready;
+  empty.hidden =
+    state.items.length > 0 ||
+    loadPhase === "error" ||
+    (!ready && openingExisting);
+  meta.hidden = !ready && openingExisting;
+  title.placeholder = !ready && openingExisting ? "List title" : "my qList";
+  if (!ready && openingExisting) addInput.placeholder = "enter an item";
+}
+function beginLoad() {
+  const retryHadFocus = document.activeElement === retryLoad;
+  const revision = ++loadRevision;
+  stopLoad();
+  clearTimeout(loadTimer);
+  const disposers: (() => void)[] = [];
+  stopLoad = () => {
+    for (const dispose of disposers.splice(0).reverse()) dispose();
+  };
+  const session: LoadSession = {
+    path: location.pathname,
+    current: () =>
+      revision === loadRevision && location.pathname === session.path,
+    own: (dispose) => {
+      if (session.current()) disposers.push(dispose);
+      else dispose();
+    },
+    loaded: (next) => {
+      if (!session.current()) return;
+      const first = !ready;
+      clearTimeout(loadTimer);
+      ready = true;
+      loadPhase = "ready";
+      render(next);
+      if (first && openingExisting) list.classList.add("list-reveal");
+    },
+    failed: (error) => {
+      if (!session.current()) return;
+      if (ready) {
+        showError(error.message);
+        return;
+      }
+      ++loadRevision;
+      clearTimeout(loadTimer);
+      stopLoad();
+      loadPhase = "error";
+      loadErrorText.textContent =
+        error.message || "Could not load this list. Please retry.";
+      add.disabled = true;
+      title.disabled = true;
+      updateLoadView();
+    },
+  };
+  ready = false;
+  openingExisting = existingRoute();
+  loadPhase = "loading";
+  list.classList.remove("list-reveal");
+  add.disabled = true;
+  title.disabled = true;
+  updateLoadView();
+  if (retryHadFocus) addInput.focus({ preventScroll: true });
+  loadTimer = setTimeout(
+    () =>
+      session.failed(
+        new Error(
+          "This list is taking longer than expected. Check your connection and retry.",
+        ),
+      ),
+    15000,
+  );
+  void start(session).catch((error) => session.failed(error));
+}
+async function start(session: LoadSession) {
   if (
     mode === "photo-preview" &&
     !["localhost", "127.0.0.1"].includes(location.hostname)
@@ -734,86 +848,122 @@ async function start() {
       (await reserveGeneratedID((candidate) =>
         reserveLocalList(candidate, true),
       ));
+    if (!session.current()) return;
     if (requested !== null) await reserveLocalList(id, false);
-    store = new LocalStore(id);
+    if (!session.current()) return;
+    const localStore = new LocalStore(id);
+    store = localStore;
+    session.own(() => localStore.close());
   } else {
-    const { FirebaseStore, emulatorDatabase, reserveFirebaseList } =
-      await import("./firebase-store.ts");
+    const {
+      FirebaseStore,
+      emulatorDatabase,
+      reserveFirebaseList,
+      closeDatabase,
+    } = await import("./firebase-store.ts");
+    if (!session.current()) return;
     let db;
     const namespace = production ? "v2" : "";
     if (production) {
       const { productionDatabase, watchWrites } =
         await import("./production-store.ts");
+      if (!session.current()) return;
       db = productionDatabase(crypto.randomUUID(), location.hostname);
+      const ownedDatabase = db;
+      session.own(() => closeDatabase(ownedDatabase));
       let accessRevision = 0;
       await new Promise<void>((resolve) => {
-        watchWrites(db!, (enabled) => {
-          const revision = ++accessRevision;
-          writesAllowed = false;
-          render(state);
-          void (async () => {
-            // A custom URL opened during maintenance may not yet have a claim.
-            if (enabled && requested !== null)
-              await reserveFirebaseList(db!, requested, false, namespace);
-            if (revision === accessRevision) {
-              writesAllowed = enabled;
-              render(state);
-              resolve();
-            }
-          })().catch(() => {
-            if (revision === accessRevision) {
-              showError(
-                "Editing is paused. Keep any unsaved text and refresh when maintenance is complete.",
-              );
-              resolve();
-            }
-          });
-        });
+        session.own(
+          watchWrites(db!, (enabled) => {
+            if (!session.current()) return;
+            const revision = ++accessRevision;
+            writesAllowed = false;
+            render(state);
+            void (async () => {
+              // A custom URL opened during maintenance may not yet have a claim.
+              if (enabled && requested !== null)
+                await reserveFirebaseList(db!, requested, false, namespace);
+              if (session.current() && revision === accessRevision) {
+                writesAllowed = enabled;
+                render(state);
+                resolve();
+              }
+            })().catch(() => {
+              if (session.current() && revision === accessRevision) {
+                showError(
+                  "Editing is paused. Keep any unsaved text and refresh when maintenance is complete.",
+                );
+                resolve();
+              }
+            });
+          }),
+        );
       });
+      if (!session.current()) return;
       if (!writesAllowed && requested === null)
         throw new Error(
           "New lists are paused for maintenance. Existing list links remain available. Copy unsaved text before refreshing.",
         );
     } else if (mode === "staging") {
       const { stagingDatabase } = await import("./staging-store.ts");
+      if (!session.current()) return;
       db = stagingDatabase(crypto.randomUUID(), location.hostname);
+      const ownedDatabase = db;
+      session.own(() => closeDatabase(ownedDatabase));
     } else if (
       mode === "emulator" &&
       ["localhost", "127.0.0.1"].includes(location.hostname)
     ) {
       db = emulatorDatabase(crypto.randomUUID());
+      const ownedDatabase = db;
+      session.own(() => closeDatabase(ownedDatabase));
     } else throw new Error("Unsupported qList build mode or hostname.");
     id =
       requested ??
       (await reserveGeneratedID((candidate) =>
         reserveFirebaseList(db, candidate, true, namespace),
       ));
+    if (!session.current()) return;
     if (requested !== null && writesAllowed)
       await reserveFirebaseList(db, id, false, namespace);
+    if (!session.current()) return;
     store = new FirebaseStore(db, id, namespace);
   }
+  if (!session.current()) return;
+  const sessionStore = store;
   const canonical = `/${encodeURIComponent(id)}`;
   if (location.pathname !== canonical || location.search || location.hash)
     history.replaceState(null, "", canonical);
+  session.path = canonical;
   document.cookie = `lastList=${encodeURIComponent(id)}; Max-Age=5184000; Path=/; SameSite=Lax${location.protocol === "https:" ? "; Secure" : ""}`;
-  ready = true;
-  add.disabled = !writesAllowed;
-  title.disabled = !writesAllowed;
-  store.subscribe(
-    render,
-    (b) => {
-      online = b;
-      updateStatus();
-    },
-    (e) => showError(e.message),
+  session.own(
+    sessionStore.subscribe(
+      session.loaded,
+      (b) => {
+        if (!session.current()) return;
+        online = b;
+        updateStatus();
+      },
+      session.failed,
+    ),
   );
   if (production) {
     // Photo initialization is independent of text saves and cannot disable the list.
     void import("./photo/production-entry.ts")
-      .then(({ installProductionPhotos }) => installProductionPhotos(app, id))
+      .then(({ installProductionPhotos }) => {
+        if (!session.current()) return;
+        const photos = installProductionPhotos(app, id);
+        session.own(() => photos.close());
+      })
       .catch(() => {});
   }
-  if (local && id === "Demo23" && state.items.length === 0 && !state.title) {
+  if (
+    session.current() &&
+    local &&
+    id === "Demo23" &&
+    state.items.length === 0 &&
+    !state.title
+  ) {
     await store.apply({ type: "title", title: "A good kind of day" });
     for (const [i, name] of [
       "Pick up something fresh",
@@ -832,8 +982,4 @@ async function start() {
       });
   }
 }
-void start().catch((e) => {
-  showError(e.message);
-  add.disabled = true;
-  title.disabled = true;
-});
+beginLoad();

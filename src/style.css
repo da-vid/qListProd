@@ -771,3 +771,47 @@ dialog .primary:hover {
   min-height: 36px;
   font-size: 12px;
 }
+
+.list-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+.list-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e3d89c;
+  border-top-color: var(--secondary-ink);
+  border-radius: 50%;
+  animation: list-spin 900ms linear infinite;
+}
+.list-load-error {
+  padding: 16px;
+  color: var(--secondary-ink);
+}
+.list-load-error p {
+  margin: 0 0 10px;
+}
+.list-reveal {
+  animation: list-reveal 180ms ease-out;
+}
+@keyframes list-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes list-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .list-spinner,
+  .list-reveal {
+    animation: none;
+  }
+}
