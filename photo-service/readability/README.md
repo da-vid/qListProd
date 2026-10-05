@@ -19,11 +19,27 @@ palette, checked-row marker and existing interaction/layout behavior remain.
 | Focused completed text             |        2.13:1 |        6.01:1 |
 
 The regression first reproduced failures in 14 samples at each of three widths.
-The completed suite measures 23 samples per width (69 total), including Clear
+The completed suite measures 63 samples per width (189 total), including Clear
 normal/hover (8.08 / 6.88:1), placeholder, checked border, saving, failed save and
 error text. It requires 4.5:1 for sampled text and 3:1 for sampled control graphics,
 rejects transparent fixtures, checks secondary type size and horizontal overflow.
 This is a bounded functional contrast review, not a full accessibility assessment.
+
+## Interaction-state follow-up
+
+Independent review identified an inherited selector conflict missed by the first
+suite: `.primary:hover` overrode the dialog background with pale green while
+`dialog .primary` kept white text. The expanded browser suite reproduced 1.10:1
+confirmation contrast on hover, hover with keyboard focus, and pressed hover at
+all three widths. An explicit `dialog .primary:hover` rule now uses the dark
+hover token; these states measure 5.57:1, while focus alone remains 6.30:1.
+
+The suite now checks keyboard focus (asserting `:focus-visible`), hover with
+focus, and hover alone for header buttons, Add, Clear, reorder/camera/delete,
+About, dialog confirmation, Copy and Close. It also checks the pressed state of
+buttons without dispatching their actions. This expands coverage by 40 samples
+per width. It does not claim every possible component state or focus-ring
+contrast is audited. Disabled/inactive controls are outside these checks.
 
 ## Fresh verification
 

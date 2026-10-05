@@ -131,6 +131,41 @@ try {
       if (s.ratio < target)
         results.failures.push({ width, name, ratio: s.ratio, target });
     }
+    async function interactionStates(
+      name,
+      selector,
+      target = 4.5,
+      pressed = false,
+    ) {
+      const control = page.locator(selector).first();
+      await page.evaluate(() => getSelection()?.removeAllRanges());
+      await page.mouse.move(0, 0);
+      await page.keyboard.press("Tab");
+      await control.focus();
+      assert.equal(
+        await control.evaluate((el) => el.matches(":focus-visible")),
+        true,
+      );
+      await measure(`${name} keyboard focus`, selector, target);
+      await control.hover();
+      await measure(`${name} hover with focus`, selector, target);
+      await control.evaluate((el) => el.blur());
+      await measure(`${name} hover`, selector, target);
+      if (pressed) {
+        await page.mouse.down();
+        assert.equal(
+          await control.evaluate((el) => el.matches(":active")),
+          true,
+        );
+        await measure(`${name} pressed`, selector, target);
+        // End outside the control, without invoking its action or confirmation.
+        await page.mouse.move(0, 0);
+        await page.mouse.up();
+      }
+      await control.evaluate((el) => el.blur());
+      await page.mouse.move(0, 0);
+      await page.evaluate(() => getSelection()?.removeAllRanges());
+    }
     await measure("saved status", ".status");
     await measure("footer count", ".bottom > span");
     await measure("About link", ".about-link");
@@ -161,11 +196,42 @@ try {
     await page.locator(".add .btn").hover();
     await measure("Add button hover", ".add .btn");
     await page.mouse.move(0, 0);
+    for (const [name, selector, target, pressed] of [
+      ["header secondary", "nav .btn:not(.primary)", 4.5, true],
+      ["header primary", "nav .primary", 4.5, true],
+      ["Add interaction", ".add .btn", 4.5, true],
+      ["Clear interaction", ".clear-slot .text-button", 4.5, true],
+      ["reorder interaction", ".drag-handle", 3, false],
+      ["camera interaction", ".photo-manage", 3, false],
+      ["delete interaction", ".delete-item:not([hidden])", 3, false],
+      ["About interaction", ".about-link", 4.5, false],
+    ])
+      await interactionStates(name, selector, target, pressed);
     await field.fill("Synthetic unsubmitted draft");
     await measure("draft status", ".status");
     await page.screenshot({ path: `${out}/readable-${width}.png` });
     await page.getByRole("button", { name: "new list", exact: true }).click();
     await measure("dialog confirmation", "dialog[open] .primary");
+    await interactionStates(
+      "dialog confirmation",
+      "dialog[open] .primary",
+      4.5,
+      true,
+    );
+    await page.locator("dialog[open] .primary").hover();
+    await page.screenshot({ path: `${out}/dialog-hover-${width}.png` });
+    await interactionStates(
+      "dialog copy",
+      "dialog[open] .btn:not(.primary)",
+      4.5,
+      true,
+    );
+    await interactionStates(
+      "dialog close",
+      "dialog[open] .modal-close",
+      3,
+      true,
+    );
     await page
       .getByRole("button", { name: "Close dialog", exact: true })
       .click();

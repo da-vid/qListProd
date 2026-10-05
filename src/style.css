@@ -502,6 +502,9 @@ dialog .primary {
   background: var(--action-fill);
   color: white;
 }
+dialog .primary:hover {
+  background: var(--action-hover);
+}
 @media (min-width: 525px) and (min-height: 640px) {
   .header-inner {
     min-height: 45.5px;
