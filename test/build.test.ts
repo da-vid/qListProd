@@ -16,8 +16,13 @@ test("published output contains only the modern frontend and strict preview head
   assert.deepEqual((await readdir("dist")).sort(), [
     "_headers",
     "_redirects",
+    "apple-touch-icon-precomposed.png",
+    "apple-touch-icon.png",
     "assets",
+    "favicon.ico",
+    "icons",
     "index.html",
+    "manifest.webmanifest",
     "robots.txt",
   ]);
   const headers = await readFile("dist/_headers", "utf8");
