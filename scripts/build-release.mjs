@@ -59,6 +59,8 @@ await writeFile(
   X-Content-Type-Options: nosniff
   X-Robots-Tag: noindex, nofollow
   Cache-Control: no-store
+/manifest.webmanifest
+  Content-Type: application/manifest+json
 `,
 );
 // Public list contents must never be indexed, including anonymous capability URLs.
